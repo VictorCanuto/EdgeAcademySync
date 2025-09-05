@@ -1,0 +1,5 @@
+pandas
+tabula-py
+streamlit
+openpyxl
+xlsxwriter
