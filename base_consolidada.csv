@@ -1,0 +1,632 @@
+aluno,dia,horario,materia
+Diêgo de Araujo Correia,Dom,11:10 - 12:00,---
+Diêgo de Araujo Correia,Dom,12:00 - 12:50,---
+Diêgo de Araujo Correia,Dom,13:30 - 14:20,---
+Diêgo de Araujo Correia,Dom,14:20 - 15:10,---
+Diêgo de Araujo Correia,Dom,15:20 - 16:10,---
+Diêgo de Araujo Correia,Dom,16:10 - 17:00,---
+Diêgo de Araujo Correia,Dom,17:10 - 18:00,---
+Diêgo de Araujo Correia,Dom,18:00 - 18:50,---
+Diêgo de Araujo Correia,Seg,11:10 - 12:00,COMP397
+Diêgo de Araujo Correia,Seg,12:00 - 12:50,COMP397
+Diêgo de Araujo Correia,Seg,13:30 - 14:20,COMP382
+Diêgo de Araujo Correia,Seg,14:20 - 15:10,COMP382
+Diêgo de Araujo Correia,Seg,15:20 - 16:10,COMP382
+Diêgo de Araujo Correia,Seg,16:10 - 17:00,COMP382
+Diêgo de Araujo Correia,Seg,17:10 - 18:00,---
+Diêgo de Araujo Correia,Seg,18:00 - 18:50,---
+Diêgo de Araujo Correia,Ter,11:10 - 12:00,---
+Diêgo de Araujo Correia,Ter,12:00 - 12:50,---
+Diêgo de Araujo Correia,Ter,13:30 - 14:20,COMP382
+Diêgo de Araujo Correia,Ter,14:20 - 15:10,COMP382
+Diêgo de Araujo Correia,Ter,15:20 - 16:10,COMP382
+Diêgo de Araujo Correia,Ter,16:10 - 17:00,COMP382
+Diêgo de Araujo Correia,Ter,17:10 - 18:00,---
+Diêgo de Araujo Correia,Ter,18:00 - 18:50,---
+Diêgo de Araujo Correia,Qua,11:10 - 12:00,COMP397
+Diêgo de Araujo Correia,Qua,12:00 - 12:50,COMP397
+Diêgo de Araujo Correia,Qua,13:30 - 14:20,---
+Diêgo de Araujo Correia,Qua,14:20 - 15:10,---
+Diêgo de Araujo Correia,Qua,15:20 - 16:10,---
+Diêgo de Araujo Correia,Qua,16:10 - 17:00,---
+Diêgo de Araujo Correia,Qua,17:10 - 18:00,COMP382
+Diêgo de Araujo Correia,Qua,18:00 - 18:50,COMP382
+Diêgo de Araujo Correia,Qui,11:10 - 12:00,---
+Diêgo de Araujo Correia,Qui,12:00 - 12:50,---
+Diêgo de Araujo Correia,Qui,13:30 - 14:20,COMP382
+Diêgo de Araujo Correia,Qui,14:20 - 15:10,COMP382
+Diêgo de Araujo Correia,Qui,15:20 - 16:10,---
+Diêgo de Araujo Correia,Qui,16:10 - 17:00,---
+Diêgo de Araujo Correia,Qui,17:10 - 18:00,COMP384
+Diêgo de Araujo Correia,Qui,18:00 - 18:50,COMP384
+Diêgo de Araujo Correia,Sex,11:10 - 12:00,---
+Diêgo de Araujo Correia,Sex,12:00 - 12:50,---
+Diêgo de Araujo Correia,Sex,13:30 - 14:20,COMP382
+Diêgo de Araujo Correia,Sex,14:20 - 15:10,COMP382
+Diêgo de Araujo Correia,Sex,15:20 - 16:10,COMP382
+Diêgo de Araujo Correia,Sex,16:10 - 17:00,COMP382
+Diêgo de Araujo Correia,Sex,17:10 - 18:00,---
+Diêgo de Araujo Correia,Sex,18:00 - 18:50,---
+Diêgo de Araujo Correia,Sab,11:10 - 12:00,---
+Diêgo de Araujo Correia,Sab,12:00 - 12:50,---
+Diêgo de Araujo Correia,Sab,13:30 - 14:20,---
+Diêgo de Araujo Correia,Sab,14:20 - 15:10,---
+Diêgo de Araujo Correia,Sab,15:20 - 16:10,---
+Diêgo de Araujo Correia,Sab,16:10 - 17:00,---
+Diêgo de Araujo Correia,Sab,17:10 - 18:00,---
+Diêgo de Araujo Correia,Sab,18:00 - 18:50,---
+Erasmo da Silva Sá Junior,---,10:10 - 11:00,---
+Erasmo da Silva Sá Junior,---,11:10 - 12:00,---
+Erasmo da Silva Sá Junior,---,12:00 - 12:50,---
+Erasmo da Silva Sá Junior,---,13:30 - 14:20,---
+Erasmo da Silva Sá Junior,---,14:20 - 15:10,---
+Erasmo da Silva Sá Junior,---,15:20 - 16:10,---
+Erasmo da Silva Sá Junior,---,16:10 - 17:00,---
+Erasmo da Silva Sá Junior,COMP369,10:10 - 11:00,COMP369
+Erasmo da Silva Sá Junior,COMP369,11:10 - 12:00,---
+Erasmo da Silva Sá Junior,COMP369,12:00 - 12:50,---
+Erasmo da Silva Sá Junior,COMP369,13:30 - 14:20,ECOM020
+Erasmo da Silva Sá Junior,COMP369,14:20 - 15:10,ECOM020
+Erasmo da Silva Sá Junior,COMP369,15:20 - 16:10,ECOM011
+Erasmo da Silva Sá Junior,COMP369,16:10 - 17:00,ECOM011
+Erasmo da Silva Sá Junior,---.1,10:10 - 11:00,---
+Erasmo da Silva Sá Junior,---.1,11:10 - 12:00,ECOM029
+Erasmo da Silva Sá Junior,---.1,12:00 - 12:50,ECOM029
+Erasmo da Silva Sá Junior,---.1,13:30 - 14:20,---
+Erasmo da Silva Sá Junior,---.1,14:20 - 15:10,---
+Erasmo da Silva Sá Junior,---.1,15:20 - 16:10,COMP389
+Erasmo da Silva Sá Junior,---.1,16:10 - 17:00,COMP389
+Erasmo da Silva Sá Junior,---.2,10:10 - 11:00,---
+Erasmo da Silva Sá Junior,---.2,11:10 - 12:00,ECOM029
+Erasmo da Silva Sá Junior,---.2,12:00 - 12:50,ECOM029
+Erasmo da Silva Sá Junior,---.2,13:30 - 14:20,ECOM020
+Erasmo da Silva Sá Junior,---.2,14:20 - 15:10,ECOM020
+Erasmo da Silva Sá Junior,---.2,15:20 - 16:10,ECOM011
+Erasmo da Silva Sá Junior,---.2,16:10 - 17:00,ECOM011
+Erasmo da Silva Sá Junior,COMP369.1,10:10 - 11:00,COMP369
+Erasmo da Silva Sá Junior,COMP369.1,11:10 - 12:00,---
+Erasmo da Silva Sá Junior,COMP369.1,12:00 - 12:50,---
+Erasmo da Silva Sá Junior,COMP369.1,13:30 - 14:20,---
+Erasmo da Silva Sá Junior,COMP369.1,14:20 - 15:10,---
+Erasmo da Silva Sá Junior,COMP369.1,15:20 - 16:10,COMP389
+Erasmo da Silva Sá Junior,COMP369.1,16:10 - 17:00,COMP389
+Erasmo da Silva Sá Junior,---.3,10:10 - 11:00,---
+Erasmo da Silva Sá Junior,---.3,11:10 - 12:00,---
+Erasmo da Silva Sá Junior,---.3,12:00 - 12:50,---
+Erasmo da Silva Sá Junior,---.3,13:30 - 14:20,---
+Erasmo da Silva Sá Junior,---.3,14:20 - 15:10,---
+Erasmo da Silva Sá Junior,---.3,15:20 - 16:10,---
+Erasmo da Silva Sá Junior,---.3,16:10 - 17:00,---
+Erasmo da Silva Sá Junior,--,10:10 - 11:00,--
+Erasmo da Silva Sá Junior,--,11:10 - 12:00,--
+Erasmo da Silva Sá Junior,--,12:00 - 12:50,--
+Erasmo da Silva Sá Junior,--,13:30 - 14:20,--
+Erasmo da Silva Sá Junior,--,14:20 - 15:10,--
+Erasmo da Silva Sá Junior,--,15:20 - 16:10,--
+Erasmo da Silva Sá Junior,--,16:10 - 17:00,--
+Hércules Porfirio,Seg,09:20 - 10:10,---
+Hércules Porfirio,Seg,10:10 - 11:00,---
+Hércules Porfirio,Seg,11:10 - 12:00,---
+Hércules Porfirio,Seg,12:00 - 12:50,---
+Hércules Porfirio,Seg,15:20 - 16:10,ECOM025
+Hércules Porfirio,Seg,16:10 - 17:00,ECOM025
+Hércules Porfirio,Seg,17:10 - 18:00,ECOM008
+Hércules Porfirio,Seg,18:00 - 18:50,ECOM008
+Hércules Porfirio,Ter,09:20 - 10:10,ECOM031
+Hércules Porfirio,Ter,10:10 - 11:00,ECOM031
+Hércules Porfirio,Ter,11:10 - 12:00,ECOM029
+Hércules Porfirio,Ter,12:00 - 12:50,ECOM029
+Hércules Porfirio,Ter,15:20 - 16:10,---
+Hércules Porfirio,Ter,16:10 - 17:00,---
+Hércules Porfirio,Ter,17:10 - 18:00,---
+Hércules Porfirio,Ter,18:00 - 18:50,---
+Hércules Porfirio,Qua,09:20 - 10:10,---
+Hércules Porfirio,Qua,10:10 - 11:00,---
+Hércules Porfirio,Qua,11:10 - 12:00,ECOM029
+Hércules Porfirio,Qua,12:00 - 12:50,ECOM029
+Hércules Porfirio,Qua,15:20 - 16:10,ECOM025
+Hércules Porfirio,Qua,16:10 - 17:00,ECOM025
+Hércules Porfirio,Qua,17:10 - 18:00,ECOM008
+Hércules Porfirio,Qua,18:00 - 18:50,ECOM008
+Hércules Porfirio,Qui,09:20 - 10:10,ECOM031
+Hércules Porfirio,Qui,10:10 - 11:00,ECOM031
+Hércules Porfirio,Qui,11:10 - 12:00,---
+Hércules Porfirio,Qui,12:00 - 12:50,---
+Hércules Porfirio,Qui,15:20 - 16:10,---
+Hércules Porfirio,Qui,16:10 - 17:00,---
+Hércules Porfirio,Qui,17:10 - 18:00,---
+Hércules Porfirio,Qui,18:00 - 18:50,---
+Hércules Porfirio,Sex,09:20 - 10:10,ECOM046
+Hércules Porfirio,Sex,10:10 - 11:00,ECOM046
+Hércules Porfirio,Sex,11:10 - 12:00,ECOM046
+Hércules Porfirio,Sex,12:00 - 12:50,ECOM046
+Hércules Porfirio,Sex,15:20 - 16:10,---
+Hércules Porfirio,Sex,16:10 - 17:00,---
+Hércules Porfirio,Sex,17:10 - 18:00,---
+Hércules Porfirio,Sex,18:00 - 18:50,---
+JULIA AZEVEDO PEREIRA,Seg,07:30 - 08:20,ECOM063
+JULIA AZEVEDO PEREIRA,Seg,08:20 - 09:10,ECOM063
+JULIA AZEVEDO PEREIRA,Seg,09:20 - 10:10,ECOM059
+JULIA AZEVEDO PEREIRA,Seg,10:10 - 11:00,ECOM059
+JULIA AZEVEDO PEREIRA,Seg,11:10 - 12:00,ECOM041
+JULIA AZEVEDO PEREIRA,Seg,12:00 - 12:50,ECOM041
+JULIA AZEVEDO PEREIRA,Ter,07:30 - 08:20,ECIV050
+JULIA AZEVEDO PEREIRA,Ter,08:20 - 09:10,ECIV050
+JULIA AZEVEDO PEREIRA,Ter,09:20 - 10:10,ECOM060
+JULIA AZEVEDO PEREIRA,Ter,10:10 - 11:00,ECOM060
+JULIA AZEVEDO PEREIRA,Ter,11:10 - 12:00,ECOM189
+JULIA AZEVEDO PEREIRA,Ter,12:00 - 12:50,ECOM189
+JULIA AZEVEDO PEREIRA,Qua,07:30 - 08:20,ECOM063
+JULIA AZEVEDO PEREIRA,Qua,08:20 - 09:10,ECOM063
+JULIA AZEVEDO PEREIRA,Qua,09:20 - 10:10,ECOM059
+JULIA AZEVEDO PEREIRA,Qua,10:10 - 11:00,ECOM059
+JULIA AZEVEDO PEREIRA,Qua,11:10 - 12:00,ECOM041
+JULIA AZEVEDO PEREIRA,Qua,12:00 - 12:50,ECOM041
+JULIA AZEVEDO PEREIRA,Qui,07:30 - 08:20,ECIV050
+JULIA AZEVEDO PEREIRA,Qui,08:20 - 09:10,ECIV050
+JULIA AZEVEDO PEREIRA,Qui,09:20 - 10:10,ECOM060
+JULIA AZEVEDO PEREIRA,Qui,10:10 - 11:00,ECOM060
+JULIA AZEVEDO PEREIRA,Qui,11:10 - 12:00,ECOM058
+JULIA AZEVEDO PEREIRA,Qui,12:00 - 12:50,ECOM058
+JULIA AZEVEDO PEREIRA,Sex,07:30 - 08:20,ECOM058
+JULIA AZEVEDO PEREIRA,Sex,08:20 - 09:10,ECOM058
+JULIA AZEVEDO PEREIRA,Sex,09:20 - 10:10,ECOM046
+JULIA AZEVEDO PEREIRA,Sex,10:10 - 11:00,ECOM046
+JULIA AZEVEDO PEREIRA,Sex,11:10 - 12:00,ECOM046
+JULIA AZEVEDO PEREIRA,Sex,12:00 - 12:50,ECOM046
+Julia Gonçalves,Dom,07:30 - 08:20,---
+Julia Gonçalves,Dom,08:20 - 09:10,---
+Julia Gonçalves,Dom,11:10 - 12:00,---
+Julia Gonçalves,Dom,12:00 - 12:50,---
+Julia Gonçalves,Dom,13:30 - 14:20,---
+Julia Gonçalves,Dom,14:20 - 15:10,---
+Julia Gonçalves,Dom,15:20 - 16:10,---
+Julia Gonçalves,Dom,16:10 - 17:00,---
+Julia Gonçalves,Dom,17:10 - 18:00,---
+Julia Gonçalves,Dom,18:00 - 18:50,---
+Julia Gonçalves,Seg,07:30 - 08:20,ECOM028
+Julia Gonçalves,Seg,08:20 - 09:10,ECOM028
+Julia Gonçalves,Seg,11:10 - 12:00,ECOM027
+Julia Gonçalves,Seg,12:00 - 12:50,ECOM027
+Julia Gonçalves,Seg,13:30 - 14:20,---
+Julia Gonçalves,Seg,14:20 - 15:10,---
+Julia Gonçalves,Seg,15:20 - 16:10,---
+Julia Gonçalves,Seg,16:10 - 17:00,---
+Julia Gonçalves,Seg,17:10 - 18:00,---
+Julia Gonçalves,Seg,18:00 - 18:50,---
+Julia Gonçalves,Ter,07:30 - 08:20,---
+Julia Gonçalves,Ter,08:20 - 09:10,---
+Julia Gonçalves,Ter,11:10 - 12:00,ECOM029
+Julia Gonçalves,Ter,12:00 - 12:50,ECOM029
+Julia Gonçalves,Ter,13:30 - 14:20,ECIV026
+Julia Gonçalves,Ter,14:20 - 15:10,ECIV026
+Julia Gonçalves,Ter,15:20 - 16:10,IF0003
+Julia Gonçalves,Ter,16:10 - 17:00,IF0003
+Julia Gonçalves,Ter,17:10 - 18:00,ECOM048
+Julia Gonçalves,Ter,18:00 - 18:50,ECOM048
+Julia Gonçalves,Qua,07:30 - 08:20,ECOM028
+Julia Gonçalves,Qua,08:20 - 09:10,ECOM028
+Julia Gonçalves,Qua,11:10 - 12:00,ECOM029
+Julia Gonçalves,Qua,12:00 - 12:50,ECOM029
+Julia Gonçalves,Qua,13:30 - 14:20,---
+Julia Gonçalves,Qua,14:20 - 15:10,---
+Julia Gonçalves,Qua,15:20 - 16:10,---
+Julia Gonçalves,Qua,16:10 - 17:00,---
+Julia Gonçalves,Qua,17:10 - 18:00,---
+Julia Gonçalves,Qua,18:00 - 18:50,---
+Julia Gonçalves,Qui,07:30 - 08:20,---
+Julia Gonçalves,Qui,08:20 - 09:10,---
+Julia Gonçalves,Qui,11:10 - 12:00,ECOM027
+Julia Gonçalves,Qui,12:00 - 12:50,ECOM027
+Julia Gonçalves,Qui,13:30 - 14:20,ECIV026
+Julia Gonçalves,Qui,14:20 - 15:10,ECIV026
+Julia Gonçalves,Qui,15:20 - 16:10,IF0003
+Julia Gonçalves,Qui,16:10 - 17:00,IF0003
+Julia Gonçalves,Qui,17:10 - 18:00,---
+Julia Gonçalves,Qui,18:00 - 18:50,---
+Julia Gonçalves,Sex,07:30 - 08:20,---
+Julia Gonçalves,Sex,08:20 - 09:10,---
+Julia Gonçalves,Sex,11:10 - 12:00,---
+Julia Gonçalves,Sex,12:00 - 12:50,---
+Julia Gonçalves,Sex,13:30 - 14:20,---
+Julia Gonçalves,Sex,14:20 - 15:10,---
+Julia Gonçalves,Sex,15:20 - 16:10,---
+Julia Gonçalves,Sex,16:10 - 17:00,---
+Julia Gonçalves,Sex,17:10 - 18:00,---
+Julia Gonçalves,Sex,18:00 - 18:50,---
+Julia Gonçalves,Sab,07:30 - 08:20,---
+Julia Gonçalves,Sab,08:20 - 09:10,---
+Julia Gonçalves,Sab,11:10 - 12:00,---
+Julia Gonçalves,Sab,12:00 - 12:50,---
+Julia Gonçalves,Sab,13:30 - 14:20,---
+Julia Gonçalves,Sab,14:20 - 15:10,---
+Julia Gonçalves,Sab,15:20 - 16:10,---
+Julia Gonçalves,Sab,16:10 - 17:00,---
+Julia Gonçalves,Sab,17:10 - 18:00,---
+Julia Gonçalves,Sab,18:00 - 18:50,---
+Leandro Wanderley,Dom,09:20 - 10:10,---
+Leandro Wanderley,Dom,10:10 - 11:00,---
+Leandro Wanderley,Dom,15:20 - 16:10,---
+Leandro Wanderley,Dom,16:10 - 17:00,---
+Leandro Wanderley,Dom,17:10 - 18:00,---
+Leandro Wanderley,Dom,18:00 - 18:50,---
+Leandro Wanderley,Seg,09:20 - 10:10,ECOM032
+Leandro Wanderley,Seg,10:10 - 11:00,ECOM032
+Leandro Wanderley,Seg,15:20 - 16:10,COMP395
+Leandro Wanderley,Seg,16:10 - 17:00,COMP395
+Leandro Wanderley,Seg,17:10 - 18:00,COMP390
+Leandro Wanderley,Seg,18:00 - 18:50,COMP390
+Leandro Wanderley,Ter,09:20 - 10:10,---
+Leandro Wanderley,Ter,10:10 - 11:00,---
+Leandro Wanderley,Ter,15:20 - 16:10,COMP389
+Leandro Wanderley,Ter,16:10 - 17:00,COMP389
+Leandro Wanderley,Ter,17:10 - 18:00,---
+Leandro Wanderley,Ter,18:00 - 18:50,---
+Leandro Wanderley,Qua,09:20 - 10:10,ECOM032
+Leandro Wanderley,Qua,10:10 - 11:00,ECOM032
+Leandro Wanderley,Qua,15:20 - 16:10,COMP395
+Leandro Wanderley,Qua,16:10 - 17:00,COMP395
+Leandro Wanderley,Qua,17:10 - 18:00,COMP390
+Leandro Wanderley,Qua,18:00 - 18:50,COMP390
+Leandro Wanderley,Qui,09:20 - 10:10,---
+Leandro Wanderley,Qui,10:10 - 11:00,---
+Leandro Wanderley,Qui,15:20 - 16:10,COMP389
+Leandro Wanderley,Qui,16:10 - 17:00,COMP389
+Leandro Wanderley,Qui,17:10 - 18:00,---
+Leandro Wanderley,Qui,18:00 - 18:50,---
+Leandro Wanderley,Sex,09:20 - 10:10,---
+Leandro Wanderley,Sex,10:10 - 11:00,---
+Leandro Wanderley,Sex,15:20 - 16:10,---
+Leandro Wanderley,Sex,16:10 - 17:00,---
+Leandro Wanderley,Sex,17:10 - 18:00,---
+Leandro Wanderley,Sex,18:00 - 18:50,---
+Leandro Wanderley,Sab,09:20 - 10:10,COMP385
+Leandro Wanderley,Sab,10:10 - 11:00,COMP385
+Leandro Wanderley,Sab,15:20 - 16:10,---
+Leandro Wanderley,Sab,16:10 - 17:00,---
+Leandro Wanderley,Sab,17:10 - 18:00,---
+Leandro Wanderley,Sab,18:00 - 18:50,---
+Luiz Bomfim,Dom,09:20 - 10:10,---
+Luiz Bomfim,Dom,10:10 - 11:00,---
+Luiz Bomfim,Dom,11:10 - 12:00,---
+Luiz Bomfim,Dom,12:00 - 12:50,---
+Luiz Bomfim,Dom,13:30 - 14:20,---
+Luiz Bomfim,Dom,14:20 - 15:10,---
+Luiz Bomfim,Dom,15:20 - 16:10,---
+Luiz Bomfim,Dom,16:10 - 17:00,---
+Luiz Bomfim,Seg,09:20 - 10:10,---
+Luiz Bomfim,Seg,10:10 - 11:00,---
+Luiz Bomfim,Seg,11:10 - 12:00,ECOM027
+Luiz Bomfim,Seg,12:00 - 12:50,ECOM027
+Luiz Bomfim,Seg,13:30 - 14:20,COMP376
+Luiz Bomfim,Seg,14:20 - 15:10,COMP376
+Luiz Bomfim,Seg,15:20 - 16:10,ECOM179
+Luiz Bomfim,Seg,16:10 - 17:00,ECOM179
+Luiz Bomfim,Ter,09:20 - 10:10,---
+Luiz Bomfim,Ter,10:10 - 11:00,---
+Luiz Bomfim,Ter,11:10 - 12:00,---
+Luiz Bomfim,Ter,12:00 - 12:50,---
+Luiz Bomfim,Ter,13:30 - 14:20,---
+Luiz Bomfim,Ter,14:20 - 15:10,---
+Luiz Bomfim,Ter,15:20 - 16:10,---
+Luiz Bomfim,Ter,16:10 - 17:00,---
+Luiz Bomfim,Qua,09:20 - 10:10,ECOM015
+Luiz Bomfim,Qua,10:10 - 11:00,ECOM015
+Luiz Bomfim,Qua,11:10 - 12:00,ECOM015
+Luiz Bomfim,Qua,12:00 - 12:50,ECOM015
+Luiz Bomfim,Qua,13:30 - 14:20,COMP376
+Luiz Bomfim,Qua,14:20 - 15:10,COMP376
+Luiz Bomfim,Qua,15:20 - 16:10,---
+Luiz Bomfim,Qua,16:10 - 17:00,---
+Luiz Bomfim,Qui,09:20 - 10:10,---
+Luiz Bomfim,Qui,10:10 - 11:00,---
+Luiz Bomfim,Qui,11:10 - 12:00,ECOM027
+Luiz Bomfim,Qui,12:00 - 12:50,ECOM027
+Luiz Bomfim,Qui,13:30 - 14:20,---
+Luiz Bomfim,Qui,14:20 - 15:10,---
+Luiz Bomfim,Qui,15:20 - 16:10,---
+Luiz Bomfim,Qui,16:10 - 17:00,---
+Luiz Bomfim,Sex,09:20 - 10:10,---
+Luiz Bomfim,Sex,10:10 - 11:00,---
+Luiz Bomfim,Sex,11:10 - 12:00,---
+Luiz Bomfim,Sex,12:00 - 12:50,---
+Luiz Bomfim,Sex,13:30 - 14:20,COMP377
+Luiz Bomfim,Sex,14:20 - 15:10,COMP377
+Luiz Bomfim,Sex,15:20 - 16:10,ECOM179
+Luiz Bomfim,Sex,16:10 - 17:00,ECOM179
+Luiz Bomfim,Sab,09:20 - 10:10,COMP385
+Luiz Bomfim,Sab,10:10 - 11:00,COMP385
+Luiz Bomfim,Sab,11:10 - 12:00,---
+Luiz Bomfim,Sab,12:00 - 12:50,---
+Luiz Bomfim,Sab,13:30 - 14:20,---
+Luiz Bomfim,Sab,14:20 - 15:10,---
+Luiz Bomfim,Sab,15:20 - 16:10,---
+Luiz Bomfim,Sab,16:10 - 17:00,---
+Marcela Rocha Silva,Seg,07:30 - 08:20,IF0002
+Marcela Rocha Silva,Seg,08:20 - 09:10,IF0002
+Marcela Rocha Silva,Seg,09:20 - 10:10,ECOM018
+Marcela Rocha Silva,Seg,10:10 - 11:00,ECOM018
+Marcela Rocha Silva,Seg,11:10 - 12:00,ECOM014
+Marcela Rocha Silva,Seg,12:00 - 12:50,ECOM014
+Marcela Rocha Silva,Ter,07:30 - 08:20,ECOM017
+Marcela Rocha Silva,Ter,08:20 - 09:10,ECOM017
+Marcela Rocha Silva,Ter,09:20 - 10:10,---
+Marcela Rocha Silva,Ter,10:10 - 11:00,---
+Marcela Rocha Silva,Ter,11:10 - 12:00,ECOM057
+Marcela Rocha Silva,Ter,12:00 - 12:50,ECOM057
+Marcela Rocha Silva,Qua,07:30 - 08:20,IF0002
+Marcela Rocha Silva,Qua,08:20 - 09:10,IF0002
+Marcela Rocha Silva,Qua,09:20 - 10:10,ECOM015
+Marcela Rocha Silva,Qua,10:10 - 11:00,ECOM015
+Marcela Rocha Silva,Qua,11:10 - 12:00,ECOM015
+Marcela Rocha Silva,Qua,12:00 - 12:50,ECOM015
+Marcela Rocha Silva,Qui,07:30 - 08:20,---
+Marcela Rocha Silva,Qui,08:20 - 09:10,---
+Marcela Rocha Silva,Qui,09:20 - 10:10,ECOM019
+Marcela Rocha Silva,Qui,10:10 - 11:00,ECOM019
+Marcela Rocha Silva,Qui,11:10 - 12:00,ECOM014
+Marcela Rocha Silva,Qui,12:00 - 12:50,ECOM014
+Marcela Rocha Silva,Sex,07:30 - 08:20,ECOM017
+Marcela Rocha Silva,Sex,08:20 - 09:10,ECOM017
+Marcela Rocha Silva,Sex,09:20 - 10:10,ECOM019
+Marcela Rocha Silva,Sex,10:10 - 11:00,ECOM019
+Marcela Rocha Silva,Sex,11:10 - 12:00,ECOM057
+Marcela Rocha Silva,Sex,12:00 - 12:50,ECOM057
+matricula - João Pedro,Seg,07:30 - 08:20,ECOM063
+matricula - João Pedro,Seg,08:20 - 09:10,ECOM063
+matricula - João Pedro,Seg,09:20 - 10:10,ECOM059
+matricula - João Pedro,Seg,10:10 - 11:00,ECOM059
+matricula - João Pedro,Seg,11:10 - 12:00,ECOM041
+matricula - João Pedro,Seg,12:00 - 12:50,ECOM041
+matricula - João Pedro,Ter,07:30 - 08:20,ECIV050
+matricula - João Pedro,Ter,08:20 - 09:10,ECIV050
+matricula - João Pedro,Ter,09:20 - 10:10,ECOM060
+matricula - João Pedro,Ter,10:10 - 11:00,ECOM060
+matricula - João Pedro,Ter,11:10 - 12:00,---
+matricula - João Pedro,Ter,12:00 - 12:50,---
+matricula - João Pedro,Qua,07:30 - 08:20,ECOM063
+matricula - João Pedro,Qua,08:20 - 09:10,ECOM063
+matricula - João Pedro,Qua,09:20 - 10:10,ECOM059
+matricula - João Pedro,Qua,10:10 - 11:00,ECOM059
+matricula - João Pedro,Qua,11:10 - 12:00,ECOM041
+matricula - João Pedro,Qua,12:00 - 12:50,ECOM041
+matricula - João Pedro,Qui,07:30 - 08:20,ECIV050
+matricula - João Pedro,Qui,08:20 - 09:10,ECIV050
+matricula - João Pedro,Qui,09:20 - 10:10,ECOM060
+matricula - João Pedro,Qui,10:10 - 11:00,ECOM060
+matricula - João Pedro,Qui,11:10 - 12:00,ECOM058
+matricula - João Pedro,Qui,12:00 - 12:50,ECOM058
+matricula - João Pedro,Sex,07:30 - 08:20,ECOM058
+matricula - João Pedro,Sex,08:20 - 09:10,ECOM058
+matricula - João Pedro,Sex,09:20 - 10:10,ECOM046
+matricula - João Pedro,Sex,10:10 - 11:00,ECOM046
+matricula - João Pedro,Sex,11:10 - 12:00,ECOM046
+matricula - João Pedro,Sex,12:00 - 12:50,ECOM046
+matricula_atestado - Kauã Less,Seg,07:30 - 08:20,---
+matricula_atestado - Kauã Less,Seg,08:20 - 09:10,---
+matricula_atestado - Kauã Less,Seg,09:20 - 10:10,ECOM032
+matricula_atestado - Kauã Less,Seg,10:10 - 11:00,ECOM032
+matricula_atestado - Kauã Less,Seg,11:10 - 12:00,ECOM027
+matricula_atestado - Kauã Less,Seg,12:00 - 12:50,ECOM027
+matricula_atestado - Kauã Less,Seg,13:30 - 14:20,ECOM037
+matricula_atestado - Kauã Less,Seg,14:20 - 15:10,ECOM037
+matricula_atestado - Kauã Less,Seg,17:10 - 18:00,---
+matricula_atestado - Kauã Less,Seg,18:00 - 18:50,---
+matricula_atestado - Kauã Less,Ter,07:30 - 08:20,ECOM033
+matricula_atestado - Kauã Less,Ter,08:20 - 09:10,ECOM033
+matricula_atestado - Kauã Less,Ter,09:20 - 10:10,---
+matricula_atestado - Kauã Less,Ter,10:10 - 11:00,---
+matricula_atestado - Kauã Less,Ter,11:10 - 12:00,---
+matricula_atestado - Kauã Less,Ter,12:00 - 12:50,---
+matricula_atestado - Kauã Less,Ter,13:30 - 14:20,---
+matricula_atestado - Kauã Less,Ter,14:20 - 15:10,---
+matricula_atestado - Kauã Less,Ter,17:10 - 18:00,ECOM048
+matricula_atestado - Kauã Less,Ter,18:00 - 18:50,ECOM048
+matricula_atestado - Kauã Less,Qua,07:30 - 08:20,---
+matricula_atestado - Kauã Less,Qua,08:20 - 09:10,---
+matricula_atestado - Kauã Less,Qua,09:20 - 10:10,ECOM032
+matricula_atestado - Kauã Less,Qua,10:10 - 11:00,ECOM032
+matricula_atestado - Kauã Less,Qua,11:10 - 12:00,---
+matricula_atestado - Kauã Less,Qua,12:00 - 12:50,---
+matricula_atestado - Kauã Less,Qua,13:30 - 14:20,ECOM037
+matricula_atestado - Kauã Less,Qua,14:20 - 15:10,ECOM037
+matricula_atestado - Kauã Less,Qua,17:10 - 18:00,---
+matricula_atestado - Kauã Less,Qua,18:00 - 18:50,---
+matricula_atestado - Kauã Less,Qui,07:30 - 08:20,ECOM030
+matricula_atestado - Kauã Less,Qui,08:20 - 09:10,ECOM030
+matricula_atestado - Kauã Less,Qui,09:20 - 10:10,---
+matricula_atestado - Kauã Less,Qui,10:10 - 11:00,---
+matricula_atestado - Kauã Less,Qui,11:10 - 12:00,ECOM027
+matricula_atestado - Kauã Less,Qui,12:00 - 12:50,ECOM027
+matricula_atestado - Kauã Less,Qui,13:30 - 14:20,---
+matricula_atestado - Kauã Less,Qui,14:20 - 15:10,---
+matricula_atestado - Kauã Less,Qui,17:10 - 18:00,---
+matricula_atestado - Kauã Less,Qui,18:00 - 18:50,---
+matricula_atestado - Kauã Less,Sex,07:30 - 08:20,---
+matricula_atestado - Kauã Less,Sex,08:20 - 09:10,---
+matricula_atestado - Kauã Less,Sex,09:20 - 10:10,ECOM030
+matricula_atestado - Kauã Less,Sex,10:10 - 11:00,ECOM030
+matricula_atestado - Kauã Less,Sex,11:10 - 12:00,ECOM030
+matricula_atestado - Kauã Less,Sex,12:00 - 12:50,ECOM030
+matricula_atestado - Kauã Less,Sex,13:30 - 14:20,---
+matricula_atestado - Kauã Less,Sex,14:20 - 15:10,---
+matricula_atestado - Kauã Less,Sex,17:10 - 18:00,---
+matricula_atestado - Kauã Less,Sex,18:00 - 18:50,---
+PEDRO HENRIQUE OLIVEIRA NEVES,Seg,07:30 - 08:20,IF0002
+PEDRO HENRIQUE OLIVEIRA NEVES,Seg,08:20 - 09:10,IF0002
+PEDRO HENRIQUE OLIVEIRA NEVES,Seg,09:20 - 10:10,ECOM018
+PEDRO HENRIQUE OLIVEIRA NEVES,Seg,10:10 - 11:00,ECOM018
+PEDRO HENRIQUE OLIVEIRA NEVES,Seg,11:10 - 12:00,ECOM014
+PEDRO HENRIQUE OLIVEIRA NEVES,Seg,12:00 - 12:50,ECOM014
+PEDRO HENRIQUE OLIVEIRA NEVES,Ter,07:30 - 08:20,ECOM017
+PEDRO HENRIQUE OLIVEIRA NEVES,Ter,08:20 - 09:10,ECOM017
+PEDRO HENRIQUE OLIVEIRA NEVES,Ter,09:20 - 10:10,---
+PEDRO HENRIQUE OLIVEIRA NEVES,Ter,10:10 - 11:00,---
+PEDRO HENRIQUE OLIVEIRA NEVES,Ter,11:10 - 12:00,ECOM057
+PEDRO HENRIQUE OLIVEIRA NEVES,Ter,12:00 - 12:50,ECOM057
+PEDRO HENRIQUE OLIVEIRA NEVES,Qua,07:30 - 08:20,IF0002
+PEDRO HENRIQUE OLIVEIRA NEVES,Qua,08:20 - 09:10,IF0002
+PEDRO HENRIQUE OLIVEIRA NEVES,Qua,09:20 - 10:10,ECOM015
+PEDRO HENRIQUE OLIVEIRA NEVES,Qua,10:10 - 11:00,ECOM015
+PEDRO HENRIQUE OLIVEIRA NEVES,Qua,11:10 - 12:00,ECOM015
+PEDRO HENRIQUE OLIVEIRA NEVES,Qua,12:00 - 12:50,ECOM015
+PEDRO HENRIQUE OLIVEIRA NEVES,Qui,07:30 - 08:20,---
+PEDRO HENRIQUE OLIVEIRA NEVES,Qui,08:20 - 09:10,---
+PEDRO HENRIQUE OLIVEIRA NEVES,Qui,09:20 - 10:10,ECOM019
+PEDRO HENRIQUE OLIVEIRA NEVES,Qui,10:10 - 11:00,ECOM019
+PEDRO HENRIQUE OLIVEIRA NEVES,Qui,11:10 - 12:00,ECOM014
+PEDRO HENRIQUE OLIVEIRA NEVES,Qui,12:00 - 12:50,ECOM014
+PEDRO HENRIQUE OLIVEIRA NEVES,Sex,07:30 - 08:20,ECOM017
+PEDRO HENRIQUE OLIVEIRA NEVES,Sex,08:20 - 09:10,ECOM017
+PEDRO HENRIQUE OLIVEIRA NEVES,Sex,09:20 - 10:10,ECOM019
+PEDRO HENRIQUE OLIVEIRA NEVES,Sex,10:10 - 11:00,ECOM019
+PEDRO HENRIQUE OLIVEIRA NEVES,Sex,11:10 - 12:00,ECOM057
+PEDRO HENRIQUE OLIVEIRA NEVES,Sex,12:00 - 12:50,ECOM057
+Wyvian Valença,Dom,09:20 - 10:10,---
+Wyvian Valença,Dom,10:10 - 11:00,---
+Wyvian Valença,Dom,11:10 - 12:00,---
+Wyvian Valença,Dom,12:00 - 12:50,---
+Wyvian Valença,Dom,13:30 - 14:20,---
+Wyvian Valença,Dom,14:20 - 15:10,---
+Wyvian Valença,Seg,09:20 - 10:10,---
+Wyvian Valença,Seg,10:10 - 11:00,---
+Wyvian Valença,Seg,11:10 - 12:00,ECOM027
+Wyvian Valença,Seg,12:00 - 12:50,ECOM027
+Wyvian Valença,Seg,13:30 - 14:20,COMP376
+Wyvian Valença,Seg,14:20 - 15:10,COMP376
+Wyvian Valença,Ter,09:20 - 10:10,ECOM031
+Wyvian Valença,Ter,10:10 - 11:00,ECOM031
+Wyvian Valença,Ter,11:10 - 12:00,---
+Wyvian Valença,Ter,12:00 - 12:50,---
+Wyvian Valença,Ter,13:30 - 14:20,---
+Wyvian Valença,Ter,14:20 - 15:10,---
+Wyvian Valença,Qua,09:20 - 10:10,ECOM015
+Wyvian Valença,Qua,10:10 - 11:00,ECOM015
+Wyvian Valença,Qua,11:10 - 12:00,ECOM015
+Wyvian Valença,Qua,12:00 - 12:50,ECOM015
+Wyvian Valença,Qua,13:30 - 14:20,COMP376
+Wyvian Valença,Qua,14:20 - 15:10,COMP376
+Wyvian Valença,Qui,09:20 - 10:10,ECOM031
+Wyvian Valença,Qui,10:10 - 11:00,ECOM031
+Wyvian Valença,Qui,11:10 - 12:00,ECOM027
+Wyvian Valença,Qui,12:00 - 12:50,ECOM027
+Wyvian Valença,Qui,13:30 - 14:20,---
+Wyvian Valença,Qui,14:20 - 15:10,---
+Wyvian Valença,Sex,09:20 - 10:10,---
+Wyvian Valença,Sex,10:10 - 11:00,---
+Wyvian Valença,Sex,11:10 - 12:00,---
+Wyvian Valença,Sex,12:00 - 12:50,---
+Wyvian Valença,Sex,13:30 - 14:20,COMP377
+Wyvian Valença,Sex,14:20 - 15:10,COMP377
+Wyvian Valença,Sab,09:20 - 10:10,COMP385
+Wyvian Valença,Sab,10:10 - 11:00,COMP385
+Wyvian Valença,Sab,11:10 - 12:00,---
+Wyvian Valença,Sab,12:00 - 12:50,---
+Wyvian Valença,Sab,13:30 - 14:20,---
+Wyvian Valença,Sab,14:20 - 15:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Dom,09:20 - 10:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Dom,10:10 - 11:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Dom,11:10 - 12:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Dom,12:00 - 12:50,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Dom,13:30 - 14:20,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Dom,14:20 - 15:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Dom,15:20 - 16:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Dom,16:10 - 17:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Seg,09:20 - 10:10,COMP369
+YURI RAPHAEL MOTA DE ARAÚJO BA,Seg,10:10 - 11:00,COMP369
+YURI RAPHAEL MOTA DE ARAÚJO BA,Seg,11:10 - 12:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Seg,12:00 - 12:50,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Seg,13:30 - 14:20,ECOM020
+YURI RAPHAEL MOTA DE ARAÚJO BA,Seg,14:20 - 15:10,ECOM020
+YURI RAPHAEL MOTA DE ARAÚJO BA,Seg,15:20 - 16:10,ECOM011
+YURI RAPHAEL MOTA DE ARAÚJO BA,Seg,16:10 - 17:00,ECOM011
+YURI RAPHAEL MOTA DE ARAÚJO BA,Ter,09:20 - 10:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Ter,10:10 - 11:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Ter,11:10 - 12:00,ECOM029
+YURI RAPHAEL MOTA DE ARAÚJO BA,Ter,12:00 - 12:50,ECOM029
+YURI RAPHAEL MOTA DE ARAÚJO BA,Ter,13:30 - 14:20,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Ter,14:20 - 15:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Ter,15:20 - 16:10,COMP389
+YURI RAPHAEL MOTA DE ARAÚJO BA,Ter,16:10 - 17:00,COMP389
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qua,09:20 - 10:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qua,10:10 - 11:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qua,11:10 - 12:00,ECOM029
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qua,12:00 - 12:50,ECOM029
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qua,13:30 - 14:20,ECOM020
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qua,14:20 - 15:10,ECOM020
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qua,15:20 - 16:10,ECOM011
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qua,16:10 - 17:00,ECOM011
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qui,09:20 - 10:10,COMP369
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qui,10:10 - 11:00,COMP369
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qui,11:10 - 12:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qui,12:00 - 12:50,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qui,13:30 - 14:20,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qui,14:20 - 15:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qui,15:20 - 16:10,COMP389
+YURI RAPHAEL MOTA DE ARAÚJO BA,Qui,16:10 - 17:00,COMP389
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sex,09:20 - 10:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sex,10:10 - 11:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sex,11:10 - 12:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sex,12:00 - 12:50,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sex,13:30 - 14:20,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sex,14:20 - 15:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sex,15:20 - 16:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sex,16:10 - 17:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sab,09:20 - 10:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sab,10:10 - 11:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sab,11:10 - 12:00,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sab,12:00 - 12:50,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sab,13:30 - 14:20,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sab,14:20 - 15:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sab,15:20 - 16:10,---
+YURI RAPHAEL MOTA DE ARAÚJO BA,Sab,16:10 - 17:00,---
+Érico Almeida Bernardino,Seg,07:30 - 08:20,COMP387
+Érico Almeida Bernardino,Seg,08:20 - 09:10,COMP387
+Érico Almeida Bernardino,Seg,09:20 - 10:10,COMP387
+Érico Almeida Bernardino,Seg,10:10 - 11:00,COMP387
+Érico Almeida Bernardino,Seg,11:10 - 12:00,---
+Érico Almeida Bernardino,Seg,12:00 - 12:50,---
+Érico Almeida Bernardino,Seg,13:30 - 14:20,ECOM020
+Érico Almeida Bernardino,Seg,14:20 - 15:10,ECOM020
+Érico Almeida Bernardino,Seg,15:20 - 16:10,ECOM011
+Érico Almeida Bernardino,Seg,16:10 - 17:00,ECOM011
+Érico Almeida Bernardino,Ter,07:30 - 08:20,ECIV008
+Érico Almeida Bernardino,Ter,08:20 - 09:10,ECIV008
+Érico Almeida Bernardino,Ter,09:20 - 10:10,---
+Érico Almeida Bernardino,Ter,10:10 - 11:00,---
+Érico Almeida Bernardino,Ter,11:10 - 12:00,ECOM029
+Érico Almeida Bernardino,Ter,12:00 - 12:50,ECOM029
+Érico Almeida Bernardino,Ter,13:30 - 14:20,---
+Érico Almeida Bernardino,Ter,14:20 - 15:10,---
+Érico Almeida Bernardino,Ter,15:20 - 16:10,---
+Érico Almeida Bernardino,Ter,16:10 - 17:00,---
+Érico Almeida Bernardino,Qua,07:30 - 08:20,---
+Érico Almeida Bernardino,Qua,08:20 - 09:10,---
+Érico Almeida Bernardino,Qua,09:20 - 10:10,---
+Érico Almeida Bernardino,Qua,10:10 - 11:00,---
+Érico Almeida Bernardino,Qua,11:10 - 12:00,ECOM029
+Érico Almeida Bernardino,Qua,12:00 - 12:50,ECOM029
+Érico Almeida Bernardino,Qua,13:30 - 14:20,ECOM020
+Érico Almeida Bernardino,Qua,14:20 - 15:10,ECOM020
+Érico Almeida Bernardino,Qua,15:20 - 16:10,ECOM011
+Érico Almeida Bernardino,Qua,16:10 - 17:00,ECOM011
+Érico Almeida Bernardino,Qui,07:30 - 08:20,ECIV008
+Érico Almeida Bernardino,Qui,08:20 - 09:10,ECIV008
+Érico Almeida Bernardino,Qui,09:20 - 10:10,---
+Érico Almeida Bernardino,Qui,10:10 - 11:00,---
+Érico Almeida Bernardino,Qui,11:10 - 12:00,---
+Érico Almeida Bernardino,Qui,12:00 - 12:50,---
+Érico Almeida Bernardino,Qui,13:30 - 14:20,---
+Érico Almeida Bernardino,Qui,14:20 - 15:10,---
+Érico Almeida Bernardino,Qui,15:20 - 16:10,---
+Érico Almeida Bernardino,Qui,16:10 - 17:00,---
+Érico Almeida Bernardino,Sex,07:30 - 08:20,---
+Érico Almeida Bernardino,Sex,08:20 - 09:10,---
+Érico Almeida Bernardino,Sex,09:20 - 10:10,---
+Érico Almeida Bernardino,Sex,10:10 - 11:00,---
+Érico Almeida Bernardino,Sex,11:10 - 12:00,---
+Érico Almeida Bernardino,Sex,12:00 - 12:50,---
+Érico Almeida Bernardino,Sex,13:30 - 14:20,---
+Érico Almeida Bernardino,Sex,14:20 - 15:10,---
+Érico Almeida Bernardino,Sex,15:20 - 16:10,---
+Érico Almeida Bernardino,Sex,16:10 - 17:00,---
