@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from grupos import formar_grupos
 
 # --- Configuração da Página ---
 # Define o título da aba do navegador e o layout da página como 'wide' (largo).
@@ -13,7 +14,7 @@ st.set_page_config(page_title="Cruzador de Horários", layout="wide")
 def carregar_dados():
     """Carrega a base de dados limpa a partir do arquivo CSV."""
     try:
-        df = pd.read_csv('base_consolidada.csv')
+        df = pd.read_csv('base_consolidada_ok.csv')
         df.dropna(subset=['horario'], inplace=True)
         return df
     except FileNotFoundError:
@@ -53,10 +54,23 @@ base_de_dados = carregar_dados()
 
 # --- Interface do Usuário (UI) ---
 st.title("Sistema de Cruzamento de Horários 🗓️")
+if st.button("Gerar Grupos de 10 Pessoas"):
+    grupos = formar_grupos('base_consolidada_ok.csv', 3)
+    for g in grupos:
+        grupo_id = g.get('Grupo', '?')
+        dia = g.get('Dia', '')
+        horario = g.get('Horário', '')
+        membros = g.get('Membros', [])
+
+        st.subheader(f"Grupo {grupo_id} — {dia} ({horario}) — {len(membros)} alunos")
+        for i, membro in enumerate(membros, 1):
+            st.write(f"{i}. {membro}")
+
+        st.markdown("---")
 
 # Checagem de segurança: verifica se o arquivo 'base_consolidada.csv' existe.
 if base_de_dados is None:
-    st.error("Arquivo 'base_consolidada.csv' não encontrado. Por favor, execute o script 'processador.py' primeiro.")
+    st.error("Arquivo 'base_consolidada_ok.csv' não encontrado. Por favor, execute o script 'processador.py' primeiro.")
 else:
     # Prepara as listas de dados que serão usadas nos filtros e na grade.
     lista_de_alunos = sorted(base_de_dados['aluno'].unique())

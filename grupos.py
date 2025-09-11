@@ -166,8 +166,9 @@ def formar_grupos(caminho_csv, num_grupos):
         print(f"  - {len(alunos_nao_alocados)} Pessoas: {', '.join(sorted(alunos_nao_alocados))}")
     else:
         print("\nTodos os alunos foram alocados com sucesso!")
+    return grupos_formados
 
 # --- Bloco de Execução Principal ---
 if __name__ == "__main__":
     NUMERO_DE_GRUPOS = 3
-    formar_grupos('base_consolidada.csv', NUMERO_DE_GRUPOS)
+    formar_grupos('base_consolidada_ok.csv', NUMERO_DE_GRUPOS)
