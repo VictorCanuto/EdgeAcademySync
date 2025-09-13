@@ -1,4 +1,9 @@
-# EdgeSync: Otimizador de Grupos oi
+# EdgeSync: Otimizador de Grupos
+✨ Novas Funcionalidades no app.py:
+
+Implementada agenda geral interativa com visualização completa da disponibilidade de alunos por horário. A nova feature permite ver quantos alunos estão livres em cada slot horário e clicar para listar quais alunos específicos estão disponíveis. Sistema de cores intuitivo onde tons mais verdes indicam maior disponibilidade para formação de grupos.
+.
+.
 
 EdgeSync é uma ferramenta interna desenvolvida para o programa Edge Academy, com o objetivo de otimizar a formação de equipes de projeto. A aplicação automatiza o processo de análise de horários de múltiplos alunos e fornece uma interface interativa para identificar a disponibilidade em comum de qualquer grupo selecionado.
 
