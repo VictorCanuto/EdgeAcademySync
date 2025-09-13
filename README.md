@@ -1,4 +1,4 @@
-# EdgeSync: Otimizador de Grupos
+# EdgeSync: Otimizador de Grupos oi
 
 EdgeSync é uma ferramenta interna desenvolvida para o programa Edge Academy, com o objetivo de otimizar a formação de equipes de projeto. A aplicação automatiza o processo de análise de horários de múltiplos alunos e fornece uma interface interativa para identificar a disponibilidade em comum de qualquer grupo selecionado.
 
