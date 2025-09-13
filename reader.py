@@ -4,7 +4,7 @@ import os
 
 # --- 1. Configurações ---
 # Define a pasta de onde o script vai ler os arquivos PDF.
-pasta_dos_pdfs = 'C:/Users/JoséQuintela/Desktop/edge/ALL_PDFS' 
+pasta_dos_pdfs = 'C:/edgesync/ALL_PDFS' 
 # Define o nome do arquivo Excel que será criado com os resultados.
 arquivo_excel_saida = 'consolidado_horarios.xlsx'
 
