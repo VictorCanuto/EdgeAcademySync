@@ -98,20 +98,20 @@ def visualizar_agenda_geral_completa(df):
     
     # Formata a visualização
     def formatar_celula(valor):
-        return f"{int(valor)} disp." if valor > 0 else "Livre"
+        return f"{int(valor)} DISPONÍVEIS" if valor > 0 else "Livre"
     
     def colorir_celula(valor):
         estilo = 'text-align: center; border: 1px solid #D3D3D3; cursor: pointer; padding: 8px;'
         if valor == 0:
-            cor = 'background-color: #F8F9FA; color: #6C757D; font-weight: normal;'
-        elif valor <= 5:
-            cor = 'background-color: #D4EDDA; color: #155724; font-weight: bold;'
-        elif valor <= 10:
-            cor = 'background-color: #FFF3CD; color: #856404; font-weight: bold;'
-        elif valor <= 16:
+            cor = 'background-color: #F8F9FA; color: #6C757D; font-weight: normal;' #cinza
+        elif valor <= 15:
+            cor = 'background-color: #F8D7DA; color: #721C24; font-weight: bold;' #vermelho claro
+        elif valor <= 19:
+            cor = 'background-color: #FFF3CD; color: #856404; font-weight: bold;'# amarelo
+        elif valor <= 24:
             cor = 'background-color: #D4EDDA; color: #155724; font-weight: bold;'  # Verde claro - Bom
         else:
-            cor = 'background-color: #28A745; color: white; font-weight: bold;'
+            cor = 'background-color: #28A745; color: white; font-weight: bold;' #verde escuro
         return estilo + cor
     
     # Exibe a tabela
