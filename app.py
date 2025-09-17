@@ -5,7 +5,7 @@ from datetime import datetime
 import re
 
 # --- Configuração da Página ---
-st.set_page_config(page_title="Cruzador de Horários", layout="wide")
+st.set_page_config(page_title="Edge", layout="wide")
 
 # --- Carregamento e Cache dos Dados ---
 @st.cache_data
