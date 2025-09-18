@@ -1,52 +1,62 @@
+import os
 import pandas as pd
 import tabula
-import os
 
-# --- 1. Configurações ---
-# Define a pasta de onde o script vai ler os arquivos PDF.
-pasta_dos_pdfs = 'C:/edgesync/ALL_PDFS' 
-# Define o nome do arquivo Excel que será criado com os resultados.
+# Tenta achar a pasta de PDFs: ./ALL_PDFS, ./all_pdfs ou caminho antigo
+CANDIDATAS = [
+    os.path.abspath("./ALL_PDFS"),
+    os.path.abspath("./all_pdfs"),
+    os.path.abspath("C:/edgesync/ALL_PDFS"),
+]
+pasta_dos_pdfs = next((p for p in CANDIDATAS if os.path.isdir(p)), None)
+if pasta_dos_pdfs is None:
+    raise SystemExit("Pasta de PDFs não encontrada. Crie ./ALL_PDFS (ou ./all_pdfs) e coloque os comprovantes lá.")
+
 arquivo_excel_saida = 'consolidado_horarios.xlsx'
 
+def _maior_tabela(dfs):
+    melhor, score = None, -1
+    for df in dfs or []:
+        if isinstance(df, pd.DataFrame):
+            s = df.shape[0] * df.shape[1]
+            if s > score:
+                melhor, score = df, s
+    return melhor
 
-# Abre o arquivo Excel de saída, que ficará pronto para receber múltiplas abas (uma por aluno).
+print("Iniciando...")
+print(f"Lendo PDFs de: {pasta_dos_pdfs}")
+ok, vazios = 0, []
+
 with pd.ExcelWriter(arquivo_excel_saida, engine='openpyxl') as writer:
-    
-    print(f"Iniciando processo...")
-    print(f"Os PDFs da pasta '{pasta_dos_pdfs}' serão salvos em '{arquivo_excel_saida}'")
+    for nome_arquivo in sorted(os.listdir(pasta_dos_pdfs)):
+        if not nome_arquivo.lower().endswith('.pdf'):
+            continue
 
-    # Loop principal: passa por cada arquivo encontrado na pasta de PDFs.
-    for nome_arquivo in os.listdir(pasta_dos_pdfs):
-        
-        # Filtro para processar apenas arquivos que terminam com '.pdf'.
-        if nome_arquivo.lower().endswith('.pdf'):
-            
-            caminho_completo_pdf = os.path.join(pasta_dos_pdfs, nome_arquivo)
-            print(f"\n--- Processando arquivo: {nome_arquivo} ---")
+        caminho_pdf = os.path.join(pasta_dos_pdfs, nome_arquivo)
+        print(f"→ {nome_arquivo}")
 
-            # Bloco de segurança: se a leitura de um PDF falhar, o script anota o erro e continua para o próximo.
-            try:
-                # A função principal do 'tabula' que lê o PDF e extrai as tabelas.
-                lista_de_tabelas = tabula.read_pdf(caminho_completo_pdf, pages='all', encoding='latin-1')
-                
-                # Lógica principal: verifica se o PDF tem a estrutura esperada (pelo menos 2 tabelas).
-                if len(lista_de_tabelas) >= 2:
-                    # Assume que a grade de horários é sempre a segunda tabela encontrada (índice 1).
-                    tabela_horarios = lista_de_tabelas[1]
-                    
-                    # Usa o nome do arquivo (sem a extensão .pdf) como nome da aba na planilha.
-                    nome_da_planilha = os.path.splitext(nome_arquivo)[0][:30]
+        try:
+            # Tenta pelos dois modos do tabula
+            t_lattice = tabula.read_pdf(caminho_pdf, pages='all', lattice=True, multiple_tables=True, encoding='latin-1')
+            t_stream  = tabula.read_pdf(caminho_pdf, pages='all', stream=True,  multiple_tables=True, encoding='latin-1')
+            cand = (t_lattice or []) + (t_stream or [])
+            tabela = _maior_tabela(cand)
 
-                    # Escreve a tabela extraída na sua respectiva aba dentro do arquivo Excel.
-                    tabela_horarios.to_excel(writer, sheet_name=nome_da_planilha, index=False)
-                    
-                    print(f"Sucesso! Tabela extraída e adicionada na aba '{nome_da_planilha}'.")
-                else:
-                    # Se não encontrar 2 tabelas, avisa e ignora o arquivo.
-                    print(f"AVISO: O arquivo '{nome_arquivo}' não possui duas tabelas e foi ignorado.")
+            if tabela is None or tabela.empty:
+                vazios.append(nome_arquivo)
+                print("   AVISO: Nenhuma tabela útil encontrada.")
+                continue
 
-            except Exception as e:
-                # Captura e exibe qualquer outro erro que possa ocorrer durante o processamento do PDF.
-                print(f"ERRO ao processar o arquivo {nome_arquivo}: {e}")
+            nome_aba = os.path.splitext(nome_arquivo)[0][:30]
+            tabela.to_excel(writer, sheet_name=nome_aba, index=False)
+            ok += 1
 
-print(f"\nProcesso concluído! O arquivo '{arquivo_excel_saida}' foi criado com sucesso.")
+        except Exception as e:
+            print(f"   ERRO: {e}")
+
+print(f"\nFinalizado. Abas criadas: {ok}  |  Sem tabela: {len(vazios)}")
+if vazios:
+    print("Arquivos sem tabela detectável:")
+    for v in vazios:
+        print(" -", v)
+print(f"Gerado: {arquivo_excel_saida}")

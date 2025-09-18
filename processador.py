@@ -1,107 +1,79 @@
-import pandas as pd
 import os
 import re
+import pandas as pd
 
-# Helper para limpar e padronizar as strings de horário.
-def limpar_horario(texto_horario):
-    """
-    Usa regex para encontrar e extrair um horário no formato HH:MM - HH:MM.
-    Se não encontrar, retorna None para que a linha seja descartada.
-    """
-    if not isinstance(texto_horario, str):
-        return texto_horario
+# Aceita: 8:00 - 10:00 | 08h às 10h | 9.20-10.10 | 9 20 10 10 etc.
+REG = re.compile(
+    r'(?P<h1>\d{1,2})\s*[:h\.]?\s*(?P<m1>\d{2})\s*(?:-|a|às|as|até|to)?\s*'
+    r'(?P<h2>\d{1,2})\s*[:h\.]?\s*(?P<m2>\d{2})',
+    flags=re.IGNORECASE
+)
 
-    # Remove espaços em branco no início e no fim da string.
-    texto_limpo = texto_horario.strip()
-    
-    # Procura pelo padrão de horário completo (ex: 15:20 - 16:10).
-    match = re.search(r'(\d{2}):?(\d{2}).*?(\d{2}):?(\d{2})', texto_limpo)
-    
-    if match:
-        h1, m1, h2, m2 = match.groups()
-        return f"{h1}:{m1} - {h2}:{m2}"
-    
-    # Se não encontrar um horário válido, marca para remoção.
-    return None
-
-# Função principal que lê o Excel, limpa os dados e os transforma.
-def criar_base_de_dados_consolidada(caminho_excel):
-    """
-    Lê um arquivo Excel com múltiplas abas, filtra apenas as linhas que
-    representam horários válidos e transforma os dados em um DataFrame consolidado.
-    """
-    # Verifica se o arquivo de entrada existe antes de começar.
-    if not os.path.exists(caminho_excel):
-        print(f"ERRO: O arquivo de entrada '{caminho_excel}' não foi encontrado.")
+def limpar_horario(s: str):
+    if not isinstance(s, str):
         return None
+    s = s.strip()
+    m = REG.search(s)
+    if not m:
+        return None
+    h1, m1, h2, m2 = m.group('h1','m1','h2','m2')
+    return f"{int(h1):02d}:{m1} - {int(h2):02d}:{m2}"
 
-    # Carrega o arquivo Excel e pega o nome de todas as abas (alunos).
-    xls = pd.ExcelFile(caminho_excel)
-    nomes_dos_alunos = xls.sheet_names
-    
-    lista_de_dataframes_finais = []
-
-    print(f"Processando {len(nomes_dos_alunos)} alunos do arquivo '{caminho_excel}'...")
-
-    # Itera sobre cada aluno (cada aba da planilha).
-    for aluno in nomes_dos_alunos:
-        df_aluno = pd.read_excel(xls, sheet_name=aluno)
-        # Padroniza o nome da primeira coluna para 'horario'.
-        df_aluno.rename(columns={df_aluno.columns[0]: 'horario'}, inplace=True)
-        df_aluno['horario'] = df_aluno['horario'].astype(str)
-        
-        # Filtro principal: mantém apenas as linhas que começam com um número na coluna 'horario'.
-        df_horarios_validos = df_aluno[df_aluno['horario'].str.contains(r'^\d')].copy()
-
-        # Pula o aluno se ele não tiver nenhuma linha de horário válida.
-        if df_horarios_validos.empty:
-            continue
-        
-        # Transforma a tabela do formato 'largo' (colunas de dias) para o 'longo' (linhas de eventos).
-        df_melted = df_horarios_validos.melt(
-            id_vars=['horario'], 
-            var_name='dia', 
-            value_name='materia'
-        )
-        
-        # Remove as linhas que representam horários genuinamente vazios.
-        df_ocupado = df_melted.dropna(subset=['materia']).copy()
-        
-        # Pula se não houverem horários ocupados para este aluno.
-        if df_ocupado.empty:
-            continue
-            
-        # Aplica a função de limpeza para padronizar e validar a coluna de horários.
-        df_ocupado['horario'] = df_ocupado['horario'].apply(limpar_horario)
-        # Adiciona a coluna com o nome do aluno para identificar os registros.
-        df_ocupado['aluno'] = aluno
-        
-        lista_de_dataframes_finais.append(df_ocupado)
-
-    # Se a lista de dataframes não estiver vazia, junta tudo em uma tabela mestra.
-    if lista_de_dataframes_finais:
-        base_consolidada = pd.concat(lista_de_dataframes_finais, ignore_index=True)
-        # Reorganiza as colunas para o formato final.
-        base_consolidada = base_consolidada[['aluno', 'dia', 'horario', 'materia']]
-        # Limpeza final: remove quaisquer linhas com horários nulos após a limpeza.
-        base_consolidada.dropna(subset=['horario'], inplace=True)
-        print("Base de dados consolidada criada com sucesso!")
-        return base_consolidada
-    else:
-        print("Nenhum dado válido para consolidar foi encontrado após a filtragem.")
+def criar_base_de_dados_consolidada(caminho_excel: str) -> pd.DataFrame:
+    if not os.path.exists(caminho_excel):
+        print(f"ERRO: '{caminho_excel}' não existe.")
         return pd.DataFrame()
 
-# Este bloco só executa quando o script é chamado diretamente pelo terminal (python processador.py).
-if __name__ == "__main__":
-    arquivo_consolidado = 'consolidado_horarios.xlsx'
-    base_de_dados = criar_base_de_dados_consolidada(arquivo_consolidado)
+    xls = pd.ExcelFile(caminho_excel)
+    sheets = xls.sheet_names
+    finais = []
+    vazios = []
 
-    # Se a criação da base de dados foi bem-sucedida, mostra uma amostra e salva o resultado.
-    if not base_de_dados.empty:
-        print("\n--- Amostra da Base de Dados Limpa ---")
-        print(base_de_dados.head())
-        print(f"\nTotal de {len(base_de_dados)} horários ocupados encontrados.")
-        
-        arquivo_saida_csv = 'base_consolidada.csv'
-        base_de_dados.to_csv(arquivo_saida_csv, index=False)
-        print(f"\nBase de dados limpa e salva em '{arquivo_saida_csv}'.")
+    print(f"Processando {len(sheets)} abas...")
+
+    for aluno in sheets:
+        df = pd.read_excel(xls, sheet_name=aluno)
+        if df.empty:
+            vazios.append(aluno); continue
+
+        df.rename(columns={df.columns[0]: 'horario'}, inplace=True)
+        df['horario'] = df['horario'].astype(str)
+
+        df_valid = df[df['horario'].str.contains(r'^\s*\d', regex=True)].copy()
+        if df_valid.empty:
+            vazios.append(aluno); continue
+
+        melt = df_valid.melt(id_vars=['horario'], var_name='dia', value_name='materia')
+        melt = melt.dropna(subset=['materia']).copy()
+        if melt.empty:
+            vazios.append(aluno); continue
+
+        melt['horario'] = melt['horario'].apply(limpar_horario)
+        melt = melt.dropna(subset=['horario'])
+        if melt.empty:
+            vazios.append(aluno); continue
+
+        # Normalizações leves
+        melt['aluno'] = str(aluno).strip()
+        melt['dia'] = melt['dia'].astype(str).str.strip().str.title()
+        melt['materia'] = melt['materia'].astype(str).str.strip()
+        finais.append(melt[['aluno','dia','horario','materia']])
+
+    if not finais:
+        print("Nada válido após a limpeza.")
+        return pd.DataFrame()
+
+    base = pd.concat(finais, ignore_index=True)
+    base.dropna(subset=['horario'], inplace=True)
+    print(f"OK! Registros: {len(base)}  |  Abas vazias/descartadas: {len(vazios)}")
+    if vazios:
+        print("Atenção: abas sem linhas válidas:")
+        for a in vazios: print(" -", a)
+    return base
+
+if __name__ == "__main__":
+    xlsx_in = 'consolidado_horarios.xlsx'
+    base = criar_base_de_dados_consolidada(xlsx_in)
+    if not base.empty:
+        base.to_csv('base_consolidada.csv', index=False)
+        print("Salvo em 'base_consolidada.csv'")

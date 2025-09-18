@@ -1,264 +1,342 @@
+
 import pandas as pd
 from datetime import datetime
 import random
+from typing import List, Dict, Tuple, Any, Set, Optional, Union
 
-# --- FUNÇÃO HELPER PARA LIDAR COM HORÁRIOS ---
-def horarios_conflitam(horario_aluno, bloco_acompanhamento):
-    """Verifica se um horário de aula de um aluno conflita com um bloco de acompanhamento."""
+# -------------------------------
+# Helpers de horário
+# -------------------------------
+def _parse_interval(hh: int) -> datetime.time:
+    return datetime.strptime(f"{hh:02d}:00", "%H:%M").time()
+
+def horarios_conflitam(horario_aluno: str, bloco_inicio_h: int, bloco_fim_h: int) -> bool:
+    """
+    Verifica se um horário de aula (ex.: "15:20 - 16:10") conflita com um bloco [inicio_h, fim_h].
+    """
     try:
         inicio_aluno_str, fim_aluno_str = horario_aluno.split(' - ')
         inicio_aluno = datetime.strptime(inicio_aluno_str, '%H:%M').time()
         fim_aluno = datetime.strptime(fim_aluno_str, '%H:%M').time()
-        
-        inicio_bloco = datetime.strptime(f"{bloco_acompanhamento[0]:02d}:00", '%H:%M').time()
-        fim_bloco = datetime.strptime(f"{bloco_acompanhamento[1]:02d}:00", '%H:%M').time()
-        
+        inicio_bloco = _parse_interval(bloco_inicio_h)
+        fim_bloco = _parse_interval(bloco_fim_h)
         return inicio_aluno < fim_bloco and fim_aluno > inicio_bloco
-    except ValueError:
+    except Exception:
         return False
 
-# --- NOVA FUNÇÃO HELPER PARA CALCULAR TAMANHOS DE GRUPO ---
-def calcular_tamanhos_grupos(num_alunos, num_grupos):
-    """Calcula os tamanhos dos grupos para que sejam o mais equilibrados possível."""
-    if num_grupos == 0:
+def calcular_tamanhos_grupos(num_alunos: int, num_grupos: int) -> List[int]:
+    """
+    Divide num_alunos em num_grupos tamanhos o mais equilibrados possível.
+    """
+    if num_grupos <= 0:
         return []
-    tamanho_base = num_alunos // num_grupos
+    base = num_alunos // num_grupos
     resto = num_alunos % num_grupos
-    tamanhos = [tamanho_base + 1] * resto + [tamanho_base] * (num_grupos - resto)
-    return [t for t in tamanhos if t > 0]  # Retorna apenas tamanhos maiores que zero
+    tamanhos = [base + 1] * resto + [base] * (num_grupos - resto)
+    return [t for t in tamanhos if t > 0]
 
-# --- FUNÇÃO PARA TENTAR PERMUTAÇÃO ---
-def tentar_permutacao(grupos_formados, aluno_nao_alocado, mapa_disponibilidade, slots_por_aluno):
-    """Tenta trocar alunos entre grupos para acomodar um não alocado, permitindo múltiplas trocas se necessário."""
-    for grupo_idx, grupo in enumerate(grupos_formados):
+# -------------------------------
+# Lógica de permuta/movimentação
+# -------------------------------
+def tentar_permutacao(
+    grupos_formados: List[Dict[str, Any]],
+    aluno_nao_alocado: str,
+    mapa_disponibilidade: Dict[Tuple[str, str], Set[str]],
+    slots_por_aluno: Dict[str, Set[Tuple[str, str]]]
+) -> bool:
+    """
+    Tenta inserir um aluno não alocado em algum grupo existente, via adição direta ou troca simples.
+    """
+    for g_idx, grupo in enumerate(grupos_formados):
         slot = (grupo['Dia'], grupo['Horário'])
         if aluno_nao_alocado in mapa_disponibilidade.get(slot, set()):
-            # Adiciona diretamente, permitindo desbalanceamento temporário
             grupo['Membros'].append(aluno_nao_alocado)
             return True
-        
-        # Tenta troca simples
+
         for membro in list(grupo['Membros']):
-            membro_slots = slots_por_aluno[membro]
-            for other_grupo_idx, other_grupo in enumerate(grupos_formados):
-                if other_grupo_idx == grupo_idx:
+            for other_idx, other in enumerate(grupos_formados):
+                if other_idx == g_idx:
                     continue
-                other_slot = (other_grupo['Dia'], other_grupo['Horário'])
-                if membro in mapa_disponibilidade.get(other_slot, set()):
-                    # Troca
-                    grupos_formados[grupo_idx]['Membros'].remove(membro)
-                    grupos_formados[other_grupo_idx]['Membros'].append(membro)
-                    grupos_formados[grupo_idx]['Membros'].append(aluno_nao_alocado)
+                other_slot = (other['Dia'], other['Horário'])
+                if (membro in mapa_disponibilidade.get(other_slot, set()) and
+                    aluno_nao_alocado in mapa_disponibilidade.get(slot, set())):
+                    grupos_formados[g_idx]['Membros'].remove(membro)
+                    grupos_formados[other_idx]['Membros'].append(membro)
+                    grupos_formados[g_idx]['Membros'].append(aluno_nao_alocado)
                     return True
     return False
 
-# --- NOVA FUNÇÃO PARA BALANCEAR GRUPOS ---
-def balancear_grupos(grupos_formados, mapa_disponibilidade, slots_por_aluno, max_tentativas_balance=100):
-    """Tenta balancear os tamanhos dos grupos movendo alunos entre eles, se compatível."""
-    tentativas = 0
-    while tentativas < max_tentativas_balance:
+def balancear_grupos(
+    grupos_formados: List[Dict[str, Any]],
+    mapa_disponibilidade: Dict[Tuple[str, str], Set[str]],
+    slots_por_aluno: Dict[str, Set[Tuple[str, str]]],
+    max_tentativas_balance: int = 100
+) -> None:
+    """
+    Tenta aproximar os tamanhos, movendo alunos entre grupos quando possível.
+    """
+    tent = 0
+    while tent < max_tentativas_balance:
         tamanhos = [len(g['Membros']) for g in grupos_formados]
-        max_tam = max(tamanhos)
-        min_tam = min(tamanhos)
-        if max_tam - min_tam <= 1:
-            print("Grupos balanceados com sucesso!")
-            break  # Já balanceado (diferença <=1)
-        
-        # Encontra grupo maior e menor
-        grupo_maior_idx = tamanhos.index(max_tam)
-        grupo_menor_idx = tamanhos.index(min_tam)
-        
-        grupo_maior = grupos_formados[grupo_maior_idx]
-        grupo_menor = grupos_formados[grupo_menor_idx]
-        
-        slot_menor = (grupo_menor['Dia'], grupo_menor['Horário'])
-        
-        # Tenta mover um aluno do maior para o menor, se compatível
+        if not tamanhos:
+            break
+        mx, mn = max(tamanhos), min(tamanhos)
+        if mx - mn <= 1:
+            break
+
+        i_max = tamanhos.index(mx)
+        i_min = tamanhos.index(mn)
+        g_max = grupos_formados[i_max]
+        g_min = grupos_formados[i_min]
+        slot_min = (g_min['Dia'], g_min['Horário'])
+
         movido = False
-        for membro in list(grupo_maior['Membros']):
-            if membro in mapa_disponibilidade.get(slot_menor, set()):
-                # Move
-                grupo_maior['Membros'].remove(membro)
-                grupo_menor['Membros'].append(membro)
+        for m in list(g_max['Membros']):
+            if m in mapa_disponibilidade.get(slot_min, set()):
+                g_max['Membros'].remove(m)
+                g_min['Membros'].append(m)
                 movido = True
-                print(f"Aluno {membro} movido do grupo {grupo_maior_idx+1} para {grupo_menor_idx+1} para balanceamento.")
                 break
-        
+
         if not movido:
-            # Se não conseguir mover diretamente, tenta troca com alguém do menor
-            for membro_maior in list(grupo_maior['Membros']):
-                slot_maior = (grupo_maior['Dia'], grupo_maior['Horário'])
-                for membro_menor in list(grupo_menor['Membros']):
-                    if (membro_maior in mapa_disponibilidade.get(slot_menor, set()) and
-                        membro_menor in mapa_disponibilidade.get(slot_maior, set())):
-                        # Troca
-                        grupo_maior['Membros'].remove(membro_maior)
-                        grupo_menor['Membros'].remove(membro_menor)
-                        grupo_maior['Membros'].append(membro_menor)
-                        grupo_menor['Membros'].append(membro_maior)
+            slot_max = (g_max['Dia'], g_max['Horário'])
+            for ma in list(g_max['Membros']):
+                for mi in list(g_min['Membros']):
+                    if (ma in mapa_disponibilidade.get(slot_min, set()) and
+                        mi in mapa_disponibilidade.get(slot_max, set())):
+                        g_max['Membros'].remove(ma)
+                        g_min['Membros'].remove(mi)
+                        g_max['Membros'].append(mi)
+                        g_min['Membros'].append(ma)
                         movido = True
-                        print(f"Troca realizada entre {membro_maior} e {membro_menor} para balanceamento.")
                         break
-                if movido:
-                    break
-        
+                if movido: break
+
         if not movido:
-            tentativas += 1
+            tent += 1
         else:
-            tentativas = 0  # Reset se sucesso, para continuar balanceando se necessário
+            tent = 0
 
-    if max_tam - min_tam > 1:
-        print("Não foi possível balancear perfeitamente; mantendo como está.")
+# -------------------------------
+# Sugestão de trocas (para UI)
+# -------------------------------
+def sugerir_trocas(
+    aluno: str,
+    grupos_formados: List[Dict[str, Any]],
+    mapa_disponibilidade: Dict[Tuple[str, str], Set[str]],
+    slots_por_aluno: Dict[str, Set[Tuple[str, str]]]
+) -> Dict[str, Any]:
+    """
+    Gera sugestões de remanejamento para um aluno:
+      - Movê-lo para outro grupo cujo slot ele possa participar.
+      - Troca 1-para-1 com alguém de outro grupo, garantindo compatibilidade de ambos.
+    Retorna um dicionário com listas de sugestões.
+    """
+    sugestoes = {"mover_para_grupo": [], "troca_simples": []}
 
-# --- FUNÇÃO PRINCIPAL DO ALGORITMO (ATUALIZADA) ---
-def formar_grupos(caminho_csv, num_grupos, max_tentativas=50):
-    """Algoritmo aprimorado para formar grupos de tamanhos semelhantes, priorizando alunos com menos opções. Repete até alocar todos ou atingir max."""
-    try:
-        df = pd.read_csv(caminho_csv)
-    except FileNotFoundError:
-        print(f"ERRO: Arquivo '{caminho_csv}' não encontrado. Execute o processador.py primeiro.")
-        return
+    # Descobrir de qual grupo o aluno faz parte, se fizer
+    grupo_atual_idx = None
+    for idx, g in enumerate(grupos_formados):
+        if aluno in g['Membros']:
+            grupo_atual_idx = idx
+            break
 
-    # --- 1. PREPARAÇÃO DOS DADOS ---
-    todos_os_alunos = set(df['aluno'].unique())
-    
-    dias_semana = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex']  # Sem sábado
-    
-    blocos_validos = {
-        "Manhã (08h-11h)": (8, 11),
-        "Manhã (09h-12h)": (9, 12),
-        "Tarde (14h-17h)": (14, 17)
-    }
+    # Slots onde o aluno pode participar
+    slots_do_aluno = slots_por_aluno.get(aluno, set())
+
+    # 1) Sugerir "mover para" (sem troca), se slot bater
+    for idx, g in enumerate(grupos_formados):
+        slot = (g['Dia'], g['Horário'])
+        if idx != grupo_atual_idx and (slot in slots_do_aluno):
+            sugestoes["mover_para_grupo"].append({
+                "para_grupo": g['Grupo'],
+                "dia": g['Dia'],
+                "horario": g['Horário'],
+                "impacto_tamanhos": {
+                    "origem_diminuiria": True if grupo_atual_idx is not None else False,
+                    "destino_aumentaria": True
+                }
+            })
+
+    # 2) Sugerir trocas 1-para-1
+    if grupo_atual_idx is not None:
+        grupo_atual = grupos_formados[grupo_atual_idx]
+        slot_atual = (grupo_atual['Dia'], grupo_atual['Horário'])
+        for idx, g in enumerate(grupos_formados):
+            if idx == grupo_atual_idx:
+                continue
+            slot_dest = (g['Dia'], g['Horário'])
+            for outro in g['Membros']:
+                # "aluno" precisa poder ir para slot_dest
+                # "outro" precisa poder vir para slot_atual
+                if (slot_dest in slots_por_aluno.get(aluno, set()) and
+                    slot_atual in slots_por_aluno.get(outro, set())):
+                    sugestoes["troca_simples"].append({
+                        "trocar_com": outro,
+                        "grupo_destino": g['Grupo'],
+                        "dia_destino": g['Dia'],
+                        "horario_destino": g['Horário']
+                    })
+
+    return sugestoes
+
+# -------------------------------
+# Formação de grupos (dinâmica)
+# -------------------------------
+def _carregar_df(caminho_csv_ou_df: Union[str, pd.DataFrame]) -> pd.DataFrame:
+    if isinstance(caminho_csv_ou_df, pd.DataFrame):
+        return caminho_csv_ou_df.copy()
+    return pd.read_csv(caminho_csv_ou_df)
+
+def formar_grupos(
+    caminho_csv_ou_df: Union[str, pd.DataFrame],
+    num_grupos: int,
+    blocos: List[Dict[str, Any]],
+    max_tentativas: int = 50
+) -> Dict[str, Any]:
+    """
+    blocos: lista de dicionários no formato:
+        {
+            "nome": "Manhã (08-11)",   # opcional; se ausente, geramos automaticamente
+            "inicio": 8,               # int (hora)
+            "fim": 11,                 # int (hora)
+            "dias": ["Seg","Ter","Qua","Qui","Sex"]   # lista de dias (abreviações)
+        }
+    Retorna:
+        {
+          "grupos": [ {Grupo, Dia, Horário, Membros} ... ],
+          "slots_por_aluno": {aluno: set((dia,horlabel),...) },
+          "mapa_disponibilidade": {(dia,horlabel): set(alunos)}
+        }
+    """
+    df = _carregar_df(caminho_csv_ou_df)
+    todos_os_alunos: Set[str] = set(df['aluno'].unique())
+
+    # Normaliza blocos
+    blocos_norm = []
+    for b in blocos:
+        nome = b.get("nome")
+        ini = int(b["inicio"])
+        fim = int(b["fim"])
+        dias = b.get("dias") or b.get("dia") or []
+        if isinstance(dias, str):
+            dias = [d.strip() for d in dias.split(",") if d.strip()]
+        if not nome:
+            nome = f"{ini:02d}h-{fim:02d}h"
+        # Garante que dias é lista
+        if not isinstance(dias, list):
+            dias = list(dias)
+        blocos_norm.append({"nome": nome, "inicio": ini, "fim": fim, "dias": dias})
 
     tentativas = 0
+    mapa_disponibilidade: Dict[Tuple[str, str], Set[str]] = {}
+    slots_por_aluno: Dict[str, Set[Tuple[str, str]]] = {a: set() for a in todos_os_alunos}
+
+    grupos_formados: List[Dict[str, Any]] = []
+    alunos_nao_alocados: Set[str] = set()
+
     while tentativas < max_tentativas:
         tentativas += 1
-        print(f"\nTentativa {tentativas} de formação de grupos...")
-
-        # --- 2. MAPEAMENTO DE DISPONIBILIDADE ---
-        mapa_disponibilidade = {}
-        for dia in dias_semana:
-            for nome_bloco, horas_bloco in blocos_validos.items():
-                slot_id = (dia, nome_bloco)
-                alunos_disponiveis = set()
+        # 1) Mapeia disponibilidade por slot (dia x bloco)
+        mapa_disponibilidade.clear()
+        for b in blocos_norm:
+            label = f"{b['nome']} ({b['inicio']:02d}h-{b['fim']:02d}h)"
+            for dia in b['dias']:
+                slot_id = (dia, label)
+                disponiveis = set()
                 for aluno in todos_os_alunos:
-                    horarios_ocupados_aluno = df[(df['aluno'] == aluno) & 
-                                                 (df['dia'] == dia) & 
-                                                 (df['materia'] != '---')]['horario']
-                    esta_disponivel = True
-                    for horario_ocupado in horarios_ocupados_aluno:
-                        if horarios_conflitam(horario_ocupado, horas_bloco):
-                            esta_disponivel = False
+                    busy = df[(df['aluno'] == aluno) & (df['dia'] == dia) & (df['materia'] != '---')]['horario']
+                    livre = True
+                    for h in busy:
+                        if horarios_conflitam(h, b['inicio'], b['fim']):
+                            livre = False
                             break
-                    if esta_disponivel:
-                        alunos_disponiveis.add(aluno)
-                if alunos_disponiveis:
-                    mapa_disponibilidade[slot_id] = alunos_disponiveis
+                    if livre:
+                        disponiveis.add(aluno)
+                if disponiveis:
+                    mapa_disponibilidade[slot_id] = disponiveis
 
-        # Randomizar ordem dos slots
-        slots_list = list(mapa_disponibilidade.items())
-        random.shuffle(slots_list)
-        mapa_disponibilidade = dict(slots_list)
+        # Embaralha slots
+        items = list(mapa_disponibilidade.items())
+        random.shuffle(items)
+        mapa_disponibilidade = dict(items)
 
-        # --- 2.1. CALCULAR OPÇÕES DE DISPONIBILIDADE POR ALUNO ---
-        opcoes_por_aluno = {aluno: 0 for aluno in todos_os_alunos}
-        slots_por_aluno = {aluno: set() for aluno in todos_os_alunos}
+        # 2) Opções por aluno
+        opcoes_por_aluno = {a: 0 for a in todos_os_alunos}
+        slots_por_aluno = {a: set() for a in todos_os_alunos}
         for slot, disponiveis in mapa_disponibilidade.items():
-            for aluno in disponiveis:
-                opcoes_por_aluno[aluno] += 1
-                slots_por_aluno[aluno].add(slot)
+            for a in disponiveis:
+                opcoes_por_aluno[a] += 1
+                slots_por_aluno[a].add(slot)
+        media_op = (sum(opcoes_por_aluno.values()) / len(opcoes_por_aluno)) if opcoes_por_aluno else 0
 
-        alunos_sem_disponibilidade = {aluno for aluno in todos_os_alunos if opcoes_por_aluno[aluno] == 0}
-        if alunos_sem_disponibilidade:
-            print(f"AVISO: {len(alunos_sem_disponibilidade)} alunos sem disponibilidade em nenhum slot: {', '.join(sorted(alunos_sem_disponibilidade))}")
-
-        # Média de opções para bonus
-        media_opcoes = sum(opcoes_por_aluno.values()) / len(opcoes_por_aluno) if opcoes_por_aluno else 0
-
-        # --- 3. ALGORITMO DE FORMAÇÃO DE GRUPOS BALANCEADOS ---
-        alunos_nao_alocados = todos_os_alunos.copy()
+        # 3) Formação de grupos
+        alunos_nao_alocados = set(todos_os_alunos)
         grupos_formados = []
-        
-        tamanhos_ideais_dos_grupos = calcular_tamanhos_grupos(len(todos_os_alunos), num_grupos)
-        print(f"Iniciando formação de {len(tamanhos_ideais_dos_grupos)} grupos com tamanhos ideais: {tamanhos_ideais_dos_grupos}...")
+        tamanhos_alvos = calcular_tamanhos_grupos(len(todos_os_alunos), num_grupos)
 
-        for i, tamanho_alvo in enumerate(tamanhos_ideais_dos_grupos):
+        for i, t_alvo in enumerate(tamanhos_alvos):
             melhor_slot = None
-            melhor_grupo_candidato = set()
-            max_pontuacao = -float('inf')
-
-            for slot, alunos_disponiveis in mapa_disponibilidade.items():
-                alunos_candidatos = alunos_nao_alocados.intersection(alunos_disponiveis)
-                len_candidatos = len(alunos_candidatos)
-                if len_candidatos >= tamanho_alvo:
-                    # Pontuação: número de candidatos + bonus para cobrir alunos com poucas opções
-                    bonus = sum(1 for a in alunos_candidatos if opcoes_por_aluno[a] < media_opcoes)
-                    pontuacao = len_candidatos + bonus * 2  # Peso maior para alunos difíceis
-                    if pontuacao > max_pontuacao:
-                        max_pontuacao = pontuacao
+            melhor_cand = set()
+            best_score = -1e9
+            for slot, disponiveis in mapa_disponibilidade.items():
+                cand = alunos_nao_alocados.intersection(disponiveis)
+                if len(cand) >= t_alvo:
+                    bonus = sum(1 for a in cand if opcoes_por_aluno[a] < media_op)
+                    score = len(cand) + 2*bonus
+                    if score > best_score:
+                        best_score = score
                         melhor_slot = slot
-                        melhor_grupo_candidato = alunos_candidatos
-            
+                        melhor_cand = cand
             if melhor_slot is None:
-                # Relaxamento com pontuação
-                max_pontuacao = -float('inf')
-                for slot, alunos_disponiveis in mapa_disponibilidade.items():
-                    alunos_candidatos = alunos_nao_alocados.intersection(alunos_disponiveis)
-                    len_candidatos = len(alunos_candidatos)
-                    if len_candidatos > 0:
-                        bonus = sum(1 for a in alunos_candidatos if opcoes_por_aluno[a] < media_opcoes)
-                        pontuacao = len_candidatos + bonus * 2
-                        if pontuacao > max_pontuacao:
-                            max_pontuacao = pontuacao
+                # relaxa
+                best_score = -1e9
+                for slot, disponiveis in mapa_disponibilidade.items():
+                    cand = alunos_nao_alocados.intersection(disponiveis)
+                    if len(cand) > 0:
+                        bonus = sum(1 for a in cand if opcoes_por_aluno[a] < media_op)
+                        score = len(cand) + 2*bonus
+                        if score > best_score:
+                            best_score = score
                             melhor_slot = slot
-                            melhor_grupo_candidato = alunos_candidatos
+                            melhor_cand = cand
                 if melhor_slot is None:
-                    print(f"ERRO: Não há mais slots disponíveis para o {i+1}º grupo.")
                     break
-                tamanho_alvo = len(melhor_grupo_candidato)
-            
-            # Selecionar priorizando alunos difíceis
-            candidatos_ordenados = sorted(
-                list(melhor_grupo_candidato),
-                key=lambda a: opcoes_por_aluno[a]
-            )
-            membros_do_grupo = set(candidatos_ordenados[:tamanho_alvo])
-            
+                t_alvo = len(melhor_cand)
+
+            escolhidos = sorted(list(melhor_cand), key=lambda a: opcoes_por_aluno[a])[:t_alvo]
             grupos_formados.append({
-                "Grupo": i + 1, "Dia": melhor_slot[0], "Horário": melhor_slot[1], "Membros": list(membros_do_grupo)
+                "Grupo": i+1,
+                "Dia": melhor_slot[0],
+                "Horário": melhor_slot[1],
+                "Membros": escolhidos
             })
-            
-            alunos_nao_alocados -= membros_do_grupo
+            alunos_nao_alocados -= set(escolhidos)
 
-        # --- 3.1. TENTATIVA DE ALOCAR RESTANTES ---
+        # 3.1 Tenta alocar restantes
         if alunos_nao_alocados:
-            print("\nTentando alocar alunos restantes em grupos existentes...")
-            nao_alocados_ordenados = sorted(alunos_nao_alocados, key=lambda a: opcoes_por_aluno[a])
-            for aluno in nao_alocados_ordenados:
-                if tentar_permutacao(grupos_formados, aluno, mapa_disponibilidade, slots_por_aluno):
-                    alunos_nao_alocados.remove(aluno)
-                    print(f"Aluno {aluno} alocado via permutação ou adição.")
+            nao_alocados_ord = sorted(list(alunos_nao_alocados), key=lambda a: opcoes_por_aluno[a])
+            for a in nao_alocados_ord:
+                if tentar_permutacao(grupos_formados, a, mapa_disponibilidade, slots_por_aluno):
+                    alunos_nao_alocados.remove(a)
 
-        # --- 3.2. BALANCEAMENTO FINAL ---
+        # 3.2 Balanceamento
         if not alunos_nao_alocados:
-            print("\nIniciando balanceamento dos grupos...")
             balancear_grupos(grupos_formados, mapa_disponibilidade, slots_por_aluno)
-            break  # Sai se alocou todos, após balancear
+            break
 
-    # --- 4. EXIBIÇÃO DOS RESULTADOS ---
-    print("\n--- GRUPOS FORMADOS ---")
-    for grupo in grupos_formados:
-        print(f"\n{grupo['Grupo']}º Grupo: {grupo['Dia']} - {grupo['Horário']}")
-        print(f"  - {len(grupo['Membros'])} Pessoas: {', '.join(sorted(grupo['Membros']))}")
+    return {
+        "grupos": grupos_formados,
+        "slots_por_aluno": slots_por_aluno,
+        "mapa_disponibilidade": mapa_disponibilidade
+    }
 
-    if alunos_nao_alocados:
-        print("\n--- ALUNOS QUE NÃO FORAM ALOCADOS ---")
-        print(f"  - {len(alunos_nao_alocados)} Pessoas: {', '.join(sorted(alunos_nao_alocados))}")
-    else:
-        print("\nTodos os alunos foram alocados com sucesso!")
-    return grupos_formados
-
-# --- Bloco de Execução Principal ---
 if __name__ == "__main__":
-    NUMERO_DE_GRUPOS = 3
-    formar_grupos('base_consolidada_ok.csv', NUMERO_DE_GRUPOS)
+    # Exemplo básico de uso com blocos dinâmicos
+    blocos_exemplo = [
+        {"nome": "Manhã", "inicio": 8, "fim": 11, "dias": ["Seg","Ter","Qua","Qui","Sex"]},
+        {"nome": "Manhã 2", "inicio": 9, "fim": 12, "dias": ["Seg","Ter","Qua","Qui","Sex"]},
+        {"nome": "Tarde", "inicio": 14, "fim": 17, "dias": ["Seg","Ter","Qua","Qui","Sex"]},
+    ]
+    res = formar_grupos('base_consolidada_ok.csv', num_grupos=3, blocos=blocos_exemplo)
+    print(res["grupos"])
