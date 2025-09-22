@@ -3,3 +3,4 @@ tabula-py
 streamlit
 openpyxl
 xlsxwriter
+reportlab

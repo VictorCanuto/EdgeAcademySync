@@ -8,8 +8,45 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 from grupos import formar_grupos, sugerir_trocas, balancear_grupos  # sua lógica existente
+import re
+import base64
 
-st.set_page_config(page_title="Sistema de Cruzamento de Horários", layout="wide")
+st.set_page_config(page_title="AcademySync", layout="wide")
+
+# --- Converter imagens para base64 ---
+def get_base64_image(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+logo_light = get_base64_image("logos/modo claro.png")
+logo_dark = get_base64_image("logos/modo dark.png")
+
+# --- Logo Centralizado no Topo (modo claro/escuro) ---
+st.markdown(
+    f"""
+    <style>
+        .logo-container {{
+            display: flex;
+            justify-content: center;
+        }}
+        .logo-light {{
+            display: block;
+        }}
+        .logo-dark {{
+            display: none;
+        }}
+        @media (prefers-color-scheme: dark) {{
+            .logo-light {{ display: none; }}
+            .logo-dark {{ display: block; }}
+        }}
+    </style>
+    <div class="logo-container">
+        <img class="logo-light" src="data:image/png;base64,{logo_light}" width="600">
+        <img class="logo-dark" src="data:image/png;base64,{logo_dark}" width="600">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # ---------------- Carregamento & Normalização ----------------
 @st.cache_data
@@ -229,7 +266,7 @@ def visualizar_agenda_geral_completa(df):
 # ---------------- App (única seção) ----------------
 _ensure_states()
 base = carregar_dados()
-st.title("Sistema de Cruzamento de Horários 🗓️")
+st.title("AcademySync 🗓️")
 
 tab1, tab2, tab3 = st.tabs(["Visualização Individual", "Cruzamento de Grupo", "Agenda Geral"])
 
