@@ -271,7 +271,9 @@ def visualizar_agenda_geral_completa(df):
 # ---------------- App (única seção) ----------------
 _ensure_states()
 base = carregar_dados()
-st.title("AcademySync 🗓️")
+col1, col2 = st.columns([0.9, 0.1])
+with col1:
+    st.title("AcademySync")
 
 tab1, tab2, tab3, tab4 = st.tabs(["Visualização Individual", "Cruzamento de Grupo", "Agenda Geral", "Relatório de Grupos"])
 
@@ -522,6 +524,13 @@ with tab4:
         
         # --- DISTRIBUIÇÃO DETALHADA POR GRUPO ---
         st.subheader("👥 Distribuição por Grupo")
+    
+
+
+
+
+
+
         
         # Criar tabela detalhada
         dados_grupos = []
@@ -538,6 +547,12 @@ with tab4:
         st.dataframe(df_grupos[["Grupo", "Dia", "Horário", "Total Alunos", "Membros"]], 
                     use_container_width=True,
                     height=min(400, 50 * len(df_grupos) + 50))
+
+    
+
+
+
+
         
         # --- ALUNOS NÃO ALOCADOS ---
         alunos_nao_alocados = [a for a in base_alunos if a not in alunos_alocados]
@@ -550,8 +565,9 @@ with tab4:
                 cols[i % 2].write(f"• {aluno}")
         
         # --- ESTATÍSTICAS DE DISPONIBILIDADE ---
+        # --- ESTATÍSTICAS DE DISPONIBILIDADE ---
         st.subheader("⏰ Ranking de Disponibilidade")
-        
+
         # Calcular disponibilidade por aluno
         disponibilidade_alunos = []
         for aluno in base_alunos:
@@ -567,23 +583,39 @@ with tab4:
                 "Horários Ocupados": horarios_ocupados,
                 "% Livre": percentual_livre
             })
-        
+
         df_disponibilidade = pd.DataFrame(disponibilidade_alunos)
-        
-        # Top 5 mais disponíveis
+
+        # Ordenar por disponibilidade (do maior para o menor)
+        df_disponibilidade_ordenado = df_disponibilidade.sort_values("Horários Livres", ascending=False)
+
+        # Dividir na metade exata
+        total_alunos = len(base_alunos)
+        metade = total_alunos // 2  # Divisão inteira
+
+        # Primeira metade: mais disponíveis
+        mais_disponiveis = df_disponibilidade_ordenado.head(metade)
+
+        # Segunda metade: menos disponíveis (inverter ordem para mostrar do pior para o melhor)
+        menos_disponiveis = df_disponibilidade_ordenado.tail(total_alunos - metade).iloc[::-1]
+
         col_top1, col_top2 = st.columns(2)
-        
+
         with col_top1:
-            st.write("**🏆 Top 5 - Mais Disponíveis**")
-            top_disponiveis = df_disponibilidade.nlargest(5, "Horários Livres")[["Aluno", "Horários Livres", "% Livre"]]
-            st.dataframe(top_disponiveis.style.format({"% Livre": "{:.1f}%"}), 
+            st.write(f"**🏆 Mais Disponíveis ({len(mais_disponiveis)} alunos)**")
+            st.dataframe(mais_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
+                        .style.format({"% Livre": "{:.1f}%"}), 
                         use_container_width=True, hide_index=True)
-        
+
         with col_top2:
-            st.write("**⏳ Top 5 - Menos Disponíveis**")
-            top_indisponiveis = df_disponibilidade.nsmallest(5, "Horários Livres")[["Aluno", "Horários Livres", "% Livre"]]
-            st.dataframe(top_indisponiveis.style.format({"% Livre": "{:.1f}%"}), 
+            st.write(f"**⏳ Menos Disponíveis ({len(menos_disponiveis)} alunos)**")
+            st.dataframe(menos_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
+                        .style.format({"% Livre": "{:.1f}%"}), 
                         use_container_width=True, hide_index=True)
+
+        # Mostrar estatísticas
+        st.write(f"** Total de alunos no sistema: {total_alunos}**")
+        st.write(f"** Divisão: {len(mais_disponiveis)} mais disponíveis vs {len(menos_disponiveis)} menos disponíveis**")
         
         # --- VISUALIZAÇÃO DE GRADES POR GRUPO ---
         st.subheader("👥 Visualização de Grades por Grupo")
