@@ -2,7 +2,6 @@ import os
 import tabula
 import pandas as pd
 import unicodedata
-import shutil
 
 def normalizar_horario(h: str) -> str:
     h = str(h).strip()
@@ -56,11 +55,6 @@ def ler_pdfs_para_excel(pasta_pdfs, saida_excel):
     print("Iniciando leitura de PDFs...")
     print("Lendo PDFs de:", pasta_pdfs)
 
-    # Limpa a pasta ALL_PDFS antes de processar
-    if os.path.exists(pasta_pdfs):
-        shutil.rmtree(pasta_pdfs)  # Apaga a pasta inteira
-    os.makedirs(pasta_pdfs, exist_ok=True)
-
     arquivos = [f for f in os.listdir(pasta_pdfs) if f.lower().endswith(".pdf")]
     if not arquivos:
         print("Nenhum PDF encontrado.")
@@ -74,6 +68,9 @@ def ler_pdfs_para_excel(pasta_pdfs, saida_excel):
 
             try:
                 cand = tabula.read_pdf(caminho, pages="all", multiple_tables=True, lattice=True, encoding='latin-1', silent=True)
+            except UnicodeDecodeError as e:
+                print("   ERRO de encoding:", e)
+                cand = tabula.read_pdf(caminho, pages="all", multiple_tables=True, lattice=True, encoding='iso-8859-1', silent=True)
             except Exception as e:
                 print("   ERRO geral:", e)
                 vazios.append(nome_arquivo)
@@ -85,17 +82,20 @@ def ler_pdfs_para_excel(pasta_pdfs, saida_excel):
 
             if not tabelas_validas:
                 vazios.append(nome_arquivo)
-                print("   AVISO: Nenhuma grade de horários encontrada.")
+                print("AVISO: Nenhuma grade de horários encontrada.")
                 continue
 
-            nome_aba = os.path.splitext(nome_arquivo)[0][:30]
-            tabelas_validas[0].to_excel(writer, sheet_name=nome_aba, index=False)  # Salva a primeira tabela válida
+            # Junta todas as tabelas de grade do PDF
+            tabela_final = pd.concat(tabelas_validas, ignore_index=True)
+
+            # Normaliza coluna de horários se existir
+            if 'Horário' in tabela_final.columns:
+                tabela_final['Horário'] = tabela_final['Horário'].apply(normalizar_horario)
+
+            nome_aba = os.path.splitext(nome_arquivo)[0][:30]  # Excel limita 31 chars
+            tabela_final.to_excel(writer, sheet_name=nome_aba, index=False)
             ok += 1
             print(f"   OK: {len(tabelas_validas)} grade(s) escritas na aba", nome_aba)
-
-    if ok == 0:
-        print("Nenhum PDF processado com sucesso. Arquivo Excel não será gerado.")
-        return
 
     print("\nFinalizado. Abas criadas:", ok, " |  Sem grade:", len(vazios))
     print("Gerado:", saida_excel)
