@@ -1,62 +1,94 @@
 import os
-import pandas as pd
 import tabula
+import pandas as pd
+import unicodedata
 
-# Tenta achar a pasta de PDFs: ./ALL_PDFS, ./all_pdfs ou caminho antigo
-CANDIDATAS = [
-    os.path.abspath("./ALL_PDFS"),
-    os.path.abspath("./all_pdfs"),
-    os.path.abspath("C:/edgesync/ALL_PDFS"),
-]
-pasta_dos_pdfs = next((p for p in CANDIDATAS if os.path.isdir(p)), None)
-if pasta_dos_pdfs is None:
-    raise SystemExit("Pasta de PDFs não encontrada. Crie ./ALL_PDFS (ou ./all_pdfs) e coloque os comprovantes lá.")
+# Dias da semana que indicam uma grade de horários
+DIAS_SEMANA = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"]
 
-arquivo_excel_saida = 'consolidado_horarios.xlsx'
+def _normalizar(texto: str) -> str:
+    """Remove acentos, põe minúsculas e tira espaços extras."""
+    if not isinstance(texto, str):
+        texto = str(texto)
+    return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII").strip().lower()
 
-def _maior_tabela(dfs):
-    melhor, score = None, -1
-    for df in dfs or []:
-        if isinstance(df, pd.DataFrame):
-            s = df.shape[0] * df.shape[1]
-            if s > score:
-                melhor, score = df, s
-    return melhor
+def _limpar_tabela(df):
+    if df is None or df.empty:
+        return None
+    df = df.dropna(how="all")  # remove linhas totalmente vazias
+    df = df.loc[:, ~df.columns.duplicated()]  # remove colunas duplicadas
+    return df if not df.empty else None
 
-print("Iniciando...")
-print(f"Lendo PDFs de: {pasta_dos_pdfs}")
-ok, vazios = 0, []
+def _eh_grade(df: pd.DataFrame):
+    """Verifica se a tabela parece ser uma grade de horários."""
+    cols = [_normalizar(c) for c in df.columns]
 
-with pd.ExcelWriter(arquivo_excel_saida, engine='openpyxl') as writer:
-    for nome_arquivo in sorted(os.listdir(pasta_dos_pdfs)):
-        if not nome_arquivo.lower().endswith('.pdf'):
-            continue
+    # procura dias no cabeçalho
+    if any(any(d in c for d in DIAS_SEMANA) for c in cols):
+        return True
 
-        caminho_pdf = os.path.join(pasta_dos_pdfs, nome_arquivo)
-        print(f"→ {nome_arquivo}")
+    # procura dias na primeira linha também
+    if not df.empty:
+        primeira = [_normalizar(x) for x in df.iloc[0].tolist()]
+        if any(any(d in c for d in DIAS_SEMANA) for c in primeira):
+            return True
+    return False
 
-        try:
-            # Tenta pelos dois modos do tabula
-            t_lattice = tabula.read_pdf(caminho_pdf, pages='all', lattice=True, multiple_tables=True, encoding='latin-1')
-            t_stream  = tabula.read_pdf(caminho_pdf, pages='all', stream=True,  multiple_tables=True, encoding='latin-1')
-            cand = (t_lattice or []) + (t_stream or [])
-            tabela = _maior_tabela(cand)
+def _ajustar_header(df: pd.DataFrame) -> pd.DataFrame:
+    """Se a primeira linha contiver dias da semana, promove como cabeçalho."""
+    if df is None or df.empty:
+        return df
+    primeira = [_normalizar(x) for x in df.iloc[0].tolist()]
+    if any(any(d in c for d in DIAS_SEMANA) for c in primeira):
+        df.columns = df.iloc[0]
+        df = df.drop(df.index[0]).reset_index(drop=True)
+    return df
 
-            if tabela is None or tabela.empty:
+def ler_pdfs_para_excel(pasta_pdfs, saida_excel):
+    print("Iniciando leitura de PDFs...")
+    print("Lendo PDFs de:", pasta_pdfs)
+
+    arquivos = [f for f in os.listdir(pasta_pdfs) if f.lower().endswith(".pdf")]
+    if not arquivos:
+        print("Nenhum PDF encontrado.")
+        return
+
+    ok, vazios = 0, []
+    with pd.ExcelWriter(saida_excel, engine="openpyxl") as writer:
+        for nome_arquivo in arquivos:
+            caminho = os.path.join(pasta_pdfs, nome_arquivo)
+            print("\n→", nome_arquivo)
+
+            try:
+                # Lê todas as tabelas do PDF
+                cand = tabula.read_pdf(caminho, pages="all", multiple_tables=True, lattice=True)
+            except Exception as e:
+                print("   ERRO:", e)
                 vazios.append(nome_arquivo)
-                print("   AVISO: Nenhuma tabela útil encontrada.")
                 continue
 
-            nome_aba = os.path.splitext(nome_arquivo)[0][:30]
-            tabela.to_excel(writer, sheet_name=nome_aba, index=False)
+            cand_limpos = [_limpar_tabela(t) for t in cand if t is not None]
+            cand_ajustados = [_ajustar_header(t) for t in cand_limpos if t is not None]
+            tabelas_validas = [t for t in cand_ajustados if t is not None and _eh_grade(t)]
+
+            if not tabelas_validas:
+                vazios.append(nome_arquivo)
+                print("   AVISO: Nenhuma grade de horários encontrada.")
+                continue
+
+            # Junta todas as tabelas de grade do PDF
+            tabela_final = pd.concat(tabelas_validas, ignore_index=True)
+
+            nome_aba = os.path.splitext(nome_arquivo)[0][:30]  # Excel limita 31 chars
+            tabela_final.to_excel(writer, sheet_name=nome_aba, index=False)
             ok += 1
+            print(f"   OK: {len(tabelas_validas)} grade(s) escritas na aba", nome_aba)
 
-        except Exception as e:
-            print(f"   ERRO: {e}")
+    print("\nFinalizado. Abas criadas:", ok, " |  Sem grade:", len(vazios))
+    print("Gerado:", saida_excel)
 
-print(f"\nFinalizado. Abas criadas: {ok}  |  Sem tabela: {len(vazios)}")
-if vazios:
-    print("Arquivos sem tabela detectável:")
-    for v in vazios:
-        print(" -", v)
-print(f"Gerado: {arquivo_excel_saida}")
+
+if __name__ == "__main__":
+    pasta = "ALL_PDFS"
+    saida = "consolidado_horarios.xlsx"
+    ler_pdfs_para_excel(pasta, saida)

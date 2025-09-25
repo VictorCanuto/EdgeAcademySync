@@ -10,6 +10,9 @@ from io import BytesIO
 from grupos import formar_grupos, sugerir_trocas, balancear_grupos  # sua lógica existente
 import re
 import base64
+import os
+from reader import ler_pdfs_para_excel
+from processador import criar_base_de_dados_consolidada
 
 #------
 import plotly.express as px
@@ -52,6 +55,43 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+# ---------------- PDFs ----------------
+st.subheader("Carregar comprovantes (PDF) e gerar base")
+uploaded = st.file_uploader("Envie um ou mais PDFs", type=["pdf"], accept_multiple_files=True)
+col_up_a, col_up_b = st.columns([0.7, 0.3])
+with col_up_b:
+    if st.button("Processar PDFs"):
+        pasta = "ALL_PDFS"
+        os.makedirs(pasta, exist_ok=True)
+        for f in os.listdir(pasta):
+            if f.lower().endswith(".pdf"):
+                try:
+                    os.remove(os.path.join(pasta, f))
+                except Exception:
+                    pass
+        if not uploaded:
+            st.warning("Nenhum arquivo enviado.")
+        else:
+            for uf in uploaded:
+                try:
+                    with open(os.path.join(pasta, uf.name), "wb") as out:
+                        out.write(uf.getbuffer())
+                except Exception as e:
+                    st.error(f"Falha ao salvar {uf.name}: {e}")
+
+            xlsx_out = "consolidado_horarios.xlsx"
+            ler_pdfs_para_excel(pasta, xlsx_out)
+            base_df = criar_base_de_dados_consolidada(xlsx_out)
+            if base_df is None or base_df.empty:
+                st.error("Nenhum dado válido gerado a partir dos PDFs.")
+            else:
+                base_df.to_csv("base_consolidada.csv", index=False)
+                try:
+                    st.cache_data.clear()
+                except Exception:
+                    pass
+                st.success("Base atualizada com sucesso! Você pode navegar nas abas abaixo.")
 
 # ---------------- Carregamento & Normalização ----------------
 @st.cache_data
@@ -280,7 +320,7 @@ tab1, tab2, tab3, tab4 = st.tabs(["Visualização Individual", "Cruzamento de Gr
 # ----- Tab 1
 with tab1:
     if base is None:
-        st.error("Arquivo 'base_consolidada.csv' não encontrado. Rode o reader/processador antes.")
+        st.error("Sem base de dados. Adicione os arquivos PDF e aperte em processar.")
     else:
         alunos = sorted(base["aluno"].unique())
         horarios = sorted(base["horario"].unique())
@@ -485,7 +525,7 @@ with tab2:
 # ----- Tab 3
 with tab3:
     if base is None:
-        st.error("Arquivo 'base_consolidada.csv' não encontrado. Rode o reader/processador antes.")
+        st.error("Sem base de dados. Adicione os arquivos PDF e aperte em processar.")
     else:
         visualizar_agenda_geral_completa(base)
 
