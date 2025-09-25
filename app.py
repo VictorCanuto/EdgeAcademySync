@@ -319,34 +319,6 @@ tab1, tab2, tab3, tab4 = st.tabs(["Visualização Individual", "Cruzamento de Gr
 
 # ----- Tab 1
 with tab1:
-    if base is None:
-        st.error("Sem base de dados. Adicione os arquivos PDF e aperte em processar.")
-    else:
-        alunos = sorted(base["aluno"].unique())
-        horarios = sorted(base["horario"].unique())
-        dias = ["Seg","Ter","Qua","Qui","Sex","Sab"]
-
-        selec = st.multiselect("Selecione um ou mais alunos para ver a disponibilidade:",
-                               options=alunos, key="tab1_select")
-        if not selec:
-            st.info("Por favor, selecione pelo menos um aluno para começar.")
-        elif len(selec)==1:
-            a = selec[0]
-            piv = base[base.aluno==a].pivot_table(index="horario", columns="dia",
-                                                  values="materia", aggfunc="first")
-            grid = (piv.notna() & (piv!='---')).reindex(index=horarios, columns=dias, fill_value=False)
-            criar_grid_visual(grid, f"Grade de Horários de {a}")
-        else:
-            grid = pd.DataFrame(False, index=horarios, columns=dias)
-            for a in selec:
-                df_a = base[base.aluno==a]
-                if df_a.empty: continue
-                piv = df_a.pivot_table(index="horario", columns="dia", values="materia", aggfunc="first")
-                grid |= (piv.notna() & (piv!='---')).reindex(index=horarios, columns=dias, fill_value=False)
-            criar_grid_visual(grid, f"Disponibilidade Combinada ({len(selec)} alunos)")
-
-# ----- Tab 2
-with tab2:
     st.header("Formação de Grupos (Dinâmica)")
     st.caption("Defina quantos grupos deseja e configure blocos com dias e janelas de horário.")
 
@@ -521,6 +493,35 @@ with tab2:
             except Exception:
                 with st.expander("Como habilitar PDF (ReportLab)"):
                     st.info("Instale no mesmo ambiente:\n\n```bash\npython -m pip install reportlab\n```")
+
+# ----- Tab 2
+with tab2:
+    if base is None:
+        st.error("Sem base de dados. Adicione os arquivos PDF e aperte em processar.")
+    else:
+        alunos = sorted(base["aluno"].unique())
+        horarios = sorted(base["horario"].unique())
+        dias = ["Seg","Ter","Qua","Qui","Sex","Sab"]
+
+        selec = st.multiselect("Selecione um ou mais alunos para ver a disponibilidade:",
+                               options=alunos, key="tab1_select")
+        if not selec:
+            st.info("Por favor, selecione pelo menos um aluno para começar.")
+        elif len(selec)==1:
+            a = selec[0]
+            piv = base[base.aluno==a].pivot_table(index="horario", columns="dia",
+                                                  values="materia", aggfunc="first")
+            grid = (piv.notna() & (piv!='---')).reindex(index=horarios, columns=dias, fill_value=False)
+            criar_grid_visual(grid, f"Grade de Horários de {a}")
+        else:
+            grid = pd.DataFrame(False, index=horarios, columns=dias)
+            for a in selec:
+                df_a = base[base.aluno==a]
+                if df_a.empty: continue
+                piv = df_a.pivot_table(index="horario", columns="dia", values="materia", aggfunc="first")
+                grid |= (piv.notna() & (piv!='---')).reindex(index=horarios, columns=dias, fill_value=False)
+            criar_grid_visual(grid, f"Disponibilidade Combinada ({len(selec)} alunos)")
+
 
 # ----- Tab 3
 with tab3:
