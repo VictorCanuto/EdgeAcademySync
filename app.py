@@ -286,7 +286,7 @@ def obter_alunos_disponiveis_especifico(df, dia, horario):
 def visualizar_agenda_geral_completa(df):
     st.header("📊 Agenda Geral Completa - Alunos Disponíveis por Horário")
     agenda = criar_agenda_geral_completa(df)
-    def fmt_cell(v): return f"{int(v)} DISPONÍVEIS" if v>0 else "Livre"
+    def fmt_cell(v): return f"{int(v)} DISPONÍVEL" if v == 1 else f"{int(v)} DISPONÍVEIS" if v > 1 else "0 DISPONÍVEIS"
     def sty_cell(v):
         base = "text-align:center;border:1px solid #D3D3D3;cursor:pointer;padding:8px;"
         if v==0:   cor = "background-color:#F8F9FA;color:#6C757D;font-weight:normal;"
