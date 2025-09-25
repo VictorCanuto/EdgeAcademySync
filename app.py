@@ -14,6 +14,11 @@ import os
 from reader import ler_pdfs_para_excel, normalizar_horario
 from processador import criar_base_de_dados_consolidada
 
+#------
+import plotly.express as px
+
+from openpyxl import Workbook
+
 st.set_page_config(page_title="AcademySync", layout="wide")
 
 # --- Converter imagens para base64 ---
@@ -380,9 +385,11 @@ def visualizar_agenda_geral_completa(df):
 # ---------------- App (única seção) ----------------
 _ensure_states()
 base = carregar_dados()
-st.title("AcademySync 🗓️")
+col1, col2 = st.columns([0.9, 0.1])
+with col1:
+    st.title("AcademySync")
 
-tab1, tab2, tab3 = st.tabs(["Visualização Individual", "Cruzamento de Grupo", "Agenda Geral"])
+tab1, tab2, tab3, tab4 = st.tabs(["Cruzamento de Grupo", "Visualização Individual", "Agenda Geral", "Relatório de Grupos"])
 
 # ----- Tab 1
 with tab1:
@@ -467,7 +474,7 @@ with tab2:
     with c2: st.caption("Edite: nome, início, fim e dias (texto: Seg, Ter, Qua...).")
 
     blocos_df = st.data_editor(st.session_state["blocos_df"], key="editor_blocos",
-                               use_container_width=True, num_rows="dynamic", hide_index=True)
+                               width="stretch", num_rows="dynamic", hide_index=True)
 
     def _parse_dias(s):
         if not isinstance(s,str): return []
@@ -618,9 +625,250 @@ with tab2:
                 with st.expander("Como habilitar PDF (ReportLab)"):
                     st.info("Instale no mesmo ambiente:\n\n```bash\npython -m pip install reportlab\n```")
 
+# ----- Tab 2
+with tab2:
+    if base is None:
+        st.error("Sem base de dados. Adicione os arquivos PDF e aperte em processar.")
+    else:
+        alunos = sorted(base["aluno"].unique())
+        horarios = sorted(base["horario"].unique())
+        dias = ["Seg","Ter","Qua","Qui","Sex","Sab"]
+
+        selec = st.multiselect("Selecione um ou mais alunos para ver a disponibilidade:",
+                               options=alunos, key="tab1_select")
+        if not selec:
+            st.info("Por favor, selecione pelo menos um aluno para começar.")
+        elif len(selec)==1:
+            a = selec[0]
+            piv = base[base.aluno==a].pivot_table(index="horario", columns="dia",
+                                                  values="materia", aggfunc="first")
+            grid = (piv.notna() & (piv!='---')).reindex(index=horarios, columns=dias, fill_value=False)
+            criar_grid_visual(grid, f"Grade de Horários de {a}")
+        else:
+            grid = pd.DataFrame(False, index=horarios, columns=dias)
+            for a in selec:
+                df_a = base[base.aluno==a]
+                if df_a.empty: continue
+                piv = df_a.pivot_table(index="horario", columns="dia", values="materia", aggfunc="first")
+                grid |= (piv.notna() & (piv!='---')).reindex(index=horarios, columns=dias, fill_value=False)
+            criar_grid_visual(grid, f"Disponibilidade Combinada ({len(selec)} alunos)")
+
+
 # ----- Tab 3
 with tab3:
     if base is None:
         st.error("Sem base de dados. Adicione os arquivos PDF e aperte em processar.")
     else:
         visualizar_agenda_geral_completa(base)
+
+# --- NOVA ABA: RELATÓRIO E VISUALIZAÇÃO DE RESULTADOS ---
+with tab4:
+    st.header("📊 Relatório e Análise de Grupos")
+    
+    res = st.session_state.get("grupos_result")
+    if not res:
+        st.info("Gere os grupos na aba 'Cruzamento de Grupo' primeiro para ver o relatório.")
+    else:
+        grupos = res["grupos"]
+        base_alunos = base["aluno"].unique()
+        
+        # --- ESTATÍSTICAS GERAIS ---
+        st.subheader("📈 Estatísticas Gerais")
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        # Total de alunos únicos na base
+        total_alunos_base = len(base_alunos)
+        
+        # Alocados nos grupos
+        alunos_alocados = [m for g in grupos for m in g["Membros"]]
+        total_alocados = len(alunos_alocados)
+        percentual_alocados = (total_alocados / total_alunos_base * 100) if total_alunos_base > 0 else 0
+        
+        with col1:
+            st.metric("Total de Alunos", total_alunos_base)
+        with col2:
+            st.metric("Alunos Alocados", total_alocados)
+        with col3:
+            st.metric("Taxa de Alocação", f"{percentual_alocados:.1f}%")
+        with col4:
+            st.metric("Grupos Formados", len(grupos))
+        
+        # --- DISTRIBUIÇÃO DETALHADA POR GRUPO ---
+        st.subheader("👥 Distribuição por Grupo")
+    
+
+
+
+
+
+
+        
+        # Criar tabela detalhada
+        dados_grupos = []
+        for g in grupos:
+            dados_grupos.append({
+                "Grupo": g["Grupo"],
+                "Dia": g["Dia"],
+                "Horário": g["Horário"],
+                "Total Alunos": len(g["Membros"]),
+                "Membros": ", ".join(sorted(g["Membros"]))
+            })
+        
+        df_grupos = pd.DataFrame(dados_grupos)
+        st.dataframe(df_grupos[["Grupo", "Dia", "Horário", "Total Alunos", "Membros"]], 
+                    width="stretch",
+                    height=min(400, 50 * len(df_grupos) + 50))
+
+    
+
+
+
+
+        
+        # --- ALUNOS NÃO ALOCADOS ---
+        alunos_nao_alocados = [a for a in base_alunos if a not in alunos_alocados]
+        if alunos_nao_alocados:
+            st.subheader("⚠️ Alunos Não Alocados")
+            st.warning(f"{len(alunos_nao_alocados)} alunos não foram alocados em grupos:")
+            
+            cols = st.columns(2)
+            for i, aluno in enumerate(sorted(alunos_nao_alocados)):
+                cols[i % 2].write(f"• {aluno}")
+        
+        # --- ESTATÍSTICAS DE DISPONIBILIDADE ---
+        # --- ESTATÍSTICAS DE DISPONIBILIDADE ---
+        st.subheader("⏰ Ranking de Disponibilidade")
+
+        # Calcular disponibilidade por aluno
+        disponibilidade_alunos = []
+        for aluno in base_alunos:
+            df_aluno = base[base.aluno == aluno]
+            total_horarios = len(base["horario"].unique()) * len(base["dia"].unique())
+            horarios_ocupados = len(df_aluno[df_aluno.materia != '---'])
+            horarios_livres = total_horarios - horarios_ocupados
+            percentual_livre = (horarios_livres / total_horarios * 100) if total_horarios > 0 else 0
+            
+            disponibilidade_alunos.append({
+                "Aluno": aluno,
+                "Horários Livres": horarios_livres,
+                "Horários Ocupados": horarios_ocupados,
+                "% Livre": percentual_livre
+            })
+
+        df_disponibilidade = pd.DataFrame(disponibilidade_alunos)
+
+        # Ordenar por disponibilidade (do maior para o menor)
+        df_disponibilidade_ordenado = df_disponibilidade.sort_values("Horários Livres", ascending=False)
+
+        # Dividir na metade exata
+        total_alunos = len(base_alunos)
+        metade = total_alunos // 2  # Divisão inteira
+
+        # Primeira metade: mais disponíveis
+        mais_disponiveis = df_disponibilidade_ordenado.head(metade)
+
+        # Segunda metade: menos disponíveis (inverter ordem para mostrar do pior para o melhor)
+        menos_disponiveis = df_disponibilidade_ordenado.tail(total_alunos - metade).iloc[::-1]
+
+        col_top1, col_top2 = st.columns(2)
+
+        with col_top1:
+            st.write(f"**🏆 Mais Disponíveis ({len(mais_disponiveis)} alunos)**")
+            st.dataframe(mais_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
+                        .style.format({"% Livre": "{:.1f}%"}), 
+                        width="stretch", hide_index=True)
+
+        with col_top2:
+            st.write(f"**⏳ Menos Disponíveis ({len(menos_disponiveis)} alunos)**")
+            st.dataframe(menos_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
+                        .style.format({"% Livre": "{:.1f}%"}), 
+                        width="stretch", hide_index=True)
+
+        # Mostrar estatísticas
+        st.write(f"** Total de alunos no sistema: {total_alunos}**")
+        st.write(f"** Divisão: {len(mais_disponiveis)} mais disponíveis vs {len(menos_disponiveis)} menos disponíveis**")
+        
+        # --- VISUALIZAÇÃO DE GRADES POR GRUPO ---
+        st.subheader("👥 Visualização de Grades por Grupo")
+        
+        grupo_selecionado = st.selectbox(
+            "Selecione um grupo para ver a grade combinada:",
+            options=[g["Grupo"] for g in grupos],
+            format_func=lambda x: f"Grupo {x} - {next(g['Dia'] for g in grupos if g['Grupo'] == x)} {next(g['Horário'] for g in grupos if g['Grupo'] == x)}"
+        )
+        
+        if grupo_selecionado:
+            grupo = next(g for g in grupos if g["Grupo"] == grupo_selecionado)
+            membros_grupo = grupo["Membros"]
+            
+            st.write(f"**Membros do Grupo {grupo_selecionado}:**")
+            for membro in sorted(membros_grupo):
+                st.write(f"• {membro}")
+            
+            # Criar grade combinada do grupo
+            if membros_grupo:
+                horarios = sorted(base["horario"].unique())
+                dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
+                
+                # Grade combinada (TRUE se pelo menos um membro está indisponível)
+                grid_combinada = pd.DataFrame(False, index=horarios, columns=dias)
+                
+                for membro in membros_grupo:
+                    df_membro = base[base.aluno == membro]
+                    if not df_membro.empty:
+                        piv = df_membro.pivot_table(index="horario", columns="dia", 
+                                                  values="materia", aggfunc="first")
+                        grid_membro = (piv.notna() & (piv != '---')).reindex(
+                            index=horarios, columns=dias, fill_value=False)
+                        grid_combinada |= grid_membro
+                
+                # Visualizar grade combinada
+                st.write(f"**Grade Combinada do Grupo {grupo_selecionado}:**")
+                criar_grid_visual(grid_combinada, f"Disponibilidade Combinada - Grupo {grupo_selecionado}")
+                
+                # Horário do grupo
+                dia_grupo = grupo["Dia"]
+                horario_grupo = grupo["Horário"]
+                
+                # Verificar se o horário do grupo é viável
+                if dia_grupo in dias and horario_grupo in horarios:
+                    grupo_disponivel = not grid_combinada.loc[horario_grupo, dia_grupo]
+                    
+                    if grupo_disponivel:
+                        st.success("✅ O horário deste grupo é viável para todos os membros!")
+                    else:
+                        st.error("❌ Conflito de horário: algum membro não está disponível no horário do grupo!")
+            else:
+                st.info("Este grupo não possui membros.")
+        
+        # --- BOTÃO DE EXPORTAÇÃO DO RELATÓRIO ---
+        st.divider()
+        st.subheader("📤 Exportar Relatório Completo")
+        
+        # Preparar dados para exportação
+        @st.cache_data
+        def exportar_relatorio_completo(grupos, df_disponibilidade, alunos_nao_alocados):
+            output = BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                # Sheet 1: Grupos
+                df_grupos.to_excel(writer, sheet_name='Grupos', index=False)
+                
+                # Sheet 2: Disponibilidade
+                df_disponibilidade.sort_values("Horários Livres", ascending=False).to_excel(
+                    writer, sheet_name='Disponibilidade', index=False)
+                
+                # Sheet 3: Não Alocados
+                pd.DataFrame({"Alunos Não Alocados": sorted(alunos_nao_alocados)}).to_excel(
+                    writer, sheet_name='Não_Alocados', index=False)
+            
+            output.seek(0)
+            return output.getvalue()
+        
+        excel_data = exportar_relatorio_completo(grupos, df_disponibilidade, alunos_nao_alocados)
+        st.download_button(
+            label="📊 Baixar Relatório Completo (Excel)",
+            data=excel_data,
+            file_name="relatorio_grupos.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
