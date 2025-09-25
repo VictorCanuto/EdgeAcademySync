@@ -315,7 +315,7 @@ col1, col2 = st.columns([0.9, 0.1])
 with col1:
     st.title("AcademySync")
 
-tab1, tab2, tab3, tab4 = st.tabs(["Visualização Individual", "Cruzamento de Grupo", "Agenda Geral", "Relatório de Grupos"])
+tab1, tab2, tab3, tab4 = st.tabs(["Cruzamento de Grupo", "Visualização Individual", "Agenda Geral", "Relatório de Grupos"])
 
 # ----- Tab 1
 with tab1:
