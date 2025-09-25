@@ -284,7 +284,7 @@ def obter_alunos_disponiveis_especifico(df, dia, horario):
     return sorted(livres)
 
 def visualizar_agenda_geral_completa(df):
-    st.header("📊 Agenda Geral Completa - Alunos Disponíveis por Horário")
+    st.header(" Agenda Geral Completa - Alunos Disponíveis por Horário")
     agenda = criar_agenda_geral_completa(df)
     def fmt_cell(v): return f"{int(v)} DISPONÍVEL" if v == 1 else f"{int(v)} DISPONÍVEIS" if v > 1 else "0 DISPONÍVEIS"
     def sty_cell(v):
@@ -296,7 +296,7 @@ def visualizar_agenda_geral_completa(df):
         else:      cor = "background-color:#28A745;color:white;font-weight:bold;"
         return base+cor
     st.table(agenda.style.map(sty_cell).format(fmt_cell).set_table_styles([]))
-    st.subheader("🔍 Ver alunos disponíveis em horário específico")
+    st.subheader(" Ver alunos disponíveis em horário específico")
     col1, col2 = st.columns(2)
     with col1:  h_sel = st.selectbox("Horário:", options=agenda.index.tolist(), key="horario_select")
     with col2:  d_sel = st.selectbox("Dia:", options=agenda.columns.tolist(), key="dia_select")
@@ -443,7 +443,7 @@ with tab1:
         st.divider()
 
         # Banco de removidos
-        st.subheader("🗃️ Banco de removidos")
+        st.subheader(" Banco de removidos")
         if not st.session_state["removidos"]:
             st.caption("Nenhum aluno removido.")
         else:
@@ -462,7 +462,7 @@ with tab1:
         st.divider()
 
         # Troca manual
-        st.subheader("🔁 Troca manual 1–1")
+        st.subheader(" Troca manual 1–1")
         todos_membros = [m for g in grupos for m in g["Membros"]]
         c1,c2,c3 = st.columns([0.4,0.3,0.3])
         with c1: aA = st.selectbox("Aluno A", options=sorted(todos_membros), key="swap_a")
@@ -478,7 +478,7 @@ with tab1:
         st.divider()
 
         # Exportação
-        st.subheader("📤 Exportar")
+        st.subheader(" Exportar")
         df_export = grupos_para_dataframe(grupos)
         c1,c2 = st.columns(2)
         with c1:
@@ -532,7 +532,7 @@ with tab3:
 
 # --- NOVA ABA: RELATÓRIO E VISUALIZAÇÃO DE RESULTADOS ---
 with tab4:
-    st.header("📊 Relatório e Análise de Grupos")
+    st.header(" Relatório e Análise de Grupos")
     
     res = st.session_state.get("grupos_result")
     if not res:
@@ -542,7 +542,7 @@ with tab4:
         base_alunos = base["aluno"].unique()
         
         # --- ESTATÍSTICAS GERAIS ---
-        st.subheader("📈 Estatísticas Gerais")
+        st.subheader(" Estatísticas Gerais")
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -565,14 +565,7 @@ with tab4:
         
         # --- DISTRIBUIÇÃO DETALHADA POR GRUPO ---
         st.subheader("👥 Distribuição por Grupo")
-    
 
-
-
-
-
-
-        
         # Criar tabela detalhada
         dados_grupos = []
         for g in grupos:
@@ -589,16 +582,10 @@ with tab4:
                     width="stretch",
                     height=min(400, 50 * len(df_grupos) + 50))
 
-    
-
-
-
-
-        
         # --- ALUNOS NÃO ALOCADOS ---
         alunos_nao_alocados = [a for a in base_alunos if a not in alunos_alocados]
         if alunos_nao_alocados:
-            st.subheader("⚠️ Alunos Não Alocados")
+            st.subheader(" Alunos Não Alocados")
             st.warning(f"{len(alunos_nao_alocados)} alunos não foram alocados em grupos:")
             
             cols = st.columns(2)
@@ -607,7 +594,7 @@ with tab4:
         
         # --- ESTATÍSTICAS DE DISPONIBILIDADE ---
         # --- ESTATÍSTICAS DE DISPONIBILIDADE ---
-        st.subheader("⏰ Ranking de Disponibilidade")
+        st.subheader(" Ranking de Disponibilidade")
 
         # Calcular disponibilidade por aluno
         disponibilidade_alunos = []
@@ -643,13 +630,13 @@ with tab4:
         col_top1, col_top2 = st.columns(2)
 
         with col_top1:
-            st.write(f"**🏆 Mais Disponíveis ({len(mais_disponiveis)} alunos)**")
+            st.write(f"** Mais Disponíveis ({len(mais_disponiveis)} alunos)**")
             st.dataframe(mais_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
                         .style.format({"% Livre": "{:.1f}%"}), 
                         width="stretch", hide_index=True)
 
         with col_top2:
-            st.write(f"**⏳ Menos Disponíveis ({len(menos_disponiveis)} alunos)**")
+            st.write(f"** Menos Disponíveis ({len(menos_disponiveis)} alunos)**")
             st.dataframe(menos_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
                         .style.format({"% Livre": "{:.1f}%"}), 
                         width="stretch", hide_index=True)
@@ -705,15 +692,15 @@ with tab4:
                     grupo_disponivel = not grid_combinada.loc[horario_grupo, dia_grupo]
                     
                     if grupo_disponivel:
-                        st.success("✅ O horário deste grupo é viável para todos os membros!")
+                        st.success(" O horário deste grupo é viável para todos os membros!")
                     else:
-                        st.error("❌ Conflito de horário: algum membro não está disponível no horário do grupo!")
+                        st.error(" Conflito de horário: algum membro não está disponível no horário do grupo!")
             else:
                 st.info("Este grupo não possui membros.")
         
         # --- BOTÃO DE EXPORTAÇÃO DO RELATÓRIO ---
         st.divider()
-        st.subheader("📤 Exportar Relatório Completo")
+        st.subheader(" Exportar Relatório Completo")
         
         # Preparar dados para exportação
         @st.cache_data
@@ -736,7 +723,7 @@ with tab4:
         
         excel_data = exportar_relatorio_completo(grupos, df_disponibilidade, alunos_nao_alocados)
         st.download_button(
-            label="📊 Baixar Relatório Completo (Excel)",
+            label=" Baixar Relatório Completo (Excel)",
             data=excel_data,
             file_name="relatorio_grupos.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

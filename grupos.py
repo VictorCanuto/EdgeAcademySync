@@ -10,61 +10,22 @@ from typing import List, Dict, Tuple, Any, Set, Optional, Union
 def _parse_interval(hh: int) -> datetime.time:
     return datetime.strptime(f"{hh:02d}:00", "%H:%M").time()
 
-def horarios_conflitam(horario_aluno: str, bloco_inicio_h: int, bloco_fim_h: int) -> bool:
-    """
-    Verifica se um horário de aula (ex.: "15:20 - 16:10") conflita com um bloco [inicio_h, fim_h].
-    """
+def horarios_conflitam(horario_a: str, inicio: int, fim: int) -> bool:
+    """Verifica se 'horario_a' (ex.: '09:20 - 10:10') conflita com o intervalo [inicio, fim] (em horas inteiras)."""
     try:
-        inicio_aluno_str, fim_aluno_str = horario_aluno.split(' - ')
-        inicio_aluno = datetime.strptime(inicio_aluno_str, '%H:%M').time()
-        fim_aluno = datetime.strptime(fim_aluno_str, '%H:%M').time()
-        inicio_bloco = _parse_interval(bloco_inicio_h)
-        fim_bloco = _parse_interval(bloco_fim_h)
-        return inicio_aluno < fim_bloco and fim_aluno > inicio_bloco
+        from datetime import datetime
+        def _parse_time(s: str):
+            return datetime.strptime(s.strip(), "%H:%M").time()
+
+        ini_a, fim_a = [x.strip() for x in horario_a.split("-")]
+        ini_a, fim_a = _parse_time(ini_a), _parse_time(fim_a)
+
+        ini_b = datetime.strptime(f"{inicio:02d}:00", "%H:%M").time()
+        fim_b = datetime.strptime(f"{fim:02d}:00", "%H:%M").time()
+
+        return ini_a < fim_b and fim_a > ini_b
     except Exception:
         return False
-
-def calcular_tamanhos_grupos(num_alunos: int, num_grupos: int) -> List[int]:
-    """
-    Divide num_alunos em num_grupos tamanhos o mais equilibrados possível.
-    """
-    if num_grupos <= 0:
-        return []
-    base = num_alunos // num_grupos
-    resto = num_alunos % num_grupos
-    tamanhos = [base + 1] * resto + [base] * (num_grupos - resto)
-    return [t for t in tamanhos if t > 0]
-
-# -------------------------------
-# Lógica de permuta/movimentação
-# -------------------------------
-def tentar_permutacao(
-    grupos_formados: List[Dict[str, Any]],
-    aluno_nao_alocado: str,
-    mapa_disponibilidade: Dict[Tuple[str, str], Set[str]],
-    slots_por_aluno: Dict[str, Set[Tuple[str, str]]]
-) -> bool:
-    """
-    Tenta inserir um aluno não alocado em algum grupo existente, via adição direta ou troca simples.
-    """
-    for g_idx, grupo in enumerate(grupos_formados):
-        slot = (grupo['Dia'], grupo['Horário'])
-        if aluno_nao_alocado in mapa_disponibilidade.get(slot, set()):
-            grupo['Membros'].append(aluno_nao_alocado)
-            return True
-
-        for membro in list(grupo['Membros']):
-            for other_idx, other in enumerate(grupos_formados):
-                if other_idx == g_idx:
-                    continue
-                other_slot = (other['Dia'], other['Horário'])
-                if (membro in mapa_disponibilidade.get(other_slot, set()) and
-                    aluno_nao_alocado in mapa_disponibilidade.get(slot, set())):
-                    grupos_formados[g_idx]['Membros'].remove(membro)
-                    grupos_formados[other_idx]['Membros'].append(membro)
-                    grupos_formados[g_idx]['Membros'].append(aluno_nao_alocado)
-                    return True
-    return False
 
 def balancear_grupos(
     grupos_formados: List[Dict[str, Any]],
@@ -340,3 +301,19 @@ if __name__ == "__main__":
     ]
     res = formar_grupos('base_consolidada_ok.csv', num_grupos=3, blocos=blocos_exemplo)
     print(res["grupos"])
+
+
+
+def calcular_tamanhos_grupos(total_alunos: int, num_grupos: int) -> List[int]:
+    """Divide o total de alunos em grupos de tamanhos equilibrados."""
+    base, resto = divmod(total_alunos, num_grupos)
+    return [base + 1 if i < resto else base for i in range(num_grupos)]
+
+def tentar_permutacao(grupos, aluno, mapa_disponibilidade, slots_por_aluno) -> bool:
+    """Tenta inserir 'aluno' em algum grupo compatível."""
+    for g in grupos:
+        slot = (g["Dia"], g["Horário"])
+        if slot in slots_por_aluno.get(aluno, set()):
+            g["Membros"].append(aluno)
+            return True
+    return False
