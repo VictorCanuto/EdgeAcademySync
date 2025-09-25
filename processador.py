@@ -17,9 +17,6 @@ def _normalizar(texto: str) -> str:
         texto = str(texto)
     return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII").strip().lower()
 
-# Regex mais tolerante: aceita "07:30 - 08:20", "07:30-08:20", "07:30"
-PAT_HORARIO = re.compile(r"^\s*\d{1,2}:\d{2}(\s*-\s*\d{1,2}:\d{2})?\s*$")
-
 def extrair_grade(df: pd.DataFrame, aluno: str):
     # tenta detectar a coluna de horários
     col_horario = None
@@ -98,6 +95,21 @@ def criar_base_de_dados_consolidada(caminho_excel: str) -> pd.DataFrame:
         return pd.DataFrame()
 
     base = pd.concat(finais, ignore_index=True)
+
+    # Deduplica: um registro por aluno-dia-horario
+    base = (
+        base.sort_values(by=["aluno", "dia", "horario", "materia"])
+        .drop_duplicates(subset=["aluno", "dia", "horario"], keep="last")
+    )
+
+    if not finais:
+        print("Nada válido após a limpeza.")
+        return pd.DataFrame()
+
+    base = pd.concat(finais, ignore_index=True)
+    
+    # Remove Duplicatas
+    base = base.drop_duplicates(subset=['aluno', 'dia', 'horario'])
 
     # Ordena por aluno, dia da semana e horário
     ordem_dias = {d.title(): i for i, d in enumerate(DIAS_SEMANA) if d != "dom"}

@@ -11,7 +11,7 @@ from grupos import formar_grupos, sugerir_trocas, balancear_grupos  # sua lógic
 import re
 import base64
 import os
-from reader import ler_pdfs_para_excel
+from reader import ler_pdfs_para_excel, normalizar_horario
 from processador import criar_base_de_dados_consolidada
 
 st.set_page_config(page_title="AcademySync", layout="wide")
@@ -99,6 +99,12 @@ def carregar_dados():
     for col in ("aluno", "dia", "horario", "materia"):
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
+    # Normaliza horários para formato consistente
+    if 'horario' in df.columns:
+        df['horario'] = df['horario'].apply(normalizar_horario)
+    # Normaliza dias (Seg, Ter, ...)
+    if 'dia' in df.columns:
+        df['dia'] = df['dia'].astype(str).str.strip().str.title()
     df.dropna(subset=["horario"], inplace=True)
     return df
 
@@ -257,49 +263,117 @@ def criar_grid_visual(grid_booleana_ocupado, titulo):
     st.header(titulo)
     st.table(grid_booleana_ocupado.style.map(style_cell).format(fmt))
 
+from datetime import datetime
+
+def _parse_time(s: str):
+    return datetime.strptime(s.strip(), "%H:%M").time()
+
+def horarios_conflitam(horario_a: str, horario_b: str) -> bool:
+    """Verifica se dois intervalos (ex.: '09:20 - 10:10') se sobrepõem."""
+    try:
+        ini_a, fim_a = [x.strip() for x in horario_a.split("-")]
+        ini_b, fim_b = [x.strip() for x in horario_b.split("-")]
+        ini_a, fim_a = _parse_time(ini_a), _parse_time(fim_a)
+        ini_b, fim_b = _parse_time(ini_b), _parse_time(fim_b)
+        return ini_a < fim_b and fim_a > ini_b
+    except Exception:
+        return False
+
 def criar_agenda_geral_completa(df):
-    horarios = sorted(df["horario"].unique())
-    dias = ["Seg","Ter","Qua","Qui","Sex","Sab"]
-    alunos = df["aluno"].unique()
-    agenda = pd.DataFrame(0, index=horarios, columns=dias)
-    for h in horarios:
-        for d in dias:
-            count = 0
-            for a in alunos:
-                ocupado = df[(df.aluno==a)&(df.dia==d)&(df.horario==h)&(df.materia!='---')].any().any()
-                if not ocupado: count += 1
-            agenda.loc[h,d] = count
-    return agenda
+    try:
+        df = df.drop_duplicates(subset=["aluno", "dia", "horario", "materia"]).copy()
+        df["horario"] = df["horario"].apply(normalizar_horario)
+
+        horarios = sorted(df["horario"].unique())
+        dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
+        alunos = df["aluno"].unique()
+        agenda = pd.DataFrame(0, index=horarios, columns=dias)
+
+        for h in horarios:
+            for d in dias:
+                livres = 0
+                for a in alunos:
+                    subset = df[(df.aluno == a) & (df.dia == d)]
+                    ocupado = False
+                    for h_aluno, materia in zip(subset["horario"], subset["materia"]):
+                        if materia not in ["", "---"] and horarios_conflitam(h, h_aluno):
+                            ocupado = True
+                            break
+                    if not ocupado:
+                        livres += 1
+                agenda.loc[h, d] = livres
+        return agenda
+    except Exception as e:
+        st.error(f"Erro ao criar agenda: {e}")
+        return pd.DataFrame()
 
 def obter_alunos_disponiveis_especifico(df, dia, horario):
+    """Obtém alunos disponíveis usando a mesma lógica da criar_agenda_geral_completa (conflitos de intervalo)."""
     livres = []
     for a in df["aluno"].unique():
-        ocupado = df[(df.aluno==a)&(df.dia==dia)&(df.horario==horario)&(df.materia!='---')].any().any()
-        if not ocupado: livres.append(a)
+        df_a = df[(df.aluno == a) & (df.dia == dia)]
+        ocupado = False
+        for h_aluno, materia in zip(df_a['horario'], df_a['materia']):
+            if materia not in [None, '', '---'] and horarios_conflitam(horario, h_aluno):
+                ocupado = True
+                break
+        if not ocupado:
+            livres.append(a)
     return sorted(livres)
+
 
 def visualizar_agenda_geral_completa(df):
     st.header("📊 Agenda Geral Completa - Alunos Disponíveis por Horário")
+    
+    # Verifica se há dados duplicados
+    duplicatas = df.duplicated(subset=['aluno', 'dia', 'horario']).sum()
+    if duplicatas > 0:
+        st.warning(f"⚠️ Encontradas {duplicatas} entradas duplicadas na base de dados")
+        # Remove duplicatas para exibição
+        df = df.drop_duplicates(subset=['aluno', 'dia', 'horario'])
+    
     agenda = criar_agenda_geral_completa(df)
-    def fmt_cell(v): return f"{int(v)} DISPONÍVEIS" if v>0 else "Livre"
+    
+    if agenda.empty:
+        st.error("Não foi possível gerar a agenda. Verifique os dados.")
+        return
+    
+    def fmt_cell(v): 
+        return f"{int(v)} DISPONÍVEIS" if v > 0 else "Livre"
+    
     def sty_cell(v):
         base = "text-align:center;border:1px solid #D3D3D3;cursor:pointer;padding:8px;"
-        if v==0:   cor = "background-color:#F8F9FA;color:#6C757D;font-weight:normal;"
-        elif v<=15:cor = "background-color:#F8D7DA;color:#721C24;font-weight:bold;"
-        elif v<=19:cor = "background-color:#FFF3CD;color:#856404;font-weight:bold;"
-        elif v<=24:cor = "background-color:#D4EDDA;color:#155724;font-weight:bold;"
-        else:      cor = "background-color:#28A745;color:white;font-weight:bold;"
-        return base+cor
+        if v == 0:   
+            cor = "background-color:#F8F9FA;color:#6C757D;font-weight:normal;"
+        elif v <= 15:
+            cor = "background-color:#F8D7DA;color:#721C24;font-weight:bold;"
+        elif v <= 19:
+            cor = "background-color:#FFF3CD;color:#856404;font-weight:bold;"
+        elif v <= 24:
+            cor = "background-color:#D4EDDA;color:#155724;font-weight:bold;"
+        else:      
+            cor = "background-color:#28A745;color:white;font-weight:bold;"
+        return base + cor
+    
     st.table(agenda.style.map(sty_cell).format(fmt_cell).set_table_styles([]))
+    
     st.subheader("🔍 Ver alunos disponíveis em horário específico")
     col1, col2 = st.columns(2)
-    with col1:  h_sel = st.selectbox("Horário:", options=agenda.index.tolist(), key="horario_select")
-    with col2:  d_sel = st.selectbox("Dia:", options=agenda.columns.tolist(), key="dia_select")
+    with col1:  
+        h_sel = st.selectbox("Horário:", options=agenda.index.tolist(), key="horario_select")
+    with col2:  
+        d_sel = st.selectbox("Dia:", options=agenda.columns.tolist(), key="dia_select")
+    
     alunos_disp = obter_alunos_disponiveis_especifico(df, d_sel, h_sel)
     st.write(f"**{len(alunos_disp)} alunos disponíveis em {h_sel} ({d_sel})**")
+    
     if alunos_disp:
-        cols = st.columns(2 if len(alunos_disp)>10 else 1)
-        for i, a in enumerate(alunos_disp): cols[i%len(cols)].write(f"• {a}")
+        # Mostra estatísticas
+        st.info(f"Total de alunos únicos na base: {len(df['aluno'].unique())}")
+        
+        cols = st.columns(2 if len(alunos_disp) > 10 else 1)
+        for i, a in enumerate(alunos_disp): 
+            cols[i % len(cols)].write(f"• {a}")
     else:
         st.info("Nenhum aluno disponível neste horário.")
 
@@ -316,6 +390,7 @@ with tab1:
         st.error("Sem base de dados. Adicione os arquivos PDF e aperte em processar.")
     else:
         alunos = sorted(base["aluno"].unique())
+        # garante lista de horários normalizada para exibição
         horarios = sorted(base["horario"].unique())
         dias = ["Seg","Ter","Qua","Qui","Sex","Sab"]
 
@@ -323,21 +398,49 @@ with tab1:
                                options=alunos, key="tab1_select")
         if not selec:
             st.info("Por favor, selecione pelo menos um aluno para começar.")
-        elif len(selec)==1:
+        elif len(selec) == 1:
             a = selec[0]
-            piv = base[base.aluno==a].pivot_table(index="horario", columns="dia",
-                                                  values="materia", aggfunc="first")
-            grid = (piv.notna() & (piv!='---')).reindex(index=horarios, columns=dias, fill_value=False)
+            # Cria grid por conflito de intervalos (mais robusto que igualdade exata)
+            grid = pd.DataFrame(False, index=horarios, columns=dias)
+            df_a = base[base.aluno == a]
+            for _, row in df_a.iterrows():
+                dia_row = str(row.get('dia', '')).strip().title()
+                h_aluno = row.get('horario')
+                materia = str(row.get('materia', '---')).strip()
+                if not dia_row or dia_row not in dias:
+                    continue
+                if materia in ['', '---', 'nan', 'None']:
+                    continue
+                for H in horarios:
+                    try:
+                        if horarios_conflitam(H, h_aluno):
+                            grid.at[H, dia_row] = True
+                    except Exception:
+                        continue
             criar_grid_visual(grid, f"Grade de Horários de {a}")
         else:
-            grid = pd.DataFrame(False, index=horarios, columns=dias)
+            # combinação de múltiplos alunos (OR dos grids individuais)
+            grid_comb = pd.DataFrame(False, index=horarios, columns=dias)
             for a in selec:
-                df_a = base[base.aluno==a]
+                df_a = base[base.aluno == a]
                 if df_a.empty: continue
-                piv = df_a.pivot_table(index="horario", columns="dia", values="materia", aggfunc="first")
-                grid |= (piv.notna() & (piv!='---')).reindex(index=horarios, columns=dias, fill_value=False)
-            criar_grid_visual(grid, f"Disponibilidade Combinada ({len(selec)} alunos)")
-
+                grid = pd.DataFrame(False, index=horarios, columns=dias)
+                for _, row in df_a.iterrows():
+                    dia_row = str(row.get('dia', '')).strip().title()
+                    h_aluno = row.get('horario')
+                    materia = str(row.get('materia', '---')).strip()
+                    if not dia_row or dia_row not in dias:
+                        continue
+                    if materia in ['', '---', 'nan', 'None']:
+                        continue
+                    for H in horarios:
+                        try:
+                            if horarios_conflitam(H, h_aluno):
+                                grid.at[H, dia_row] = True
+                        except Exception:
+                            continue
+                grid_comb |= grid
+            criar_grid_visual(grid_comb, f"Disponibilidade Combinada ({len(selec)} alunos)")
 # ----- Tab 2
 with tab2:
     st.header("Formação de Grupos (Dinâmica)")
