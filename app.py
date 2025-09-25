@@ -13,6 +13,7 @@ import base64
 import os
 from reader import ler_pdfs_para_excel
 from processador import criar_base_de_dados_consolidada
+import shutil
 
 #------
 import plotly.express as px
@@ -57,6 +58,17 @@ st.markdown(
 )
 
 # ---------------- PDFs ----------------
+def limpar_arquivos_gerados():
+    arquivos_para_apagar = ["base_consolidada.csv", "consolidado_horarios.xlsx"]
+    for arquivo in arquivos_para_apagar:
+        if os.path.exists(arquivo):
+            os.remove(arquivo)
+    # Limpa cache explicitamente
+    try:
+        st.cache_data.clear()
+    except:
+        pass
+
 st.subheader("Carregar comprovantes (PDF) e gerar base")
 uploaded = st.file_uploader("Envie um ou mais PDFs", type=["pdf"], accept_multiple_files=True)
 col_up_a, col_up_b = st.columns([0.7, 0.3])
@@ -64,12 +76,13 @@ with col_up_b:
     if st.button("Processar PDFs"):
         pasta = "ALL_PDFS"
         os.makedirs(pasta, exist_ok=True)
-        for f in os.listdir(pasta):
-            if f.lower().endswith(".pdf"):
-                try:
+        # Limpa arquivos gerados antes de processar
+        limpar_arquivos_gerados()
+        # Limpa a pasta ALL_PDFS se necessário
+        if os.path.exists(pasta):
+            for f in os.listdir(pasta):
+                if f.lower().endswith(".pdf"):
                     os.remove(os.path.join(pasta, f))
-                except Exception:
-                    pass
         if not uploaded:
             st.warning("Nenhum arquivo enviado.")
         else:
