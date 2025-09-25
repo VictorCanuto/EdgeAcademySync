@@ -371,7 +371,7 @@ with tab2:
     with c2: st.caption("Edite: nome, início, fim e dias (texto: Seg, Ter, Qua...).")
 
     blocos_df = st.data_editor(st.session_state["blocos_df"], key="editor_blocos",
-                               use_container_width=True, num_rows="dynamic", hide_index=True)
+                               width="stretch", num_rows="dynamic", hide_index=True)
 
     def _parse_dias(s):
         if not isinstance(s,str): return []
@@ -585,7 +585,7 @@ with tab4:
         
         df_grupos = pd.DataFrame(dados_grupos)
         st.dataframe(df_grupos[["Grupo", "Dia", "Horário", "Total Alunos", "Membros"]], 
-                    use_container_width=True,
+                    width="stretch",
                     height=min(400, 50 * len(df_grupos) + 50))
 
     
@@ -645,13 +645,13 @@ with tab4:
             st.write(f"**🏆 Mais Disponíveis ({len(mais_disponiveis)} alunos)**")
             st.dataframe(mais_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
                         .style.format({"% Livre": "{:.1f}%"}), 
-                        use_container_width=True, hide_index=True)
+                        width="stretch", hide_index=True)
 
         with col_top2:
             st.write(f"**⏳ Menos Disponíveis ({len(menos_disponiveis)} alunos)**")
             st.dataframe(menos_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
                         .style.format({"% Livre": "{:.1f}%"}), 
-                        use_container_width=True, hide_index=True)
+                        width="stretch", hide_index=True)
 
         # Mostrar estatísticas
         st.write(f"** Total de alunos no sistema: {total_alunos}**")

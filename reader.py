@@ -60,10 +60,12 @@ def ler_pdfs_para_excel(pasta_pdfs, saida_excel):
             print("\n→", nome_arquivo)
 
             try:
-                # Lê todas as tabelas do PDF
-                cand = tabula.read_pdf(caminho, pages="all", multiple_tables=True, lattice=True)
+                cand = tabula.read_pdf(caminho, pages="all", multiple_tables=True, lattice=True, encoding='latin-1', silent=True)
+            except UnicodeDecodeError as e:
+                print("   ERRO de encoding:", e)
+                cand = tabula.read_pdf(caminho, pages="all", multiple_tables=True, lattice=True, encoding='iso-8859-1', silent=True)
             except Exception as e:
-                print("   ERRO:", e)
+                print("   ERRO geral:", e)
                 vazios.append(nome_arquivo)
                 continue
 
@@ -73,7 +75,7 @@ def ler_pdfs_para_excel(pasta_pdfs, saida_excel):
 
             if not tabelas_validas:
                 vazios.append(nome_arquivo)
-                print("   AVISO: Nenhuma grade de horários encontrada.")
+                print("AVISO: Nenhuma grade de horários encontrada.")
                 continue
 
             # Junta todas as tabelas de grade do PDF
