@@ -105,3 +105,6 @@ if __name__ == "__main__":
     pasta = "ALL_PDFS"
     saida = "consolidado_horarios.xlsx"
     ler_pdfs_para_excel(pasta, saida)
+
+
+
