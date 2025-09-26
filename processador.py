@@ -1,6 +1,7 @@
 import os
 import re
 import pandas as pd
+import streamlit as st
 import unicodedata
 
 # Dias da semana aceitos (mantém a lista completa, mas vamos ignorar Dom ao gerar CSV)
@@ -126,6 +127,30 @@ def criar_base_de_dados_consolidada(caminho_excel: str) -> pd.DataFrame:
         for a in vazios:
             print(" -", a)
     return base
+
+def limpar_pasta_pdfs(caminho_da_pasta):
+    """
+    Apaga todos os arquivos .pdf de um diretório de forma segura.
+    """
+    st.write(f"Limpando arquivos PDF antigos da pasta '{caminho_da_pasta}'...")
+    if not os.path.isdir(caminho_da_pasta):
+        st.write("Pasta não encontrada, nada a limpar.")
+        return
+
+    arquivos_encontrados = 0
+    arquivos_removidos = 0
+    for nome_arquivo in os.listdir(caminho_da_pasta):
+        if nome_arquivo.lower().endswith(".pdf"):
+            arquivos_encontrados += 1
+            caminho_completo = os.path.join(caminho_da_pasta, nome_arquivo)
+            try:
+                os.remove(caminho_completo)
+                arquivos_removidos += 1
+            except Exception as e:
+                # Mostra o erro em vez de falhar silenciosamente
+                st.warning(f"Não foi possível remover o arquivo '{nome_arquivo}': {e}")
+    
+    st.write(f"Limpeza concluída. {arquivos_removidos}/{arquivos_encontrados} arquivos PDF removidos.")
 
 
 if __name__ == "__main__":

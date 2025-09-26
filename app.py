@@ -1,9 +1,3 @@
-# app.py — EdgeSync (refatorado)
-# - remove duplicações da UI
-# - não usa st.rerun() nas ações (tabs não “voltam”)
-# - export PDF sem showPage() extra
-# - usa session_state para mover/trocar/recolocar alunos
-
 import streamlit as st
 import pandas as pd
 from io import BytesIO
@@ -11,9 +5,9 @@ from grupos import formar_grupos, sugerir_trocas, balancear_grupos  # sua lógic
 import re
 import base64
 import os
-from reader import ler_pdfs_para_excel, normalizar_horario
+from reader import ler_pdfs_para_excel
 from processador import criar_base_de_dados_consolidada
-import shutil
+from datetime import datetime
 
 #------
 import plotly.express as px
@@ -69,18 +63,34 @@ def limpar_arquivos_gerados():
     except:
         pass
 
-# Carregar comprovantes (PDF) e gerar base
+# <<< FUNÇÃO DE LIMPEZA DE PDFs >>>
+def limpar_pasta_pdfs(caminho_da_pasta):
+    """
+    Apaga todos os arquivos .pdf de um diretório de forma segura.
+    """
+    if not os.path.isdir(caminho_da_pasta):
+        return # Pasta não existe, nada a fazer.
+
+    for nome_arquivo in os.listdir(caminho_da_pasta):
+        if nome_arquivo.lower().endswith(".pdf"):
+            caminho_completo = os.path.join(caminho_da_pasta, nome_arquivo)
+            try:
+                os.remove(caminho_completo)
+            except Exception as e:
+                st.warning(f"Não foi possível remover o arquivo antigo '{nome_arquivo}': {e}")
+
+
 st.subheader("Carregar comprovantes (PDF) e gerar base")
 uploaded = st.file_uploader("Envie um ou mais PDFs", type=["pdf"], accept_multiple_files=True)
 col_up_a, col_up_b = st.columns([0.7, 0.3])
 with col_up_b:
-    # Crie duas colunas internas para os botões
-    col_btn1, col_btn2 = st.columns([0.5, 0.5])  # Proporção 50/50
+    col_btn1, col_btn2 = st.columns([0.5, 0.5]) 
     with col_btn1:
         if st.button("Limpar Cache"):
             try:
-                st.cache_data.clear()
                 limpar_arquivos_gerados()
+                if "grupos_result" in st.session_state:
+                    del st.session_state["grupos_result"]
                 st.success("Cache e arquivos gerados limpos com sucesso!")
             except Exception as e:
                 st.error(f"Erro ao limpar cache: {e}")
@@ -88,8 +98,9 @@ with col_up_b:
         if st.button("Processar PDFs"):
             pasta = "ALL_PDFS"
             os.makedirs(pasta, exist_ok=True)
-            # Limpa arquivos gerados antes de processar
+            limpar_pasta_pdfs(pasta)
             limpar_arquivos_gerados()
+            
             if not uploaded:
                 st.warning("Nenhum arquivo enviado.")
             else:
@@ -103,6 +114,7 @@ with col_up_b:
                 xlsx_out = "consolidado_horarios.xlsx"
                 ler_pdfs_para_excel(pasta, xlsx_out)
                 base_df = criar_base_de_dados_consolidada(xlsx_out)
+                
                 if base_df is None or base_df.empty:
                     st.error("Nenhum dado válido gerado a partir dos PDFs.")
                 else:
@@ -112,7 +124,7 @@ with col_up_b:
                     except Exception:
                         pass
                     st.success("Base atualizada com sucesso! Você pode navegar nas abas abaixo.")
-                        
+                            
 # ---------------- Carregamento & Normalização ----------------
 @st.cache_data
 def carregar_dados():
@@ -124,9 +136,6 @@ def carregar_dados():
     for col in ("aluno", "dia", "horario", "materia"):
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
-                # Normaliza horários para formato consistente
-    if 'horario' in df.columns:
-        df['horario'] = df['horario'].apply(normalizar_horario)
     # Normaliza dias (Seg, Ter, ...)
     if 'dia' in df.columns:
         df['dia'] = df['dia'].astype(str).str.strip().str.title()
@@ -273,12 +282,9 @@ def montar_pdf_grupos(grupos):
         y -= 0.3*cm
         if y <= margem:
             c.showPage(); y = altura - margem; c.setFont("Helvetica", 11)
-
-    # sem c.showPage() final → evita “página espelhada”
     c.save(); buf.seek(0)
     return buf.getvalue()
 
-# ---------------- Visualizações auxiliares ----------------
 def criar_grid_visual(grid_booleana_ocupado, titulo):
     def fmt(ocupado): return "INDISPONÍVEL" if ocupado else "DISPONÍVEL"
     def style_cell(ocupado):
@@ -288,7 +294,6 @@ def criar_grid_visual(grid_booleana_ocupado, titulo):
     st.header(titulo)
     st.table(grid_booleana_ocupado.style.map(style_cell).format(fmt))
 
-from datetime import datetime
 
 def _parse_time(s: str):
     return datetime.strptime(s.strip(), "%H:%M").time()
@@ -307,7 +312,6 @@ def horarios_conflitam(horario_a: str, horario_b: str) -> bool:
 def criar_agenda_geral_completa(df):
     try:
         df = df.drop_duplicates(subset=["aluno", "dia", "horario", "materia"]).copy()
-        df["horario"] = df["horario"].apply(normalizar_horario)
 
         horarios = sorted(df["horario"].unique())
         dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
@@ -370,7 +374,6 @@ def visualizar_agenda_geral_completa(df):
     else:
         st.info("Nenhum aluno disponível neste horário.")
 
-# ---------------- App (única seção) ----------------
 _ensure_states()
 base = carregar_dados()
 col1, col2 = st.columns([0.9, 0.1])
@@ -387,11 +390,12 @@ with tab1:
     num_grupos = st.number_input("Número de grupos", 1, 20, 3, 1)
 
     st.markdown("### Blocos de horários (visual)")
-    st.session_state.setdefault("blocos_df", pd.DataFrame([
+    if "blocos_df" not in st.session_state:
+        st.session_state.blocos_df = pd.DataFrame([
         {"nome":"Manhã",  "inicio":8,  "fim":11, "dias_str":"Seg, Ter, Qua, Qui, Sex"},
         {"nome":"Manhã2", "inicio":9,  "fim":12, "dias_str":"Seg, Ter, Qua, Qui, Sex"},
         {"nome":"Tarde",  "inicio":14, "fim":17, "dias_str":"Seg, Ter, Qua, Qui, Sex"},
-    ]))
+    ])
     dias_opts = ["Seg","Ter","Qua","Qui","Sex","Sab"]
 
     c1, c2 = st.columns([0.25,0.75])
@@ -458,7 +462,6 @@ with tab1:
             st.session_state["grupos_result"] = None
             st.session_state["removidos"].clear()
 
-    # Render dos grupos / ações / export
     res = st.session_state.get("grupos_result")
     if res:
         grupos = res["grupos"]
@@ -504,7 +507,6 @@ with tab1:
 
         st.divider()
 
-        # Banco de removidos
         st.subheader(" Banco de removidos")
         if not st.session_state["removidos"]:
             st.caption("Nenhum aluno removido.")
@@ -523,7 +525,6 @@ with tab1:
 
         st.divider()
 
-        # Troca manual
         st.subheader(" Troca manual 1–1")
         todos_membros = [m for g in grupos for m in g["Membros"]]
         c1,c2,c3 = st.columns([0.4,0.3,0.3])
@@ -539,7 +540,6 @@ with tab1:
 
         st.divider()
 
-        # Exportação
         st.subheader(" Exportar")
         df_export = grupos_para_dataframe(grupos)
         c1,c2 = st.columns(2)
@@ -592,7 +592,6 @@ with tab3:
     else:
         visualizar_agenda_geral_completa(base)
 
-# --- NOVA ABA: RELATÓRIO E VISUALIZAÇÃO DE RESULTADOS ---
 with tab4:
     st.header(" Relatório e Análise de Grupos")
     
@@ -603,15 +602,12 @@ with tab4:
         grupos = res["grupos"]
         base_alunos = base["aluno"].unique()
         
-        # --- ESTATÍSTICAS GERAIS ---
         st.subheader(" Estatísticas Gerais")
         
         col1, col2, col3, col4 = st.columns(4)
         
-        # Total de alunos únicos na base
         total_alunos_base = len(base_alunos)
         
-        # Alocados nos grupos
         alunos_alocados = [m for g in grupos for m in g["Membros"]]
         total_alocados = len(alunos_alocados)
         percentual_alocados = (total_alocados / total_alunos_base * 100) if total_alunos_base > 0 else 0
@@ -625,10 +621,8 @@ with tab4:
         with col4:
             st.metric("Grupos Formados", len(grupos))
         
-        # --- DISTRIBUIÇÃO DETALHADA POR GRUPO ---
         st.subheader("👥 Distribuição por Grupo")
 
-        # Criar tabela detalhada
         dados_grupos = []
         for g in grupos:
             dados_grupos.append({
@@ -644,7 +638,6 @@ with tab4:
                     width="stretch",
                     height=min(400, 50 * len(df_grupos) + 50))
 
-        # --- ALUNOS NÃO ALOCADOS ---
         alunos_nao_alocados = [a for a in base_alunos if a not in alunos_alocados]
         if alunos_nao_alocados:
             st.subheader(" Alunos Não Alocados")
@@ -654,11 +647,8 @@ with tab4:
             for i, aluno in enumerate(sorted(alunos_nao_alocados)):
                 cols[i % 2].write(f"• {aluno}")
         
-        # --- ESTATÍSTICAS DE DISPONIBILIDADE ---
-        # --- ESTATÍSTICAS DE DISPONIBILIDADE ---
         st.subheader(" Ranking de Disponibilidade")
 
-        # Calcular disponibilidade por aluno
         disponibilidade_alunos = []
         for aluno in base_alunos:
             df_aluno = base[base.aluno == aluno]
@@ -676,17 +666,13 @@ with tab4:
 
         df_disponibilidade = pd.DataFrame(disponibilidade_alunos)
 
-        # Ordenar por disponibilidade (do maior para o menor)
         df_disponibilidade_ordenado = df_disponibilidade.sort_values("Horários Livres", ascending=False)
 
-        # Dividir na metade exata
         total_alunos = len(base_alunos)
-        metade = total_alunos // 2  # Divisão inteira
+        metade = total_alunos // 2 
 
-        # Primeira metade: mais disponíveis
         mais_disponiveis = df_disponibilidade_ordenado.head(metade)
 
-        # Segunda metade: menos disponíveis (inverter ordem para mostrar do pior para o melhor)
         menos_disponiveis = df_disponibilidade_ordenado.tail(total_alunos - metade).iloc[::-1]
 
         col_top1, col_top2 = st.columns(2)
@@ -703,11 +689,9 @@ with tab4:
                         .style.format({"% Livre": "{:.1f}%"}), 
                         width="stretch", hide_index=True)
 
-        # Mostrar estatísticas
         st.write(f"** Total de alunos no sistema: {total_alunos}**")
         st.write(f"** Divisão: {len(mais_disponiveis)} mais disponíveis vs {len(menos_disponiveis)} menos disponíveis**")
         
-        # --- VISUALIZAÇÃO DE GRADES POR GRUPO ---
         st.subheader("👥 Visualização de Grades por Grupo")
         
         grupo_selecionado = st.selectbox(
@@ -724,12 +708,10 @@ with tab4:
             for membro in sorted(membros_grupo):
                 st.write(f"• {membro}")
             
-            # Criar grade combinada do grupo
             if membros_grupo:
                 horarios = sorted(base["horario"].unique())
                 dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
                 
-                # Grade combinada (TRUE se pelo menos um membro está indisponível)
                 grid_combinada = pd.DataFrame(False, index=horarios, columns=dias)
                 
                 for membro in membros_grupo:
@@ -741,15 +723,12 @@ with tab4:
                             index=horarios, columns=dias, fill_value=False)
                         grid_combinada |= grid_membro
                 
-                # Visualizar grade combinada
                 st.write(f"**Grade Combinada do Grupo {grupo_selecionado}:**")
                 criar_grid_visual(grid_combinada, f"Disponibilidade Combinada - Grupo {grupo_selecionado}")
                 
-                # Horário do grupo
                 dia_grupo = grupo["Dia"]
                 horario_grupo = grupo["Horário"]
                 
-                # Verificar se o horário do grupo é viável
                 if dia_grupo in dias and horario_grupo in horarios:
                     grupo_disponivel = not grid_combinada.loc[horario_grupo, dia_grupo]
                     
@@ -760,23 +739,18 @@ with tab4:
             else:
                 st.info("Este grupo não possui membros.")
         
-        # --- BOTÃO DE EXPORTAÇÃO DO RELATÓRIO ---
         st.divider()
         st.subheader(" Exportar Relatório Completo")
         
-        # Preparar dados para exportação
         @st.cache_data
         def exportar_relatorio_completo(grupos, df_disponibilidade, alunos_nao_alocados):
             output = BytesIO()
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                # Sheet 1: Grupos
                 df_grupos.to_excel(writer, sheet_name='Grupos', index=False)
                 
-                # Sheet 2: Disponibilidade
                 df_disponibilidade.sort_values("Horários Livres", ascending=False).to_excel(
                     writer, sheet_name='Disponibilidade', index=False)
                 
-                # Sheet 3: Não Alocados
                 pd.DataFrame({"Alunos Não Alocados": sorted(alunos_nao_alocados)}).to_excel(
                     writer, sheet_name='Não_Alocados', index=False)
             
