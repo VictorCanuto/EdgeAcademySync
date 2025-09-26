@@ -11,7 +11,7 @@ from grupos import formar_grupos, sugerir_trocas, balancear_grupos  # sua lógic
 import re
 import base64
 import os
-from reader import ler_pdfs_para_excel
+from reader import ler_pdfs_para_excel, normalizar_horario
 from processador import criar_base_de_dados_consolidada
 import shutil
 
@@ -124,6 +124,12 @@ def carregar_dados():
     for col in ("aluno", "dia", "horario", "materia"):
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
+                # Normaliza horários para formato consistente
+    if 'horario' in df.columns:
+        df['horario'] = df['horario'].apply(normalizar_horario)
+    # Normaliza dias (Seg, Ter, ...)
+    if 'dia' in df.columns:
+        df['dia'] = df['dia'].astype(str).str.strip().str.title()
     df.dropna(subset=["horario"], inplace=True)
     return df
 
@@ -282,25 +288,61 @@ def criar_grid_visual(grid_booleana_ocupado, titulo):
     st.header(titulo)
     st.table(grid_booleana_ocupado.style.map(style_cell).format(fmt))
 
+from datetime import datetime
+
+def _parse_time(s: str):
+    return datetime.strptime(s.strip(), "%H:%M").time()
+
+def horarios_conflitam(horario_a: str, horario_b: str) -> bool:
+    """Verifica se dois intervalos (ex.: '09:20 - 10:10') se sobrepõem."""
+    try:
+        ini_a, fim_a = [x.strip() for x in horario_a.split("-")]
+        ini_b, fim_b = [x.strip() for x in horario_b.split("-")]
+        ini_a, fim_a = _parse_time(ini_a), _parse_time(fim_a)
+        ini_b, fim_b = _parse_time(ini_b), _parse_time(fim_b)
+        return ini_a < fim_b and fim_a > ini_b
+    except Exception:
+        return False
+
 def criar_agenda_geral_completa(df):
-    horarios = sorted(df["horario"].unique())
-    dias = ["Seg","Ter","Qua","Qui","Sex","Sab"]
-    alunos = df["aluno"].unique()
-    agenda = pd.DataFrame(0, index=horarios, columns=dias)
-    for h in horarios:
-        for d in dias:
-            count = 0
-            for a in alunos:
-                ocupado = df[(df.aluno==a)&(df.dia==d)&(df.horario==h)&(df.materia!='---')].any().any()
-                if not ocupado: count += 1
-            agenda.loc[h,d] = count
-    return agenda
+    try:
+        df = df.drop_duplicates(subset=["aluno", "dia", "horario", "materia"]).copy()
+        df["horario"] = df["horario"].apply(normalizar_horario)
+
+        horarios = sorted(df["horario"].unique())
+        dias = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
+        alunos = df["aluno"].unique()
+        agenda = pd.DataFrame(0, index=horarios, columns=dias)
+
+        for h in horarios:
+            for d in dias:
+                livres = 0
+                for a in alunos:
+                    subset = df[(df.aluno == a) & (df.dia == d)]
+                    ocupado = False
+                    for h_aluno, materia in zip(subset["horario"], subset["materia"]):
+                        if materia not in ["", "---"] and horarios_conflitam(h, h_aluno):
+                            ocupado = True
+                            break
+                    if not ocupado:
+                        livres += 1
+                agenda.loc[h, d] = livres
+        return agenda
+    except Exception as e:
+        st.error(f"Erro ao criar agenda: {e}")
+        return pd.DataFrame()
 
 def obter_alunos_disponiveis_especifico(df, dia, horario):
     livres = []
     for a in df["aluno"].unique():
-        ocupado = df[(df.aluno==a)&(df.dia==dia)&(df.horario==horario)&(df.materia!='---')].any().any()
-        if not ocupado: livres.append(a)
+        df_a = df[(df.aluno == a) & (df.dia == dia)]
+        ocupado = False
+        for h_aluno, materia in zip(df_a['horario'], df_a['materia']):
+            if materia not in [None, '', '---'] and horarios_conflitam(horario, h_aluno):
+                ocupado = True
+                break
+        if not ocupado:
+            livres.append(a)
     return sorted(livres)
 
 def visualizar_agenda_geral_completa(df):

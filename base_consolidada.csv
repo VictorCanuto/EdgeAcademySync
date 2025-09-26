@@ -1,0 +1,481 @@
+aluno,dia,horario,materia
+Erasmo da Silva Sà Junior,Seg,"09:20 -
+10:10",COMP369
+Erasmo da Silva Sà Junior,Seg,"10:10 -
+11:00",COMP369
+Erasmo da Silva Sà Junior,Seg,"11:10 -
+12:00",---
+Erasmo da Silva Sà Junior,Seg,"12:00 -
+12:50",---
+Erasmo da Silva Sà Junior,Seg,"13:30 -
+14:20",ECOM020
+Erasmo da Silva Sà Junior,Seg,"14:20 -
+15:10",ECOM020
+Erasmo da Silva Sà Junior,Seg,"15:20 -
+16:10",ECOM011
+Erasmo da Silva Sà Junior,Seg,"16:10 -
+17:00",ECOM011
+Erasmo da Silva Sà Junior,Ter,"09:20 -
+10:10",---
+Erasmo da Silva Sà Junior,Ter,"10:10 -
+11:00",---
+Erasmo da Silva Sà Junior,Ter,"11:10 -
+12:00",ECOM029
+Erasmo da Silva Sà Junior,Ter,"12:00 -
+12:50",ECOM029
+Erasmo da Silva Sà Junior,Ter,"13:30 -
+14:20",---
+Erasmo da Silva Sà Junior,Ter,"14:20 -
+15:10",---
+Erasmo da Silva Sà Junior,Ter,"15:20 -
+16:10",COMP389
+Erasmo da Silva Sà Junior,Ter,"16:10 -
+17:00",COMP389
+Erasmo da Silva Sà Junior,Qua,"09:20 -
+10:10",---
+Erasmo da Silva Sà Junior,Qua,"10:10 -
+11:00",---
+Erasmo da Silva Sà Junior,Qua,"11:10 -
+12:00",ECOM029
+Erasmo da Silva Sà Junior,Qua,"12:00 -
+12:50",ECOM029
+Erasmo da Silva Sà Junior,Qua,"13:30 -
+14:20",ECOM020
+Erasmo da Silva Sà Junior,Qua,"14:20 -
+15:10",ECOM020
+Erasmo da Silva Sà Junior,Qua,"15:20 -
+16:10",ECOM011
+Erasmo da Silva Sà Junior,Qua,"16:10 -
+17:00",ECOM011
+Erasmo da Silva Sà Junior,Qui,"09:20 -
+10:10",COMP369
+Erasmo da Silva Sà Junior,Qui,"10:10 -
+11:00",COMP369
+Erasmo da Silva Sà Junior,Qui,"11:10 -
+12:00",---
+Erasmo da Silva Sà Junior,Qui,"12:00 -
+12:50",---
+Erasmo da Silva Sà Junior,Qui,"13:30 -
+14:20",---
+Erasmo da Silva Sà Junior,Qui,"14:20 -
+15:10",---
+Erasmo da Silva Sà Junior,Qui,"15:20 -
+16:10",COMP389
+Erasmo da Silva Sà Junior,Qui,"16:10 -
+17:00",COMP389
+Erasmo da Silva Sà Junior,Sex,"09:20 -
+10:10",---
+Erasmo da Silva Sà Junior,Sex,"10:10 -
+11:00",---
+Erasmo da Silva Sà Junior,Sex,"11:10 -
+12:00",---
+Erasmo da Silva Sà Junior,Sex,"12:00 -
+12:50",---
+Erasmo da Silva Sà Junior,Sex,"13:30 -
+14:20",---
+Erasmo da Silva Sà Junior,Sex,"14:20 -
+15:10",---
+Erasmo da Silva Sà Junior,Sex,"15:20 -
+16:10",---
+Erasmo da Silva Sà Junior,Sex,"16:10 -
+17:00",---
+Erasmo da Silva Sà Junior,Sab,"09:20 -
+10:10",---
+Erasmo da Silva Sà Junior,Sab,"10:10 -
+11:00",---
+Erasmo da Silva Sà Junior,Sab,"11:10 -
+12:00",---
+Erasmo da Silva Sà Junior,Sab,"12:00 -
+12:50",---
+Erasmo da Silva Sà Junior,Sab,"13:30 -
+14:20",---
+Erasmo da Silva Sà Junior,Sab,"14:20 -
+15:10",---
+Erasmo da Silva Sà Junior,Sab,"15:20 -
+16:10",---
+Erasmo da Silva Sà Junior,Sab,"16:10 -
+17:00",---
+Erick de Lima Mascarenhas,Seg,"09:20 -
+10:10",ECOM059
+Erick de Lima Mascarenhas,Seg,"10:10 -
+11:00",ECOM059
+Erick de Lima Mascarenhas,Seg,"11:10 -
+12:00",ECOM027
+Erick de Lima Mascarenhas,Seg,"12:00 -
+12:50",ECOM027
+Erick de Lima Mascarenhas,Seg,"13:30 -
+14:20",COMP376
+Erick de Lima Mascarenhas,Seg,"14:20 -
+15:10",COMP376
+Erick de Lima Mascarenhas,Seg,"15:20 -
+16:10",---
+Erick de Lima Mascarenhas,Seg,"16:10 -
+17:00",---
+Erick de Lima Mascarenhas,Ter,"09:20 -
+10:10",ECOM031
+Erick de Lima Mascarenhas,Ter,"10:10 -
+11:00",ECOM031
+Erick de Lima Mascarenhas,Ter,"11:10 -
+12:00",---
+Erick de Lima Mascarenhas,Ter,"12:00 -
+12:50",---
+Erick de Lima Mascarenhas,Ter,"13:30 -
+14:20",COMP372
+Erick de Lima Mascarenhas,Ter,"14:20 -
+15:10",COMP372
+Erick de Lima Mascarenhas,Ter,"15:20 -
+16:10",COMP373
+Erick de Lima Mascarenhas,Ter,"16:10 -
+17:00",COMP373
+Erick de Lima Mascarenhas,Qua,"09:20 -
+10:10",ECOM059
+Erick de Lima Mascarenhas,Qua,"10:10 -
+11:00",ECOM059
+Erick de Lima Mascarenhas,Qua,"11:10 -
+12:00",---
+Erick de Lima Mascarenhas,Qua,"12:00 -
+12:50",---
+Erick de Lima Mascarenhas,Qua,"13:30 -
+14:20",COMP376
+Erick de Lima Mascarenhas,Qua,"14:20 -
+15:10",COMP376
+Erick de Lima Mascarenhas,Qua,"15:20 -
+16:10",---
+Erick de Lima Mascarenhas,Qua,"16:10 -
+17:00",---
+Erick de Lima Mascarenhas,Qui,"09:20 -
+10:10",ECOM031
+Erick de Lima Mascarenhas,Qui,"10:10 -
+11:00",ECOM031
+Erick de Lima Mascarenhas,Qui,"11:10 -
+12:00",ECOM027
+Erick de Lima Mascarenhas,Qui,"12:00 -
+12:50",ECOM027
+Erick de Lima Mascarenhas,Qui,"13:30 -
+14:20",COMP372
+Erick de Lima Mascarenhas,Qui,"14:20 -
+15:10",COMP372
+Erick de Lima Mascarenhas,Qui,"15:20 -
+16:10",COMP373
+Erick de Lima Mascarenhas,Qui,"16:10 -
+17:00",COMP373
+Erick de Lima Mascarenhas,Sex,"09:20 -
+10:10",---
+Erick de Lima Mascarenhas,Sex,"10:10 -
+11:00",---
+Erick de Lima Mascarenhas,Sex,"11:10 -
+12:00",---
+Erick de Lima Mascarenhas,Sex,"12:00 -
+12:50",---
+Erick de Lima Mascarenhas,Sex,"13:30 -
+14:20",COMP377
+Erick de Lima Mascarenhas,Sex,"14:20 -
+15:10",COMP377
+Erick de Lima Mascarenhas,Sex,"15:20 -
+16:10",---
+Erick de Lima Mascarenhas,Sex,"16:10 -
+17:00",---
+Erick de Lima Mascarenhas,Sab,"09:20 -
+10:10",---
+Erick de Lima Mascarenhas,Sab,"10:10 -
+11:00",---
+Erick de Lima Mascarenhas,Sab,"11:10 -
+12:00",---
+Erick de Lima Mascarenhas,Sab,"12:00 -
+12:50",---
+Erick de Lima Mascarenhas,Sab,"13:30 -
+14:20",---
+Erick de Lima Mascarenhas,Sab,"14:20 -
+15:10",---
+Erick de Lima Mascarenhas,Sab,"15:20 -
+16:10",---
+Erick de Lima Mascarenhas,Sab,"16:10 -
+17:00",---
+Hércules Porfirio de Jesus San,Seg,"09:20 -
+10:10",---
+Hércules Porfirio de Jesus San,Seg,"10:10 -
+11:00",---
+Hércules Porfirio de Jesus San,Seg,"11:10 -
+12:00",---
+Hércules Porfirio de Jesus San,Seg,"12:00 -
+12:50",---
+Hércules Porfirio de Jesus San,Seg,"15:20 -
+16:10",ECOM025
+Hércules Porfirio de Jesus San,Seg,"16:10 -
+17:00",ECOM025
+Hércules Porfirio de Jesus San,Seg,"17:10 -
+18:00",ECOM008
+Hércules Porfirio de Jesus San,Seg,"18:00 -
+18:50",ECOM008
+Hércules Porfirio de Jesus San,Ter,"09:20 -
+10:10",ECOM031
+Hércules Porfirio de Jesus San,Ter,"10:10 -
+11:00",ECOM031
+Hércules Porfirio de Jesus San,Ter,"11:10 -
+12:00",ECOM029
+Hércules Porfirio de Jesus San,Ter,"12:00 -
+12:50",ECOM029
+Hércules Porfirio de Jesus San,Ter,"15:20 -
+16:10",---
+Hércules Porfirio de Jesus San,Ter,"16:10 -
+17:00",---
+Hércules Porfirio de Jesus San,Ter,"17:10 -
+18:00",---
+Hércules Porfirio de Jesus San,Ter,"18:00 -
+18:50",---
+Hércules Porfirio de Jesus San,Qua,"09:20 -
+10:10",---
+Hércules Porfirio de Jesus San,Qua,"10:10 -
+11:00",---
+Hércules Porfirio de Jesus San,Qua,"11:10 -
+12:00",ECOM029
+Hércules Porfirio de Jesus San,Qua,"12:00 -
+12:50",ECOM029
+Hércules Porfirio de Jesus San,Qua,"15:20 -
+16:10",ECOM025
+Hércules Porfirio de Jesus San,Qua,"16:10 -
+17:00",ECOM025
+Hércules Porfirio de Jesus San,Qua,"17:10 -
+18:00",ECOM008
+Hércules Porfirio de Jesus San,Qua,"18:00 -
+18:50",ECOM008
+Hércules Porfirio de Jesus San,Qui,"09:20 -
+10:10",ECOM031
+Hércules Porfirio de Jesus San,Qui,"10:10 -
+11:00",ECOM031
+Hércules Porfirio de Jesus San,Qui,"11:10 -
+12:00",---
+Hércules Porfirio de Jesus San,Qui,"12:00 -
+12:50",---
+Hércules Porfirio de Jesus San,Qui,"15:20 -
+16:10",---
+Hércules Porfirio de Jesus San,Qui,"16:10 -
+17:00",---
+Hércules Porfirio de Jesus San,Qui,"17:10 -
+18:00",---
+Hércules Porfirio de Jesus San,Qui,"18:00 -
+18:50",---
+Hércules Porfirio de Jesus San,Sex,"09:20 -
+10:10",ECOM046
+Hércules Porfirio de Jesus San,Sex,"10:10 -
+11:00",ECOM046
+Hércules Porfirio de Jesus San,Sex,"11:10 -
+12:00",ECOM046
+Hércules Porfirio de Jesus San,Sex,"12:00 -
+12:50",ECOM046
+Hércules Porfirio de Jesus San,Sex,"15:20 -
+16:10",---
+Hércules Porfirio de Jesus San,Sex,"16:10 -
+17:00",---
+Hércules Porfirio de Jesus San,Sex,"17:10 -
+18:00",---
+Hércules Porfirio de Jesus San,Sex,"18:00 -
+18:50",---
+Hércules Porfirio de Jesus San,Sab,"09:20 -
+10:10",---
+Hércules Porfirio de Jesus San,Sab,"10:10 -
+11:00",---
+Hércules Porfirio de Jesus San,Sab,"11:10 -
+12:00",---
+Hércules Porfirio de Jesus San,Sab,"12:00 -
+12:50",---
+Hércules Porfirio de Jesus San,Sab,"15:20 -
+16:10",---
+Hércules Porfirio de Jesus San,Sab,"16:10 -
+17:00",---
+Hércules Porfirio de Jesus San,Sab,"17:10 -
+18:00",---
+Hércules Porfirio de Jesus San,Sab,"18:00 -
+18:50",---
+Ian Carlos Cidreira Tenório,Seg,"13:30 -
+14:20",IF0001
+Ian Carlos Cidreira Tenório,Seg,"14:20 -
+15:10",IF0001
+Ian Carlos Cidreira Tenório,Seg,"15:20 -
+16:10",ECOM011
+Ian Carlos Cidreira Tenório,Seg,"16:10 -
+17:00",ECOM011
+Ian Carlos Cidreira Tenório,Seg,"17:10 -
+18:00",ECOM008
+Ian Carlos Cidreira Tenório,Seg,"18:00 -
+18:50",ECOM008
+Ian Carlos Cidreira Tenório,Ter,"13:30 -
+14:20",CPT0036
+Ian Carlos Cidreira Tenório,Ter,"14:20 -
+15:10",CPT0036
+Ian Carlos Cidreira Tenório,Ter,"15:20 -
+16:10",ECOM007
+Ian Carlos Cidreira Tenório,Ter,"16:10 -
+17:00",ECOM007
+Ian Carlos Cidreira Tenório,Ter,"17:10 -
+18:00",ECOM012
+Ian Carlos Cidreira Tenório,Ter,"18:00 -
+18:50",ECOM012
+Ian Carlos Cidreira Tenório,Qua,"13:30 -
+14:20",IF0001
+Ian Carlos Cidreira Tenório,Qua,"14:20 -
+15:10",IF0001
+Ian Carlos Cidreira Tenório,Qua,"15:20 -
+16:10",ECOM011
+Ian Carlos Cidreira Tenório,Qua,"16:10 -
+17:00",ECOM011
+Ian Carlos Cidreira Tenório,Qua,"17:10 -
+18:00",ECOM008
+Ian Carlos Cidreira Tenório,Qua,"18:00 -
+18:50",ECOM008
+Ian Carlos Cidreira Tenório,Qui,"13:30 -
+14:20",CPT0036
+Ian Carlos Cidreira Tenório,Qui,"14:20 -
+15:10",CPT0036
+Ian Carlos Cidreira Tenório,Qui,"15:20 -
+16:10",ECOM007
+Ian Carlos Cidreira Tenório,Qui,"16:10 -
+17:00",ECOM007
+Ian Carlos Cidreira Tenório,Qui,"17:10 -
+18:00",---
+Ian Carlos Cidreira Tenório,Qui,"18:00 -
+18:50",---
+Ian Carlos Cidreira Tenório,Sex,"13:30 -
+14:20",ECOM013
+Ian Carlos Cidreira Tenório,Sex,"14:20 -
+15:10",ECOM013
+Ian Carlos Cidreira Tenório,Sex,"15:20 -
+16:10",ECOM013
+Ian Carlos Cidreira Tenório,Sex,"16:10 -
+17:00",ECOM013
+Ian Carlos Cidreira Tenório,Sex,"17:10 -
+18:00",---
+Ian Carlos Cidreira Tenório,Sex,"18:00 -
+18:50",---
+Ian Carlos Cidreira Tenório,Sab,"13:30 -
+14:20",---
+Ian Carlos Cidreira Tenório,Sab,"14:20 -
+15:10",---
+Ian Carlos Cidreira Tenório,Sab,"15:20 -
+16:10",---
+Ian Carlos Cidreira Tenório,Sab,"16:10 -
+17:00",---
+Ian Carlos Cidreira Tenório,Sab,"17:10 -
+18:00",---
+Ian Carlos Cidreira Tenório,Sab,"18:00 -
+18:50",---
+Érico Almeida Bernardino,Seg,"07:30 -
+08:20",COMP387
+Érico Almeida Bernardino,Seg,"08:20 -
+09:10",COMP387
+Érico Almeida Bernardino,Seg,"09:20 -
+10:10",COMP387
+Érico Almeida Bernardino,Seg,"10:10 -
+11:00",COMP387
+Érico Almeida Bernardino,Seg,"11:10 -
+12:00",---
+Érico Almeida Bernardino,Seg,"12:00 -
+12:50",---
+Érico Almeida Bernardino,Seg,"13:30 -
+14:20",ECOM020
+Érico Almeida Bernardino,Seg,"14:20 -
+15:10",ECOM020
+Érico Almeida Bernardino,Seg,"15:20 -
+16:10",ECOM011
+Érico Almeida Bernardino,Seg,"16:10 -
+17:00",ECOM011
+Érico Almeida Bernardino,Ter,"07:30 -
+08:20",ECIV008
+Érico Almeida Bernardino,Ter,"08:20 -
+09:10",ECIV008
+Érico Almeida Bernardino,Ter,"09:20 -
+10:10",---
+Érico Almeida Bernardino,Ter,"10:10 -
+11:00",---
+Érico Almeida Bernardino,Ter,"11:10 -
+12:00",ECOM029
+Érico Almeida Bernardino,Ter,"12:00 -
+12:50",ECOM029
+Érico Almeida Bernardino,Ter,"13:30 -
+14:20",---
+Érico Almeida Bernardino,Ter,"14:20 -
+15:10",---
+Érico Almeida Bernardino,Ter,"15:20 -
+16:10",---
+Érico Almeida Bernardino,Ter,"16:10 -
+17:00",---
+Érico Almeida Bernardino,Qua,"07:30 -
+08:20",---
+Érico Almeida Bernardino,Qua,"08:20 -
+09:10",---
+Érico Almeida Bernardino,Qua,"09:20 -
+10:10",---
+Érico Almeida Bernardino,Qua,"10:10 -
+11:00",---
+Érico Almeida Bernardino,Qua,"11:10 -
+12:00",ECOM029
+Érico Almeida Bernardino,Qua,"12:00 -
+12:50",ECOM029
+Érico Almeida Bernardino,Qua,"13:30 -
+14:20",ECOM020
+Érico Almeida Bernardino,Qua,"14:20 -
+15:10",ECOM020
+Érico Almeida Bernardino,Qua,"15:20 -
+16:10",ECOM011
+Érico Almeida Bernardino,Qua,"16:10 -
+17:00",ECOM011
+Érico Almeida Bernardino,Qui,"07:30 -
+08:20",ECIV008
+Érico Almeida Bernardino,Qui,"08:20 -
+09:10",ECIV008
+Érico Almeida Bernardino,Qui,"09:20 -
+10:10",---
+Érico Almeida Bernardino,Qui,"10:10 -
+11:00",---
+Érico Almeida Bernardino,Qui,"11:10 -
+12:00",---
+Érico Almeida Bernardino,Qui,"12:00 -
+12:50",---
+Érico Almeida Bernardino,Qui,"13:30 -
+14:20",---
+Érico Almeida Bernardino,Qui,"14:20 -
+15:10",---
+Érico Almeida Bernardino,Qui,"15:20 -
+16:10",---
+Érico Almeida Bernardino,Qui,"16:10 -
+17:00",---
+Érico Almeida Bernardino,Sex,"07:30 -
+08:20",---
+Érico Almeida Bernardino,Sex,"08:20 -
+09:10",---
+Érico Almeida Bernardino,Sex,"09:20 -
+10:10",---
+Érico Almeida Bernardino,Sex,"10:10 -
+11:00",---
+Érico Almeida Bernardino,Sex,"11:10 -
+12:00",---
+Érico Almeida Bernardino,Sex,"12:00 -
+12:50",---
+Érico Almeida Bernardino,Sex,"13:30 -
+14:20",---
+Érico Almeida Bernardino,Sex,"14:20 -
+15:10",---
+Érico Almeida Bernardino,Sex,"15:20 -
+16:10",---
+Érico Almeida Bernardino,Sex,"16:10 -
+17:00",---
+Érico Almeida Bernardino,Sab,"07:30 -
+08:20",---
+Érico Almeida Bernardino,Sab,"08:20 -
+09:10",---
+Érico Almeida Bernardino,Sab,"09:20 -
+10:10",---
+Érico Almeida Bernardino,Sab,"10:10 -
+11:00",---
+Érico Almeida Bernardino,Sab,"11:10 -
+12:00",---
+Érico Almeida Bernardino,Sab,"12:00 -
+12:50",---
+Érico Almeida Bernardino,Sab,"13:30 -
+14:20",---
+Érico Almeida Bernardino,Sab,"14:20 -
+15:10",---
+Érico Almeida Bernardino,Sab,"15:20 -
+16:10",---
+Érico Almeida Bernardino,Sab,"16:10 -
+17:00",---
