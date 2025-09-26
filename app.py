@@ -13,6 +13,7 @@ import base64
 import os
 from reader import ler_pdfs_para_excel, normalizar_horario
 from processador import criar_base_de_dados_consolidada
+import shutil
 
 #------
 import plotly.express as px
@@ -57,42 +58,61 @@ st.markdown(
 )
 
 # ---------------- PDFs ----------------
+def limpar_arquivos_gerados():
+    arquivos_para_apagar = ["base_consolidada.csv", "consolidado_horarios.xlsx"]
+    for arquivo in arquivos_para_apagar:
+        if os.path.exists(arquivo):
+            os.remove(arquivo)
+    # Limpa cache explicitamente
+    try:
+        st.cache_data.clear()
+    except:
+        pass
+
+# Carregar comprovantes (PDF) e gerar base
 st.subheader("Carregar comprovantes (PDF) e gerar base")
 uploaded = st.file_uploader("Envie um ou mais PDFs", type=["pdf"], accept_multiple_files=True)
 col_up_a, col_up_b = st.columns([0.7, 0.3])
 with col_up_b:
-    if st.button("Processar PDFs"):
-        pasta = "ALL_PDFS"
-        os.makedirs(pasta, exist_ok=True)
-        for f in os.listdir(pasta):
-            if f.lower().endswith(".pdf"):
-                try:
-                    os.remove(os.path.join(pasta, f))
-                except Exception:
-                    pass
-        if not uploaded:
-            st.warning("Nenhum arquivo enviado.")
-        else:
-            for uf in uploaded:
-                try:
-                    with open(os.path.join(pasta, uf.name), "wb") as out:
-                        out.write(uf.getbuffer())
-                except Exception as e:
-                    st.error(f"Falha ao salvar {uf.name}: {e}")
-
-            xlsx_out = "consolidado_horarios.xlsx"
-            ler_pdfs_para_excel(pasta, xlsx_out)
-            base_df = criar_base_de_dados_consolidada(xlsx_out)
-            if base_df is None or base_df.empty:
-                st.error("Nenhum dado válido gerado a partir dos PDFs.")
+    # Crie duas colunas internas para os botões
+    col_btn1, col_btn2 = st.columns([0.5, 0.5])  # Proporção 50/50
+    with col_btn1:
+        if st.button("Limpar Cache"):
+            try:
+                st.cache_data.clear()
+                limpar_arquivos_gerados()
+                st.success("Cache e arquivos gerados limpos com sucesso!")
+            except Exception as e:
+                st.error(f"Erro ao limpar cache: {e}")
+    with col_btn2:
+        if st.button("Processar PDFs"):
+            pasta = "ALL_PDFS"
+            os.makedirs(pasta, exist_ok=True)
+            # Limpa arquivos gerados antes de processar
+            limpar_arquivos_gerados()
+            if not uploaded:
+                st.warning("Nenhum arquivo enviado.")
             else:
-                base_df.to_csv("base_consolidada.csv", index=False)
-                try:
-                    st.cache_data.clear()
-                except Exception:
-                    pass
-                st.success("Base atualizada com sucesso! Você pode navegar nas abas abaixo.")
+                for uf in uploaded:
+                    try:
+                        with open(os.path.join(pasta, uf.name), "wb") as out:
+                            out.write(uf.getbuffer())
+                    except Exception as e:
+                        st.error(f"Falha ao salvar {uf.name}: {e}")
 
+                xlsx_out = "consolidado_horarios.xlsx"
+                ler_pdfs_para_excel(pasta, xlsx_out)
+                base_df = criar_base_de_dados_consolidada(xlsx_out)
+                if base_df is None or base_df.empty:
+                    st.error("Nenhum dado válido gerado a partir dos PDFs.")
+                else:
+                    base_df.to_csv("base_consolidada.csv", index=False)
+                    try:
+                        st.cache_data.clear()
+                    except Exception:
+                        pass
+                    st.success("Base atualizada com sucesso! Você pode navegar nas abas abaixo.")
+                        
 # ---------------- Carregamento & Normalização ----------------
 @st.cache_data
 def carregar_dados():
