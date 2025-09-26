@@ -678,19 +678,19 @@ with tab4:
         col_top1, col_top2 = st.columns(2)
 
         with col_top1:
-            st.write(f"** Mais Disponíveis ({len(mais_disponiveis)} alunos)**")
+            st.write(f"**Mais Disponíveis ({len(mais_disponiveis)} alunos)**")
             st.dataframe(mais_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
                         .style.format({"% Livre": "{:.1f}%"}), 
                         width="stretch", hide_index=True)
 
         with col_top2:
-            st.write(f"** Menos Disponíveis ({len(menos_disponiveis)} alunos)**")
+            st.write(f"**Menos Disponíveis ({len(menos_disponiveis)} alunos)**")
             st.dataframe(menos_disponiveis[["Aluno", "Horários Livres", "% Livre"]]
                         .style.format({"% Livre": "{:.1f}%"}), 
                         width="stretch", hide_index=True)
 
-        st.write(f"** Total de alunos no sistema: {total_alunos}**")
-        st.write(f"** Divisão: {len(mais_disponiveis)} mais disponíveis vs {len(menos_disponiveis)} menos disponíveis**")
+        st.write(f"**Total de alunos no sistema: {total_alunos}**")
+        st.write(f"**Divisão: {len(mais_disponiveis)} mais disponíveis vs {len(menos_disponiveis)} menos disponíveis**")
         
         st.subheader("👥 Visualização de Grades por Grupo")
         
