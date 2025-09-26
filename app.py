@@ -740,7 +740,7 @@ with tab4:
                 st.info("Este grupo não possui membros.")
         
         st.divider()
-        st.subheader(" Exportar Relatório Completo")
+        st.subheader(" Baixar CSV dos Grupos Formados")
         
         @st.cache_data
         def exportar_relatorio_completo(grupos, df_disponibilidade, alunos_nao_alocados):
@@ -759,7 +759,7 @@ with tab4:
         
         excel_data = exportar_relatorio_completo(grupos, df_disponibilidade, alunos_nao_alocados)
         st.download_button(
-            label=" Baixar Relatório Completo (Excel)",
+            label=" Baixar CSV",
             data=excel_data,
             file_name="relatorio_grupos.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
