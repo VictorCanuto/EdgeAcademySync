@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <title>AcademySync - Gerador de Grupos</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <h1>AcademySync</h1>
+        </div>
+
+        <div class="card">
+            <h2>1. Carregar atestados em formato PDF</h2>
+            <form method="post" enctype="multipart/form-data">
+                <input type="file" name="pdf_files" multiple required>
+                <button type="submit" name="action" value="process_pdfs" class="button-primary">Processar PDFs</button>
+            </form>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash {{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        {% if base_data_info %}
+        <!-- visualizaçao individual -->
+        <div class="card">
+            <h2>Visualização Individual</h2>
+            <p>Clique no nome de um aluno para ver a sua grelha de horários completa.</p>
+            <div class="aluno-list">
+                {% for aluno in base_data_info.lista_alunos %}
+                    <a href="#" class="aluno-link" data-aluno-nome="{{ aluno }}">{{ aluno }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ranking de disponibilidade -->
+        {% if ranking_data %}
+        <div class="card">
+            <h2>Ranking de Disponibilidade</h2>
+            <div class="ranking-container">
+                <div class="ranking-column">
+                    <h3>Mais Disponíveis</h3>
+                    <table class="ranking-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Aluno</th>
+                                <th>Horários Livres</th>
+                                <th>% Livre</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for index, aluno_data in ranking_data.mais_disponiveis.iterrows() %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ aluno_data.aluno }}</td>
+                                <td>{{ aluno_data.horarios_livres }}</td>
+                                <td>{{ aluno_data.percentual_livre }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="ranking-column">
+                    <h3>Menos Disponíveis</h3>
+                     <table class="ranking-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Aluno</th>
+                                <th>Horários Livres</th>
+                                <th>% Livre</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                             {% for index, aluno_data in ranking_data.menos_disponiveis.iterrows() %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ aluno_data.aluno }}</td>
+                                <td>{{ aluno_data.horarios_livres }}</td>
+                                <td>{{ aluno_data.percentual_livre }}%</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- geração de grupo -->
+        <div class="card">
+            <h2>2. Formar Grupos</h2>
+            <div class="metrics">
+                <div><span>{{ base_data_info.alunos }}</span> Alunos Únicos</div>
+                <div><span>{{ base_data_info.dias }}</span> Dias</div>
+                <div><span>{{ base_data_info.horarios }}</span> Horários</div>
+            </div>
+            <form method="post">
+                <div class="form-row">
+                    <label>Número de grupos:</label>
+                    <input type="number" name="num_grupos" value="{{ session.get('form_input', {}).get('num_grupos', 3) }}" min="1" max="20">
+                </div>
+                <h3>Blocos de Horários</h3>
+                {% for i in range(5) %}
+                <div class="bloco-row">
+                    <input type="text" name="bloco_{{ i }}_nome" placeholder="Nome (ex: Manhã)" value="{{ session.get('form_input', {}).get('blocos', [{},{},{},{},{}])[i].get('nome', '') }}">
+                    <input type="number" name="bloco_{{ i }}_inicio" placeholder="Início (h)" value="{{ session.get('form_input', {}).get('blocos', [{},{},{},{},{}])[i].get('inicio', '') }}">
+                    <input type="number" name="bloco_{{ i }}_fim" placeholder="Fim (h)" value="{{ session.get('form_input', {}).get('blocos', [{},{},{},{},{}])[i].get('fim', '') }}">
+                    <input type="text" name="bloco_{{ i }}_dias" placeholder="Dias (ex: Seg, Ter, Qua)" value="{{ session.get('form_input', {}).get('blocos', [{},{},{},{},{}])[i].get('dias', '') }}">
+                </div>
+                {% endfor %}
+                <button type="submit" name="action" value="generate_groups" class="button-success">Gerar Grupos</button>
+                 <a href="{{ url_for('clear_session') }}" class="button-danger">Limpar Tudo</a>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- resultados -->
+        {% if groups_result %}
+        <div class="card">
+            <h2>Resultados</h2>
+            <div class="download-buttons">
+                <a href="{{ url_for('download_csv') }}" class="button">Baixar CSV</a>
+                <a href="{{ url_for('download_pdf') }}" class="button">Baixar PDF</a>
+            </div>
+
+            {% for group in groups_result.grupos|sort(attribute='Grupo') %}
+            <div class="group-card">
+                <h3>Grupo {{ group.Grupo }} <small>({{ group.Dia }} | {{ group.Horário }})</small></h3>
+                <ul>
+                    {% for membro in group.Membros|sort(attribute='nome') %}
+                    <li>
+                        {{ membro.nome }}
+                        <details class="sugestoes">
+                            <summary>Sugestões de troca</summary>
+                            <div class="sugestoes-content">
+                                {% set sugs = membro.sugestoes %}
+                                {% if not sugs.mover_para_grupo and not sugs.troca_simples %}
+                                    <p>Nenhuma sugestão de troca disponível para este aluno.</p>
+                                {% endif %}
+
+                                {% if sugs.mover_para_grupo %}
+                                    <h4>Mover para outro grupo:</h4>
+                                    {% for mov in sugs.mover_para_grupo %}
+                                        <form action="{{ url_for('trocar_aluno') }}" method="post" class="sugestao-form">
+                                            <input type="hidden" name="aluno_a" value="{{ mov.aluno_origem }}">
+                                            <input type="hidden" name="grupo_a_id" value="{{ mov.grupo_origem_id }}">
+                                            <input type="hidden" name="grupo_b_id" value="{{ mov.grupo_destino_id }}">
+                                            <button type="submit">Mover para Grupo {{ mov.grupo_destino_id }}</button>
+                                        </form>
+                                    {% endfor %}
+                                {% endif %}
+
+                                {% if sugs.troca_simples %}
+                                    <h4>Trocar com:</h4>
+                                    {% for troca in sugs.troca_simples %}
+                                        <form action="{{ url_for('trocar_aluno') }}" method="post" class="sugestao-form">
+                                            <input type="hidden" name="aluno_a" value="{{ troca.aluno_a }}">
+                                            <input type="hidden" name="grupo_a_id" value="{{ troca.grupo_a_id }}">
+                                            <input type="hidden" name="aluno_b" value="{{ troca.aluno_b }}">
+                                            <input type="hidden" name="grupo_b_id" value="{{ troca.grupo_b_id }}">
+                                            <button type="submit">Trocar com <strong>{{ troca.aluno_b }}</strong> (Grupo {{ troca.grupo_b_id }})</button>
+                                        </form>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </details>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- modal -->
+    <div id="schedule-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Jmodal -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('schedule-modal');
+            const modalBody = document.getElementById('modal-body');
+            const closeButton = document.querySelector('.close-button');
+
+            function closeModal() {
+                modal.style.display = 'none';
+                modalBody.innerHTML = '';
+            }
+
+            closeButton.addEventListener('click', closeModal);
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+            document.querySelectorAll('.aluno-link').forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const alunoNome = event.target.dataset.alunoNome;
+                    
+                    modalBody.innerHTML = '<p>A carregar horários...</p>';
+                    modal.style.display = 'block';
+
+                    fetch(`/aluno/${encodeURIComponent(alunoNome)}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('A resposta da rede não foi bem-sucedida.');
+                            }
+                            return response.text();
+                        })
+                        .then(html => {
+                            modalBody.innerHTML = html;
+                        })
+                        .catch(error => {
+                            modalBody.innerHTML = `<p>Erro ao carregar os horários: ${error}</p>`;
+                        });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
