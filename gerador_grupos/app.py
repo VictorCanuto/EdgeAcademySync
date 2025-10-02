@@ -6,7 +6,6 @@ import pandas as pd
 from io import BytesIO
 import uuid
 
-
 from services.pdf_parser import processar_pdfs_para_dataframe
 from services.group_generator import formar_grupos
 from services.group_manager import sugerir_trocas, executar_troca

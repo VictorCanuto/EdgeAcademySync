@@ -1,3 +1,4 @@
+# services/pdf_parser.py
 import os
 import pandas as pd
 import tabula
@@ -48,7 +49,8 @@ def extrair_grade_de_df(df: pd.DataFrame, aluno: str) -> Optional[pd.DataFrame]:
         if not PAT_HORARIO.match(horario):
             continue
         for c in df.columns:
-            if c == col_horario: continue
+            if c == col_horario: 
+                continue
             dia = str(c).strip().title()
             if not any(_normalizar(dia).startswith(d) for d in DIAS_SEMANA):
                 continue
@@ -58,13 +60,17 @@ def extrair_grade_de_df(df: pd.DataFrame, aluno: str) -> Optional[pd.DataFrame]:
             resultados.append({"aluno": aluno, "dia": dia, "horario": horario, "materia": materia})
     return pd.DataFrame(resultados) if resultados else None
 
-def processar_pdfs_para_dataframe(pdf_paths: List[str]) -> Optional[pd.DataFrame]:
+def _processar_pdfs_fallback(pdf_paths: List[str]) -> Optional[pd.DataFrame]:
+    """
+    Método fallback usando a lógica original do pdf_parser - processamento direto com tabula
+    """
     finais = []
     for caminho_pdf in pdf_paths:
         aluno = re.sub(r'\.pdf$', '', caminho_pdf.split(os.path.sep)[-1], flags=re.IGNORECASE)
         try:
             tabelas_brutas = tabula.read_pdf(caminho_pdf, pages="all", multiple_tables=True, lattice=True)
-            if not tabelas_brutas: continue
+            if not tabelas_brutas: 
+                continue
             
             tabelas_validas = []
             for t in tabelas_brutas:
@@ -72,7 +78,8 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]) -> Optional[pd.DataFrame
                 if not t_limpa.empty and _eh_grade(t_limpa):
                     tabelas_validas.append(_ajustar_header(t_limpa))
             
-            if not tabelas_validas: continue
+            if not tabelas_validas: 
+                continue
             df_aluno_completo = pd.concat(tabelas_validas, ignore_index=True)
             
             df_grade = extrair_grade_de_df(df_aluno_completo, aluno)
@@ -88,3 +95,92 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]) -> Optional[pd.DataFrame
     base = pd.concat(finais, ignore_index=True)
     base = base.drop_duplicates(subset=['aluno', 'dia', 'horario']).reset_index(drop=True)
     return base
+
+def processar_pdfs_para_dataframe(pdf_paths: List[str]) -> Optional[pd.DataFrame]:
+    """
+    Nova versão que tenta primeiro usar os módulos reorganizados (pdf_reader + pdf_processor)
+    e fallback para o método original se necessário
+    """
+    if not pdf_paths:
+        return None
+    
+    # Verifica se temos os módulos necessários para o novo método
+    try:
+        from .pdf_reader import ler_pdfs_para_excel
+        from .pdf_processor import processar_excel
+        TEM_MODULOS = True
+    except ImportError:
+        TEM_MODULOS = False
+        print("Módulos pdf_reader/pdf_processor não disponíveis, usando fallback")
+    
+    if not TEM_MODULOS:
+        return _processar_pdfs_fallback(pdf_paths)
+    
+    # Cria pasta temporária se necessário
+    temp_dir = "temp_processing"
+    os.makedirs(temp_dir, exist_ok=True)
+    
+    try:
+        # Passo 1: Processar PDFs para Excel usando pdf_reader
+        # Precisamos criar uma pasta temporária com os PDFs para o ler_pdfs_para_excel
+        pdf_temp_dir = os.path.join(temp_dir, "pdfs")
+        os.makedirs(pdf_temp_dir, exist_ok=True)
+        
+        # Copia os PDFs para a pasta temporária
+        for pdf_path in pdf_paths:
+            import shutil
+            shutil.copy2(pdf_path, pdf_temp_dir)
+        
+        excel_temp = os.path.join(temp_dir, "temp_consolidado.xlsx")
+        ler_pdfs_para_excel(pdf_temp_dir, excel_temp)
+        
+        # Verifica se o Excel foi criado
+        if not os.path.exists(excel_temp):
+            print("PDF Reader não conseguiu gerar o arquivo Excel, usando fallback")
+            return _processar_pdfs_fallback(pdf_paths)
+        
+        # Passo 2: Processar Excel para CSV usando pdf_processor
+        csv_temp = os.path.join(temp_dir, "temp_base.csv")
+        processar_excel(excel_temp, csv_temp)
+        
+        # Carregar resultado final
+        if os.path.exists(csv_temp):
+            df = pd.read_csv(csv_temp)
+            print(f"Processamento integrado bem-sucedido: {len(df)} registros")
+            return df
+        else:
+            print("PDF Processor não conseguiu gerar o CSV, usando fallback")
+            return _processar_pdfs_fallback(pdf_paths)
+            
+    except Exception as e:
+        print(f"Erro no processamento integrado: {e}")
+        # Fallback para o método original
+        return _processar_pdfs_fallback(pdf_paths)
+    
+    finally:
+        # Limpeza opcional dos arquivos temporários
+        try:
+            import shutil
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+        except:
+            pass  # Ignora erros na limpeza
+
+# Para compatibilidade com o app.py existente
+def processar_pdfs_para_dataframe_original(pdf_paths: List[str]) -> Optional[pd.DataFrame]:
+    """
+    Versão que mantém exatamente o comportamento original (só usa tabula)
+    """
+    return _processar_pdfs_fallback(pdf_paths)
+
+if __name__ == "__main__":
+    # Teste simples
+    import sys
+    if len(sys.argv) > 1:
+        pdfs = sys.argv[1:]
+        resultado = processar_pdfs_para_dataframe(pdfs)
+        if resultado is not None:
+            print(f"Processados {len(resultado)} registros de {len(resultado['aluno'].unique())} alunos")
+            resultado.to_csv("teste_saida.csv", index=False)
+        else:
+            print("Nenhum dado processado")
