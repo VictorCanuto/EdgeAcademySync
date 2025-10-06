@@ -1,10 +1,11 @@
 import os
 import pickle
-from flask import Flask, request, render_template, session, redirect, url_for, flash, send_file
+from flask import (Flask, request, render_template, session, redirect, url_for, flash, send_file, render_template_string)
 from werkzeug.utils import secure_filename
 import pandas as pd
 from io import BytesIO
 import uuid
+
 
 from services.pdf_parser import processar_pdfs_para_dataframe
 from services.group_generator import formar_grupos
@@ -15,7 +16,12 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
 
-app = Flask(__name__)
+template_dir = os.path.abspath(os.path.dirname(__file__))
+
+app = Flask(__name__, 
+            template_folder=os.path.join(template_dir, 'templates'),
+            static_folder=os.path.join(template_dir, 'static'))
+
 app.config['SECRET_KEY'] = 'ACADEMYSYNC_KEY'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['SESSION_DATA_FOLDER'] = 'session_data'
@@ -51,26 +57,33 @@ def montar_pdf_grupos(grupos):
     c.save(); buf.seek(0)
     return buf
 
-def _get_nome_membro(membro):
-    return membro.get('nome') if isinstance(membro, dict) else str(membro)
+def _get_nome_membro(membro: any) -> str:
+    if isinstance(membro, dict):
+        return membro.get('nome', '')
+    return str(membro)
 
 # --- Rotas Principais ---
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         action = request.form.get('action')
-
+        
         if action == 'process_pdfs':
             files = request.files.getlist('pdf_files')
             if not files or files[0].filename == '':
                 flash('Nenhum arquivo selecionado.', 'error')
                 return redirect(request.url)
 
-            filepaths = [os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(f.filename)) for f in files]
-            for file, path in zip(files, filepaths):
-                file.save(path)
-
+            filepaths = []
+            for file in files:
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                filepaths.append(filepath)
+            
             base_df = processar_pdfs_para_dataframe(filepaths)
+    
             if base_df is not None and not base_df.empty:
                 session_filename = f"{uuid.uuid4()}.csv"
                 session_filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], session_filename)
@@ -97,29 +110,51 @@ def index():
                 return redirect(url_for('index'))
 
             num_grupos = int(request.form.get('num_grupos', 3))
-            blocos = []
-            form_input_blocos = []
-            for i in range(5):
-                nome = request.form.get(f'bloco_{i}_nome')
-                inicio = request.form.get(f'bloco_{i}_inicio')
-                fim = request.form.get(f'bloco_{i}_fim')
-                dias_str = request.form.get(f'bloco_{i}_dias')
-                form_input_blocos.append({'nome': nome, 'inicio': inicio, 'fim': fim, 'dias': dias_str})
-                if nome and inicio and fim and dias_str:
-                    try:
-                        blocos.append({
-                            "nome": nome, "inicio": int(inicio), "fim": int(fim),
-                            "dias": [d.strip().title() for d in dias_str.split(',')]
-                        })
-                    except (ValueError, TypeError): continue
             
-            session['form_input'] = {'num_grupos': num_grupos, 'blocos': form_input_blocos}
+            # Leitura dos blocos do formulário
+            nomes_blocos = request.form.getlist('bloco_nome[]')
+            horas_inicio = request.form.getlist('bloco_inicio[]')
+            horas_fim = request.form.getlist('bloco_fim[]')
+            dias_semana = request.form.getlist('bloco_dias[]')
+
+            blocos = []
+            if not all([nomes_blocos, horas_inicio, horas_fim, dias_semana]):
+                flash('Erro ao ler os blocos de horário. Tente novamente.', 'error')
+                return redirect(url_for('index'))
+
+            for i in range(len(nomes_blocos)):
+                try:
+                    # O campo de dias agora é um select, então pegamos o valor diretamente
+                    dias = [dias_semana[i]] if dias_semana[i] else []
+                    
+                    bloco = {
+                        "nome": nomes_blocos[i],
+                        "inicio": int(horas_inicio[i]),
+                        "fim": int(horas_fim[i]),
+                        "dias": dias
+                    }
+                    if all(bloco.values()): # Garante que nenhum campo está vazio
+                        blocos.append(bloco)
+                except (ValueError, IndexError):
+                    flash(f'Bloco de horário inválido encontrado. Verifique os dados.', 'warning')
+                    continue
+            
             if not blocos:
                 flash('Pelo menos um bloco de horário válido é necessário.', 'error')
                 return redirect(url_for('index'))
 
             result = formar_grupos(base_df, num_grupos=num_grupos, blocos=blocos)
             
+            alunos_sem_grupo = result.get('alunos_sem_grupo')
+            if alunos_sem_grupo:
+                display_limit = 5
+                nomes_display = ", ".join(al.replace('_', ' ') for al in alunos_sem_grupo[:display_limit])
+                extra_count = len(alunos_sem_grupo) - display_limit
+                msg = (f"{len(alunos_sem_grupo)} aluno(s) não foram alocados por conflito de horário: {nomes_display}")
+                if extra_count > 0:
+                    msg += f" e mais {extra_count}."
+                flash(msg, 'warning')
+
             result_filename = f"{uuid.uuid4()}.pkl"
             result_filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], result_filename)
             with open(result_filepath, 'wb') as f:
@@ -130,23 +165,16 @@ def index():
             
             return redirect(url_for('index'))
 
-    base_data_info = None
-    groups_result = None
-    ranking_data = None
-
+    # --- LÓGICA GET ---
+    base_data_info, groups_result, ranking_data = None, None, None
     data_filename = session.get('base_data_filename')
     if data_filename:
         filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], data_filename)
         if os.path.exists(filepath):
             df = pd.read_csv(filepath)
-            alunos = sorted(df['aluno'].unique())
-            base_data_info = {
-                "alunos": len(alunos),
-                "dias": len(df['dia'].unique()),
-                "horarios": len(df['horario'].unique()),
-                "lista_alunos": alunos
-            }
-            ranking_data = calcular_ranking_disponibilidade(df)
+            alunos = sorted([str(a).replace('_', ' ') for a in df['aluno'].unique()])
+            base_data_info = {"alunos": len(alunos), "dias": len(df['dia'].unique()), "horarios": len(df['horario'].unique()), "lista_alunos": alunos}
+            ranking_data = calcular_ranking_disponibilidade(df.copy())
 
     result_filename = session.get('groups_result_filename')
     if result_filename:
@@ -155,45 +183,88 @@ def index():
             with open(filepath, 'rb') as f:
                 groups_result = pickle.load(f)
             
-            for group in groups_result['grupos']:
+            grupos_originais = groups_result.get('grupos', [])
+            slots_por_aluno = groups_result.get('slots_por_aluno', {})
+            grupos_para_template = []
+            for group in grupos_originais:
+                novo_grupo = group.copy()
                 membros_com_sugestoes = []
-                for membro in group['Membros']:
-                    sugs = sugerir_trocas(membro, groups_result['grupos'], groups_result['slots_por_aluno'])
-                    membros_com_sugestoes.append({'nome': membro, 'sugestoes': sugs})
-                group['Membros'] = membros_com_sugestoes
+                for membro_item in group.get('Membros', []):
+                    nome_aluno = _get_nome_membro(membro_item)
+                    sugs = sugerir_trocas(nome_aluno, grupos_originais, slots_por_aluno)
+                    membros_com_sugestoes.append({'nome': nome_aluno.replace('_', ' '), 'sugestoes': sugs})
+                novo_grupo['Membros'] = membros_com_sugestoes
+                grupos_para_template.append(novo_grupo)
+            groups_result['grupos'] = grupos_para_template
 
-    return render_template('index.html', base_data_info=base_data_info, groups_result=groups_result, ranking_data=ranking_data)
+    # Listas de opções para os menus de seleção no formulário
+    horarios_disponiveis = list(range(7, 23))
+    nomes_blocos_opcoes = ["Manhã", "Tarde", "Noite", "Extra"]
+    dias_semana_opcoes = [
+        {"valor": "Seg", "texto": "Segunda-feira"},
+        {"valor": "Ter", "texto": "Terça-feira"},
+        {"valor": "Qua", "texto": "Quarta-feira"},
+        {"valor": "Qui", "texto": "Quinta-feira"},
+        {"valor": "Sex", "texto": "Sexta-feira"},
+        {"valor": "Sab", "texto": "Sábado"}
+    ]
 
-@app.route('/trocar', methods=['POST'])
+    return render_template('index.html', 
+                           base_data_info=base_data_info, 
+                           groups_result=groups_result, 
+                           ranking_data=ranking_data,
+                           horarios_disponiveis=horarios_disponiveis,
+                           nomes_blocos_opcoes=nomes_blocos_opcoes,    
+                           dias_semana_opcoes=dias_semana_opcoes)     
+
+@app.route('/trocar_aluno', methods=['POST'])
 def trocar_aluno():
+    # 1. Carregar dados da sessão
     result_filename = session.get('groups_result_filename')
+    
     if not result_filename:
-        flash('Sessão expirada ou resultado não encontrado.', 'error')
+        flash('Sessão expirada ou dados não encontrados. Por favor, gere os grupos novamente.', 'error')
         return redirect(url_for('index'))
 
     filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], result_filename)
-    try:
-        with open(filepath, 'rb') as f:
-            result = pickle.load(f)
-    except FileNotFoundError:
-        flash('Arquivo de sessão não encontrado. Gere os grupos novamente.', 'error')
+    if not os.path.exists(filepath):
+        flash('Arquivo de dados da sessão não encontrado. Por favor, gere os grupos novamente.', 'error')
         return redirect(url_for('index'))
 
-    aluno_a = request.form.get('aluno_a')
-    grupo_a_id = int(request.form.get('grupo_a_id'))
-    aluno_b = request.form.get('aluno_b')
-    grupo_b_id = int(request.form.get('grupo_b_id'))
+    with open(filepath, 'rb') as f:
+        result = pickle.load(f)
     
-    grupos_atualizados = executar_troca(result['grupos'], aluno_a, grupo_a_id, aluno_b, grupo_b_id)
-    result['grupos'] = grupos_atualizados
+    grupos = result['grupos']
+    
+    # 2. Obter dados do formulário de forma segura
+    aluno_a = request.form.get('aluno_a')
+    aluno_b = request.form.get('aluno_b') # Será None no caso de "mover"
 
+    grupo_a_id_str = request.form.get('grupo_a_id')
+    grupo_b_id_str = request.form.get('grupo_b_id')
+
+    # Valida e converte os IDs, tratando strings vazias ou None
+    grupo_a_id = int(grupo_a_id_str) if grupo_a_id_str else None
+    grupo_b_id = int(grupo_b_id_str) if grupo_b_id_str else None
+
+    # Verifica se os dados essenciais estão presentes
+    if not aluno_a or not grupo_a_id or (aluno_b and not grupo_b_id) or (not aluno_b and not grupo_b_id):
+        flash('Informação incompleta para realizar a movimentação.', 'error')
+        return redirect(url_for('index'))
+
+    # 3. Executar a lógica de troca/movimentação
+    grupos_modificados = executar_troca(grupos, aluno_a, grupo_a_id, aluno_b, grupo_b_id)
+    
+    # 4. Salvar os novos dados na sessão
+    result['grupos'] = grupos_modificados
     with open(filepath, 'wb') as f:
         pickle.dump(result, f)
-
+        
+    # Mensagem de sucesso específica
     if aluno_b:
         flash(f'Troca entre {aluno_a} e {aluno_b} realizada com sucesso!', 'success')
     else:
-        flash(f'{aluno_a} movido para o Grupo {grupo_b_id} com sucesso!', 'success')
+        flash(f'Aluno {aluno_a} movido para o Grupo {grupo_b_id} com sucesso!', 'success')
         
     return redirect(url_for('index'))
 
@@ -231,28 +302,48 @@ def download_pdf():
 def get_aluno_schedule(nome_aluno):
     data_filename = session.get('base_data_filename')
     if not data_filename:
-        return "Dados não encontrados.", 404
+        return render_template_string("<h3>Erro</h3><p>Dados não encontrados na sessão.</p>"), 404
 
     filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], data_filename)
     if not os.path.exists(filepath):
-        return "Arquivo de dados não encontrado.", 404
+        return render_template_string("<h3>Erro</h3><p>Arquivo de dados da sessão não encontrado.</p>"), 404
 
     df = pd.read_csv(filepath)
-    aluno_df = df[df['aluno'] == nome_aluno]
+    
+    # Comparar o nome da URL (com espaços) com a coluna do df (convertendo '_' para ' ' na hora)
+    # Isto garante que a busca sempre funcione, independentemente do formato.
+    aluno_df = df[df['aluno'].str.replace('_', ' ').str.lower() == nome_aluno.lower()]
 
     if aluno_df.empty:
-        return "Aluno não encontrado.", 404
-
+        return render_template_string(f"<h3>Aluno não encontrado</h3><p>O aluno '{nome_aluno}' não foi encontrado nos dados carregados.</p>"), 404
+    
+    # Pivoting (usando a coluna 'horario')
     schedule_pivot = aluno_df.pivot_table(
-        index='horario', columns='dia', values='materia',
-        aggfunc='first', fill_value='---'
-    )
+        index='horario', 
+        columns='dia', 
+        values='materia',
+        aggfunc='first', 
+        fill_value='---'
+    ).sort_index()
 
-    ordem_dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab']
-    ordem_horarios = sorted(df['horario'].unique())
-    schedule_pivot = schedule_pivot.reindex(columns=ordem_dias, index=ordem_horarios, fill_value='---')
+    # Garantir que os dias da semana sejam exibidos corretamente
+    dias_map = {
+        'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta',
+        'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'
+    }
+    
+    # Garantir que todas as colunas abreviadas existam
+    for dia_abrev in dias_map.keys():
+        if dia_abrev not in schedule_pivot.columns:
+            schedule_pivot[dia_abrev] = '---'
+            
+    # Renomear colunas para o nome completo
+    schedule_pivot.rename(columns=dias_map, inplace=True)
+    
+    # Reordenar as colunas pela ordem correta dos dias por extenso
+    schedule_pivot = schedule_pivot[list(dias_map.values())]
 
-    return render_template('_aluno_schedule.html', schedule=schedule_pivot, aluno=nome_aluno)
+    return render_template("_aluno_schedule.html", aluno=nome_aluno, schedule=schedule_pivot)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)

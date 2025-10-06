@@ -234,10 +234,19 @@ def processar_excel(entrada_excel: str, saida_csv: str):
 
 def criar_base_de_dados_consolidada(entrada_excel: str):
     """Compatibilidade com app.py — apenas chama processar_excel."""
-    saida_csv = "base_consolidada.csv"
+    caminho_saida = os.path.join("..", "session_data")
+    os.makedirs(caminho_saida, exist_ok=True)
+    
+    saida_csv = os.path.join(caminho_saida, "base_consolidada.csv")
     return processar_excel(entrada_excel, saida_csv)
 
 if __name__ == "__main__":
-    entrada = "consolidado_horarios.xlsx"
-    saida = "base_consolidada.csv"
+    caminho_dados = os.path.join("..", "session_data")
+    os.makedirs(caminho_dados, exist_ok=True)
+
+    # O arquivo de entrada agora é lido de session_data
+    entrada = os.path.join(caminho_dados, "consolidado_horarios.xlsx")
+    # E o arquivo de saída é salvo lá
+    saida = os.path.join(caminho_dados, "base_consolidada.csv")
+    
     processar_excel(entrada, saida)

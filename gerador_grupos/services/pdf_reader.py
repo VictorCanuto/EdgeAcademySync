@@ -303,6 +303,14 @@ def ler_pdfs_para_excel(pasta_pdfs, saida_excel):
     print("Gerado:", saida_excel)
 
 if __name__ == "__main__":
-    pasta = "ALL_PDFS"
-    saida = "consolidado_horarios.xlsx"
+    # O caminho para a pasta session_data, subindo um nível a partir de 'services'
+    caminho_saida = os.path.join("..", "session_data")
+    
+    # Garante que o diretório de saída exista
+    os.makedirs(caminho_saida, exist_ok=True)
+
+    pasta = "uploads"
+    # O nome do arquivo de saída agora é combinado com o novo caminho
+    saida = os.path.join(caminho_saida, "consolidado_horarios.xlsx")
+    
     ler_pdfs_para_excel(pasta, saida)

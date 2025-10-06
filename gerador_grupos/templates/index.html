@@ -1,236 +1,497 @@
 <!DOCTYPE html>
 <html lang="pt-pt">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AcademySync - Gerador de Grupos</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <div class="container">
-        <div class="logo-container">
-            <h1>AcademySync</h1>
-        </div>
+        <header class="app-header">
+            <div class="logo-container">
+                <h1>AcademySync</h1>
+                <p class="tagline">Organize grupos de estudo de forma inteligente</p>
+            </div>
+        </header>
 
-        <div class="card">
-            <h2>1. Carregar atestados em formato PDF</h2>
-            <form method="post" enctype="multipart/form-data">
-                <input type="file" name="pdf_files" multiple required>
-                <button type="submit" name="action" value="process_pdfs" class="button-primary">Processar PDFs</button>
-            </form>
-            {% with messages = get_flashed_messages(with_categories=true) %}
+        <div class="card card-primary">
+            <div class="card-header">
+                <div class="step-indicator">1</div>
+                <h2>Carregar atestados em formato PDF</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" class="upload-form" novalidate>
+                    <input type="hidden" name="action" value="process_pdfs">
+                    <div class="file-input-container">
+                        <input type="file" id="pdf-files" name="pdf_files" multiple required accept=".pdf"
+                            class="file-input-hidden">
+                        <label for="pdf-files" class="file-input-label">
+                            <span>Selecionar ficheiros PDF</span>
+                        </label>
+                        <div class="file-list" id="file-list"></div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" id="process-pdfs-btn">
+                        <span class="btn-text">Processar PDFs</span>
+                        <span class="btn-loading btn-loading-inline">Processando...</span>
+                    </button>
+                </form>
+
+                <!-- Mensagens flash -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
+                <div class="flash-messages">
                     {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
+                    <div class="flash flash-{{ category }}">
+                        <div class="flash-icon">
+                            {% if category == 'success' %}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            {% else %}
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path
+                                    d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <span class="flash-text">{{ message }}</span>
+                    </div>
                     {% endfor %}
+                </div>
                 {% endif %}
-            {% endwith %}
+                {% endwith %}
+            </div>
         </div>
 
         {% if base_data_info %}
-        <!-- visualizaçao individual -->
+        <!-- Visualização Individual - Card -->
         <div class="card">
-            <h2>Visualização Individual</h2>
-            <p>Clique no nome de um aluno para ver a sua grelha de horários completa.</p>
-            <div class="aluno-list">
-                {% for aluno in base_data_info.lista_alunos %}
-                    <a href="#" class="aluno-link" data-aluno-nome="{{ aluno }}">{{ aluno }}</a>
-                {% endfor %}
+            <div class="card-header">
+                <h2>Visualização Individual</h2>
+                <p class="card-description">Clique no nome de um aluno para ver a sua grelha de horários completa</p>
+            </div>
+            <div class="card-body">
+                <div class="aluno-list">
+                    {% for aluno in base_data_info.lista_alunos %}
+                    <a href="#" class="aluno-card" data-aluno-nome="{{ aluno }}">
+                        <div class="aluno-avatar">
+                            {{ aluno[0]|upper }}
+                        </div>
+                        <span class="aluno-name">{{ aluno }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
-        <!-- ranking de disponibilidade -->
+        <!-- Ranking de Disponibilidade -->
         {% if ranking_data %}
         <div class="card">
-            <h2>Ranking de Disponibilidade</h2>
-            <div class="ranking-container">
-                <div class="ranking-column">
-                    <h3>Mais Disponíveis</h3>
-                    <table class="ranking-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Aluno</th>
-                                <th>Horários Livres</th>
-                                <th>% Livre</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for index, aluno_data in ranking_data.mais_disponiveis.iterrows() %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td>{{ aluno_data.aluno }}</td>
-                                <td>{{ aluno_data.horarios_livres }}</td>
-                                <td>{{ aluno_data.percentual_livre }}%</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <div class="ranking-column">
-                    <h3>Menos Disponíveis</h3>
-                     <table class="ranking-table">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Aluno</th>
-                                <th>Horários Livres</th>
-                                <th>% Livre</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                             {% for index, aluno_data in ranking_data.menos_disponiveis.iterrows() %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td>{{ aluno_data.aluno }}</td>
-                                <td>{{ aluno_data.horarios_livres }}</td>
-                                <td>{{ aluno_data.percentual_livre }}%</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="card-header">
+                <h2>Ranking de Disponibilidade</h2>
+            </div>
+            <div class="card-body">
+                <div class="ranking-container">
+                    <div class="ranking-column">
+                        <div class="ranking-header">
+                            <h3>Mais Disponíveis</h3>
+                            <div class="ranking-badge positive">Mais Livres</div>
+                        </div>
+                        <div class="ranking-table-container">
+                            <table class="ranking-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Aluno</th>
+                                        <th>Horários Livres</th>
+                                        <th>% Livre</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for index, aluno_data in ranking_data.mais_disponiveis.iterrows() %}
+                                    <tr>
+                                        <td class="ranking-position">{{ loop.index }}</td>
+                                        <td class="aluno-cell">
+                                            <div class="aluno-avatar small">{{ aluno_data.aluno[0]|upper }}</div>
+                                            <span>{{ aluno_data.aluno }}</span>
+                                        </td>
+                                        <td>{{ aluno_data.horarios_livres }}</td>
+                                        <td>
+                                            <div class="percent-bar-container">
+                                                <div class="percent-bar percent-bar-inline"
+                                                    data-width="{{ aluno_data.percentual_livre }}"></div>
+                                                <span class="percent-value">{{ aluno_data.percentual_livre }}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="ranking-column">
+                        <div class="ranking-header">
+                            <h3>Menos Disponíveis</h3>
+                            <div class="ranking-badge negative">Menos Livres</div>
+                        </div>
+                        <div class="ranking-table-container">
+                            <table class="ranking-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Aluno</th>
+                                        <th>Horários Livres</th>
+                                        <th>% Livre</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for index, aluno_data in ranking_data.menos_disponiveis.iterrows() %}
+                                    <tr>
+                                        <td class="ranking-position">{{ loop.index }}</td>
+                                        <td class="aluno-cell">
+                                            <div class="aluno-avatar small">{{ aluno_data.aluno[0]|upper }}</div>
+                                            <span>{{ aluno_data.aluno }}</span>
+                                        </td>
+                                        <td>{{ aluno_data.horarios_livres }}</td>
+                                        <td>
+                                            <div class="percent-bar-container">
+                                                <div class="percent-bar percent-bar-inline"
+                                                    data-width="{{ aluno_data.percentual_livre }}"></div>
+                                                <span class="percent-value">{{ aluno_data.percentual_livre }}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         {% endif %}
 
-        <!-- geração de grupo -->
-        <div class="card">
-            <h2>2. Formar Grupos</h2>
-            <div class="metrics">
-                <div><span>{{ base_data_info.alunos }}</span> Alunos Únicos</div>
-                <div><span>{{ base_data_info.dias }}</span> Dias</div>
-                <div><span>{{ base_data_info.horarios }}</span> Horários</div>
+        <!-- Geração de Grupos - Card -->
+        <div class="card card-secondary">
+            <div class="card-header">
+                <div class="step-indicator">2</div>
+                <h2>Formar Grupos</h2>
             </div>
-            <form method="post">
-                <div class="form-row">
-                    <label>Número de grupos:</label>
-                    <input type="number" name="num_grupos" value="{{ session.get('form_input', {}).get('num_grupos', 3) }}" min="1" max="20">
+            <div class="card-body">
+                <div class="metrics">
+                    <div class="metric-item">
+                        <div class="metric-value">{{ base_data_info.alunos }}</div>
+                        <div class="metric-label">Alunos Únicos</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">{{ base_data_info.dias }}</div>
+                        <div class="metric-label">Dias</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">{{ base_data_info.horarios }}</div>
+                        <div class="metric-label">Horários</div>
+                    </div>
                 </div>
-                <h3>Blocos de Horários</h3>
-                {% for i in range(5) %}
-                <div class="bloco-row">
-                    <input type="text" name="bloco_{{ i }}_nome" placeholder="Nome (ex: Manhã)" value="{{ session.get('form_input', {}).get('blocos', [{},{},{},{},{}])[i].get('nome', '') }}">
-                    <input type="number" name="bloco_{{ i }}_inicio" placeholder="Início (h)" value="{{ session.get('form_input', {}).get('blocos', [{},{},{},{},{}])[i].get('inicio', '') }}">
-                    <input type="number" name="bloco_{{ i }}_fim" placeholder="Fim (h)" value="{{ session.get('form_input', {}).get('blocos', [{},{},{},{},{}])[i].get('fim', '') }}">
-                    <input type="text" name="bloco_{{ i }}_dias" placeholder="Dias (ex: Seg, Ter, Qua)" value="{{ session.get('form_input', {}).get('blocos', [{},{},{},{},{}])[i].get('dias', '') }}">
-                </div>
-                {% endfor %}
-                <button type="submit" name="action" value="generate_groups" class="button-success">Gerar Grupos</button>
-                 <a href="{{ url_for('clear_session') }}" class="button-danger">Limpar Tudo</a>
-            </form>
-        </div>
-        {% endif %}
 
-        <!-- resultados -->
-        {% if groups_result %}
-        <div class="card">
-            <h2>Resultados</h2>
-            <div class="download-buttons">
-                <a href="{{ url_for('download_csv') }}" class="button">Baixar CSV</a>
-                <a href="{{ url_for('download_pdf') }}" class="button">Baixar PDF</a>
-            </div>
+                <form method="post" class="groups-form">
+                    <input type="hidden" name="action" value="generate_groups">
+                    <div class="form-group">
+                        <label for="num-grupos" class="form-label">Número de grupos</label>
+                        <input type="number" id="num-grupos" name="num_grupos"
+                            value="{{ session.get('form_input', {}).get('num_grupos', 3) }}" min="1" max="20"
+                            class="form-input">
+                    </div>
 
-            {% for group in groups_result.grupos|sort(attribute='Grupo') %}
-            <div class="group-card">
-                <h3>Grupo {{ group.Grupo }} <small>({{ group.Dia }} | {{ group.Horário }})</small></h3>
-                <ul>
-                    {% for membro in group.Membros|sort(attribute='nome') %}
-                    <li>
-                        {{ membro.nome }}
-                        <details class="sugestoes">
-                            <summary>Sugestões de troca</summary>
-                            <div class="sugestoes-content">
-                                {% set sugs = membro.sugestoes %}
-                                {% if not sugs.mover_para_grupo and not sugs.troca_simples %}
-                                    <p>Nenhuma sugestão de troca disponível para este aluno.</p>
-                                {% endif %}
+                    <div class="form-section">
+                        <h3>Blocos de Horários</h3>
+                        <p class="form-description">Defina os blocos de horários para formação dos grupos.</p>
 
-                                {% if sugs.mover_para_grupo %}
-                                    <h4>Mover para outro grupo:</h4>
-                                    {% for mov in sugs.mover_para_grupo %}
-                                        <form action="{{ url_for('trocar_aluno') }}" method="post" class="sugestao-form">
-                                            <input type="hidden" name="aluno_a" value="{{ mov.aluno_origem }}">
-                                            <input type="hidden" name="grupo_a_id" value="{{ mov.grupo_origem_id }}">
-                                            <input type="hidden" name="grupo_b_id" value="{{ mov.grupo_destino_id }}">
-                                            <button type="submit">Mover para Grupo {{ mov.grupo_destino_id }}</button>
-                                        </form>
-                                    {% endfor %}
-                                {% endif %}
+                        <div id="blocos-container">
+                            <div class="bloco-card">
+                                <div class="bloco-fields">
+                                    <div class="form-group">
+                                        <label class="form-label" for="bloco_nome_1">Nome do bloco</label>
+                                        <select name="bloco_nome[]" id="bloco_nome_1" class="form-select" required>
+                                            {% for nome in nomes_blocos_opcoes %}
+                                            <option value="{{ nome }}">{{ nome }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
 
-                                {% if sugs.troca_simples %}
-                                    <h4>Trocar com:</h4>
-                                    {% for troca in sugs.troca_simples %}
-                                        <form action="{{ url_for('trocar_aluno') }}" method="post" class="sugestao-form">
-                                            <input type="hidden" name="aluno_a" value="{{ troca.aluno_a }}">
-                                            <input type="hidden" name="grupo_a_id" value="{{ troca.grupo_a_id }}">
-                                            <input type="hidden" name="aluno_b" value="{{ troca.aluno_b }}">
-                                            <input type="hidden" name="grupo_b_id" value="{{ troca.grupo_b_id }}">
-                                            <button type="submit">Trocar com <strong>{{ troca.aluno_b }}</strong> (Grupo {{ troca.grupo_b_id }})</button>
-                                        </form>
-                                    {% endfor %}
-                                {% endif %}
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label" for="bloco_inicio_1">Início (h)</label>
+                                            <select name="bloco_inicio[]" id="bloco_inicio_1" class="form-select"
+                                                required>
+                                                {% for hora in horarios_disponiveis %}
+                                                <option value="{{ hora }}">{{ "%02d:00" | format(hora) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label" for="bloco_fim_1">Fim (h)</label>
+                                            <select name="bloco_fim[]" id="bloco_fim_1" class="form-select" required>
+                                                {% for hora in horarios_disponiveis %}
+                                                <option value="{{ hora }}" {% if hora==12 %}selected{% endif %}>{{
+                                                    "%02d:00" | format(hora) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label" for="bloco_dias_1">Dia da semana</label>
+                                        <select name="bloco_dias[]" id="bloco_dias_1" class="form-select" required>
+                                            {% for dia in dias_semana_opcoes %}
+                                            <option value="{{ dia.valor }}">{{ dia.texto }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <button type="button" class="btn-remove" style="display: none;">&times;</button>
+                                </div>
                             </div>
-                        </details>
-                    </li>
-                    {% endfor %}
-                </ul>
+                        </div>
+
+                        <button type="button" class="btn btn-secondary btn-add">+ Adicionar Bloco</button>
+                    </div>
+
+                    <div id="bloco-template" style="display: none;">
+                        <div class="bloco-card">
+                            <div class="bloco-fields">
+                                <div class="form-group">
+                                    <label class="form-label">Nome do bloco</label>
+                                    <select name="bloco_nome[]" class="form-select" required>
+                                        {% for nome in nomes_blocos_opcoes %}
+                                        <option value="{{ nome }}">{{ nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Início (h)</label>
+                                        <select name="bloco_inicio[]" class="form-select" required>
+                                            {% for hora in horarios_disponiveis %}
+                                            <option value="{{ hora }}">{{ "%02d:00" | format(hora) }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Fim (h)</label>
+                                        <select name="bloco_fim[]" class="form-select" required>
+                                            {% for hora in horarios_disponiveis %}
+                                            <option value="{{ hora }}" {% if hora==18 %}selected{% endif %}>{{ "%02d:00"
+                                                | format(hora) }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Dia da semana</label>
+                                    <select name="bloco_dias[]" class="form-select" required>
+                                        {% for dia in dias_semana_opcoes %}
+                                        <option value="{{ dia.valor }}">{{ dia.texto }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="button" class="btn-remove">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" name="action" value="generate_groups" class="btn btn-success">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Gerar Grupos
+                        </button>
+                        <a href="{{ url_for('clear_session') }}" class="btn btn-danger">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path
+                                    d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M10 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M14 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            Limpar PDFs
+                        </a>
+                    </div>
+                </form>
             </div>
-            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Resultados -->
+        {% if groups_result %}
+        <div class="card card-results">
+            <div class="card-header">
+                <h2>Resultados</h2>
+                <div class="download-buttons">
+                    <a href="{{ url_for('download_csv') }}" class="btn btn-outline">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M10 9H9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                        Baixar CSV
+                    </a>
+                    <a href="{{ url_for('download_pdf') }}" class="btn btn-outline">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M10 9H9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                        Baixar PDF
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="groups-container">
+                    {% for group in groups_result.grupos|sort(attribute='Grupo') %}
+                    <div class="group-card">
+                        <div class="group-header">
+                            <h3>Grupo {{ group.Grupo }}</h3>
+                            <div class="group-schedule">
+                                <span class="schedule-badge">{{ group.Dia }}</span>
+                                <span class="schedule-badge">{{ group.Horário }}</span>
+                            </div>
+                        </div>
+                        <div class="group-members">
+                            {% for membro in group.Membros|sort(attribute='nome') %}
+                            <div class="member-item">
+                                <div class="member-info">
+                                    <div class="aluno-avatar small">{{ membro.nome[0]|upper }}</div>
+                                    <span class="member-name">{{ membro.nome }}</span>
+                                </div>
+                                <div class="member-actions">
+                                    <details class="sugestoes">
+                                        <summary class="sugestoes-toggle">
+                                            <span>Sugestões</span>
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2"
+                                                    stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                        </summary>
+                                        <div class="sugestoes-content">
+                                            {% set sugs = membro.sugestoes %}
+                                            {% if not sugs.mover_para_grupo and not sugs.troca_simples %}
+                                            <p class="no-suggestions">Nenhuma sugestão disponível para este aluno.</p>
+
+                                            {% else %}
+                                            {% if sugs.mover_para_grupo %}
+                                            <div class="suggestion-category">
+                                                <h6>Mover Aluno</h6>
+                                                {% for mover in sugs.mover_para_grupo %}
+                                                <form method="post" action="{{ url_for('trocar_aluno') }}"
+                                                    class="suggestion-form">
+                                                    <input type="hidden" name="aluno_a" value="{{ membro.nome }}">
+                                                    <input type="hidden" name="grupo_a_id" value="{{ group.Grupo }}">
+                                                    <input type="hidden" name="grupo_b_id"
+                                                        value="{{ mover.grupo_b_id }}">
+                                                    <button type="submit" class="btn btn-suggestion">
+                                                        Mover para <strong>Grupo {{ mover.grupo_b_id }}</strong>
+                                                    </button>
+                                                </form>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+
+                                            {% if sugs.troca_simples %}
+                                            <div class="suggestion-category">
+                                                <h6>Trocar Aluno</h6>
+                                                {% for troca in sugs.troca_simples %}
+                                                <form method="post" action="{{ url_for('trocar_aluno') }}"
+                                                    class="suggestion-form">
+                                                    <input type="hidden" name="aluno_a" value="{{ membro.nome }}">
+                                                    <input type="hidden" name="grupo_a_id" value="{{ group.Grupo }}">
+                                                    <input type="hidden" name="aluno_b" value="{{ troca.aluno_b }}">
+                                                    <input type="hidden" name="grupo_b_id"
+                                                        value="{{ troca.grupo_b_id }}">
+                                                    <button type="submit" class="btn btn-suggestion">
+                                                        Trocar com <strong>{{ troca.aluno_b }}</strong> (Grupo {{
+                                                        troca.grupo_b_id }})
+                                                    </button>
+                                                </form>
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+
+                                            {% endif %}
+                                        </div>
+                                    </details>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
         </div>
         {% endif %}
     </div>
 
-    <!-- modal -->
+    <!-- Modal -->
     <div id="schedule-modal" class="modal">
         <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <div id="modal-body"></div>
+            <div class="modal-header">
+                <h2 id="modal-title">Horários do Aluno</h2>
+                <span class="close-button">&times;</span>
+            </div>
+            <div id="modal-body" class="modal-body">
+                <!-- Conteúdo carregado via JavaScript -->
+            </div>
         </div>
     </div>
 
-    <!-- Jmodal -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const modal = document.getElementById('schedule-modal');
-            const modalBody = document.getElementById('modal-body');
-            const closeButton = document.querySelector('.close-button');
-
-            function closeModal() {
-                modal.style.display = 'none';
-                modalBody.innerHTML = '';
-            }
-
-            closeButton.addEventListener('click', closeModal);
-            window.addEventListener('click', (event) => {
-                if (event.target === modal) {
-                    closeModal();
-                }
-            });
-
-            document.querySelectorAll('.aluno-link').forEach(link => {
-                link.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    const alunoNome = event.target.dataset.alunoNome;
-                    
-                    modalBody.innerHTML = '<p>A carregar horários...</p>';
-                    modal.style.display = 'block';
-
-                    fetch(`/aluno/${encodeURIComponent(alunoNome)}`)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('A resposta da rede não foi bem-sucedida.');
-                            }
-                            return response.text();
-                        })
-                        .then(html => {
-                            modalBody.innerHTML = html;
-                        })
-                        .catch(error => {
-                            modalBody.innerHTML = `<p>Erro ao carregar os horários: ${error}</p>`;
-                        });
-                });
-            });
-        });
-    </script>
+    <!-- JavaScript separado -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
+
 </html>

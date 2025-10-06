@@ -1,4 +1,3 @@
-# services/pdf_parser.py
 import os
 import pandas as pd
 import tabula
