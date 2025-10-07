@@ -265,7 +265,6 @@ def formar_grupos(
             })
             alunos_nao_alocados -= set(escolhidos)
 
-        # <--- SUBSTITUIR ESTA SEÇÃO ---
         # 3.1 Tenta alocar restantes de forma inteligente
         if alunos_nao_alocados:
             alunos_nao_alocados = tentar_alocar_restantes(
@@ -280,7 +279,6 @@ def formar_grupos(
         # Se todos foram alocados, terminamos a busca.
         if not alunos_nao_alocados:
             break
-        # --- FIM DA SEÇÃO A SER SUBSTITUída ---
 
     # Adiciona a lista de alunos não alocados ao resultado final
     resultado = {

@@ -253,7 +253,7 @@ def trocar_aluno():
         return redirect(url_for('index'))
 
     # 3. Executar a lógica de troca/movimentação
-    grupos_modificados = executar_troca(grupos, aluno_a, grupo_a_id, aluno_b, grupo_b_id)
+    grupos_modificados = executar_troca(aluno_a, grupo_a_id, grupos, aluno_b, grupo_b_id)
     
     # 4. Salvar os novos dados na sessão
     result['grupos'] = grupos_modificados

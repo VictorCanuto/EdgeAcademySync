@@ -322,6 +322,7 @@ body {
 }
 
 .aluno-card {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -694,6 +695,7 @@ body {
 
 .group-members {
     padding: 0;
+    padding-bottom: 250px; 
 }
 
 .member-item {
@@ -714,6 +716,7 @@ body {
 }
 
 .member-info {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -762,17 +765,44 @@ body {
 }
 
 .sugestoes-content {
-    position: absolute;
-    right: 0;
-    top: 100%;
-    width: 300px;
-    background-color: white;
+    /* Manter Rolagem Vertical */
+    max-height: 250px;
+    overflow-y: auto;
+    
+    /* PROPRIEDADES DE SOBREPOSIÇÃO */
+    position: absolute; 
+    top: 100%; /* Posiciona logo abaixo do botão "Sugestões" */
+    
+    /* ANCORAR À DIREITA */
+    right: 0; 
+    left: auto; /* Garante que 'left' não interfira */
+
+    /* ESSENCIAL: Largura fixa (300px é um bom valor) */
+    width: 300px; 
+    
+    /* Garante visibilidade (por cima de outros cards) */
+    z-index: 10; 
+    
+    background-color: white; 
+    border: 1px solid var(--gray);
     border-radius: var(--border-radius);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-    padding: 15px;
-    z-index: 10;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15); 
+    padding: 10px; 
     margin-top: 5px;
-    border: 1px solid var(--gray-light);
+}
+
+/* Reduz o espaçamento entre as categorias (Mover e Trocar) */
+.suggestion-category {
+    margin-bottom: 10px; 
+}
+
+/* Compacta o título da categoria */
+.suggestion-category h6 {
+    margin: 0 0 5px 0; /* Reduz a margem inferior para apertar o título */
+    font-size: 0.8rem; 
+    color: var(--secondary-color);
+    font-weight: 700;
+    text-transform: uppercase; /* Deixa mais organizado e visível */
 }
 
 .suggestion-section {
@@ -791,7 +821,41 @@ body {
 }
 
 .sugestao-form {
-    margin-bottom: 8px;
+    margin-bottom: 3px; /* Espaço entre as sugestões */
+}
+
+.suggestion-form .btn-suggestion {
+    width: 100%; 
+    
+    /* Permite que o texto quebre a linha (necessário para o nome do aluno) */
+    white-space: normal; 
+    
+    /* Remove o padding lateral do container principal para maximizar o espaço */
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    line-height: 1.3;
+    
+    /* Mantém os outros estilos de compactação */
+    background-color: var(--light-color);
+    color: var(--dark-color);
+    border: 1px solid var(--gray-light);
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+/* Garante que o nome em negrito (<strong>) quebre corretamente */
+.suggestion-form .btn-suggestion strong {
+    word-break: break-word; 
+    
+    /* Garante que a frase "Grupo X" não quebre no meio do número do grupo */
+    white-space: nowrap; /* Tenta manter o texto numa única linha */
+    display: inline-block; /* Necessário para aplicar o white-space: nowrap corretamente */
+}
+
+.suggestion-form .btn-suggestion:hover {
+    background-color: var(--gray-light); /* Escurece um pouco no hover */
+    color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
 .sugestao-form:last-child {
@@ -1009,8 +1073,6 @@ body {
         font-size: 0.75rem;
     }
 }
-
-/* Adicione estas regras ao arquivo style.css */
 
 /* Estilos para a tabela de horários */
 .schedule-table {

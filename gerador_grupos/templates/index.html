@@ -454,8 +454,11 @@
                                                     <input type="hidden" name="grupo_b_id"
                                                         value="{{ troca.grupo_b_id }}">
                                                     <button type="submit" class="btn btn-suggestion">
-                                                        Trocar com <strong>{{ troca.aluno_b }}</strong> (Grupo {{
-                                                        troca.grupo_b_id }})
+                                                        Trocar com <strong>{{ troca.aluno_b }}</strong>
+
+                                                        <span style="white-space: nowrap;">
+                                                            (Grupo {{ troca.grupo_b_id }})
+                                                        </span>
                                                     </button>
                                                 </form>
                                                 {% endfor %}
