@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - AcademySync</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="{{ url_for('static', filename='edge-academy-logo.png') }}" alt="Edge Academy Logo"
+                    class="login-logo">
+                <h1>AcademySync</h1>
+                <p>Acesse sua conta para continuar</p>
+            </div>
+            <div class="login-body-content">
+                <form method="post">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Usuário</label>
+                        <input type="text" id="username" name="username" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Senha</label>
+                        <input type="password" id="password" name="password" class="form-input" required>
+                    </div>
+
+                    <div class="form-extra">
+                        <a href="{{ url_for('forgot_password') }}" class="forgot-password-link">Esqueceu a senha?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Entrar</button>
+                </form>
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="flash-messages" style="margin-top: 20px; color: #FF0000;">
+                    {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+
+                <p style="text-align: center; margin-top: 20px; color: #6c757d;">
+                    Não tem uma conta? <a href="{{ url_for('register') }}">Registre-se</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

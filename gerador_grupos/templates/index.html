@@ -15,6 +15,15 @@
                 <h1>AcademySync</h1>
                 <p class="tagline">Organize grupos de estudo de forma inteligente</p>
             </div>
+            {% if session.username %}
+            <img src="{{ url_for('static', filename='edge-academy-logo.png') }}" alt="Edge Academy Logo"
+                class="main-header-logo">
+            <div class="user-info">
+                <span>Bem-vindo(a), <strong>{{ session.username }}</strong></span>
+                <button id="change-password-btn" class="btn btn-secondary">Mudar Senha</button>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline">Logout</a>
+            </div>
+            {% endif %}
         </header>
 
         <div class="card card-primary">
@@ -84,7 +93,7 @@
         <div class="card">
             <div class="card-header">
                 <h2>Visualização Individual</h2>
-                <p class="card-description">Clique no nome de um aluno para ver a sua grelha de horários completa</p>
+                <p class="card-description">Clique no nome de um aluno para ver a sua grade de horários completa</p>
             </div>
             <div class="card-body">
                 <div class="aluno-list">
@@ -489,6 +498,79 @@
             </div>
             <div id="modal-body" class="modal-body">
                 <!-- Conteúdo carregado via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Jmodal -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('schedule-modal');
+            const modalBody = document.getElementById('modal-body');
+            const closeButton = document.querySelector('.close-button');
+
+            function closeModal() {
+                modal.style.display = 'none';
+                modalBody.innerHTML = '';
+            }
+
+            closeButton.addEventListener('click', closeModal);
+            window.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+            document.querySelectorAll('.aluno-link').forEach(link => {
+                link.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    const alunoNome = event.target.dataset.alunoNome;
+                    
+                    modalBody.innerHTML = '<p>A carregar horários...</p>';
+                    modal.style.display = 'block';
+
+                    fetch(`/aluno/${encodeURIComponent(alunoNome)}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('A resposta da rede não foi bem-sucedida.');
+                            }
+                            return response.text();
+                        })
+                        .then(html => {
+                            modalBody.innerHTML = html;
+                        })
+                        .catch(error => {
+                            modalBody.innerHTML = `<p>Erro ao carregar os horários: ${error}</p>`;
+                        });
+                });
+            });
+        });
+    </script>
+
+    <div id="change-password-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title-change">Mudar Senha</h2>
+                <span class="close-button" id="close-change-password-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('change_password') }}" method="POST">
+                    <div class="form-group">
+                        <label for="current_password" class="form-label">Senha Atual</label>
+                        <input type="password" id="current_password" name="current_password" class="form-input"
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new_password" class="form-label">Nova Senha</label>
+                        <input type="password" id="new_password" name="new_password" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password" class="form-label">Confirmar Nova Senha</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input"
+                            required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">Salvar Alterações</button>
+                </form>
             </div>
         </div>
     </div>

@@ -37,17 +37,131 @@ body {
 }
 
 /* Header */
+/* Estilo para o logo na página principal */
+.main-header-logo {
+    max-width: 150px; /* Ajuste a largura conforme desejar */
+    height: auto;
+    display: block; /* Garante que ocupa seu próprio espaço */
+    margin: 0 auto; /* Centraliza horizontalmente */
+}
+
+/* Ajustes no Header para acomodar o user-info e o logo */
 .app-header {
-    text-align: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--gray-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+    padding: 20px 30px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
+    flex-wrap: wrap; 
+    gap: 15px; 
+}
+
+.logo-container {
+    text-align: left;
 }
 
 .logo-container h1 {
     color: var(--secondary-color);
     margin-bottom: 0.5rem;
     font-size: 2.5rem;
+}
+
+/* cabeçalho e botão de logout */
+/* Garante o alinhamento de todos os itens no cabeçalho */
+.user-info {
+    display: flex;
+    align-items: center; /* Isso alinha verticalmente os botões e o texto */
+    gap: 15px; /* Espaçamento entre os itens */
+    color: var(--secondary-color);
+}
+
+.user-info strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.user-info .btn-secondary {
+    background-color: #f8f9fa;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+}
+
+.user-info .btn-secondary:hover {
+    background-color: #e9ecef;
+}
+
+/* Estilos para a página de login */
+.login-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f4f7f6;
+}
+
+/* Aumentar largura do login */
+.login-container {
+    max-width: 700px; 
+    width: 100%;
+    padding: 20px;
+}
+
+.login-card {
+    background: #fff;
+    padding: 40px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-header h1 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+    margin-top: 0; /* Garante que o H1 não tenha margem superior indesejada */
+}
+
+.login-header p {
+    color: var(--gray);
+}
+
+/* Novo estilo para o logo na tela de login/registro */
+.login-logo {
+    max-width: 250px; /* Largura máxima do logo, ajuste conforme necessário */
+    height: auto; /* Mantém a proporção */
+    display: block; /* Para centralizar e remover espaço extra */
+    margin: 0 auto 15px auto; /* Centraliza horizontalmente e adiciona margem inferior */
+}
+
+/* Estilo para a mensagem flash de 'info' */
+.flash-info {
+    background-color: #d1ecf1; /* Azul claro */
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+    text-align: center; /* Centraliza a nova senha */
+}
+
+/* Container para o link "Esqueceu a senha?" */
+.form-extra {
+    text-align: right;
+    margin-bottom: 15px;
+}
+
+/* Estilo do link */
+.forgot-password-link {
+    font-size: 0.9em;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.forgot-password-link:hover {
+    text-decoration: underline;
 }
 
 .tagline {
@@ -236,17 +350,6 @@ body {
 
 .btn-danger:hover {
     background-color: var(--danger-dark);
-}
-
-.btn-outline {
-    background-color: transparent;
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
-}
-
-.btn-outline:hover {
-    background-color: var(--primary-color);
-    color: white;
 }
 
 .btn-full {
@@ -777,7 +880,7 @@ body {
     right: 0; 
     left: auto; /* Garante que 'left' não interfira */
 
-    /* ESSENCIAL: Largura fixa (300px é um bom valor) */
+    /* Largura fixa */
     width: 300px; 
     
     /* Garante visibilidade (por cima de outros cards) */
@@ -1293,24 +1396,26 @@ body {
 
 /* Estilo para o botão "Adicionar Bloco" e outros botões secundários */
 .btn-secondary {
-    background-color: var(--primary-color);
+    background-color: var(--primary-color); /* Usei uma cor secundária para diferenciar */
+    border-color: var(--secondary-color); /* Importante para manter o tamanho */
     color: white;
-    border: none;
-    padding: 12px 20px;
-    font-size: 1rem;
-    font-weight: 500;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    transition: var(--transition);
-    text-align: center;
-    display: inline-block; /* Garante que o botão se comporte bem */
-    margin-top: 10px; /* Espaçamento do container acima */
 }
 
 .btn-secondary:hover {
-    background-color: #3e5771; /* Um tom mais claro do secondary-color */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    transform: translateY(-2px);
+    background-color: var(--dark-color);
+    border-color: var(--dark-color);
+}
+
+/* Estilo para botões de contorno (como o Logout) */
+.btn-outline {
+    background-color: transparent;
+    border: 2px solid var(--primary-color); 
+    color: var(--primary-color);
+}
+
+.btn-outline:hover {
+    background-color: var(--secondary-color);
+    color: white;
 }
 
 /* Garante que o botão de adicionar ocupe a largura toda se necessário */

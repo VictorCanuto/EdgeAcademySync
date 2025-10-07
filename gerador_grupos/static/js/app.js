@@ -1,11 +1,14 @@
-// AcademySync - JavaScript Principal
-
 class AcademySyncApp {
     constructor() {
         this.modal = document.getElementById('schedule-modal');
         this.modalBody = document.getElementById('modal-body');
         this.modalTitle = document.getElementById('modal-title');
-        this.closeButton = document.querySelector('.close-button');
+
+        this.closeButton = this.modal ? this.modal.querySelector('.close-button') : null;
+
+        this.changePasswordModal = document.getElementById('change-password-modal');
+        this.openChangePasswordBtn = document.getElementById('change-password-btn');
+        this.closeChangePasswordBtn = this.changePasswordModal ? this.changePasswordModal.querySelector('.close-button') : null;
         
         this.init();
     }
@@ -17,10 +20,30 @@ class AcademySyncApp {
         this.setupFormSubmissions();
         this.setupAlunoCards();
         this.setupBlocoHorario(); 
+        this.setupChangePasswordModal();
+    }
+
+    setupChangePasswordModal() {
+        if (!this.changePasswordModal || !this.openChangePasswordBtn || !this.closeChangePasswordBtn) {
+            return;
+        }
+
+        this.openChangePasswordBtn.addEventListener('click', () => {
+            this.changePasswordModal.style.display = 'flex';
+        });
+
+        this.closeChangePasswordBtn.addEventListener('click', () => {
+            this.changePasswordModal.style.display = 'none';
+        });
+
+        this.changePasswordModal.addEventListener('click', (event) => {
+            if (event.target === this.changePasswordModal) {
+                this.changePasswordModal.style.display = 'none';
+            }
+        });
     }
 
     setupModal() {
-        // Fechar modal
         this.closeButton.addEventListener('click', () => this.closeModal());
         window.addEventListener('click', (event) => {
             if (event.target === this.modal) {
@@ -121,7 +144,6 @@ class AcademySyncApp {
 
     async fetchAlunoSchedule(alunoNome) {
         try {
-            // A sua rota correta é /aluno/NOME, vamos garantir que a chamada corresponde
             const response = await fetch(`/aluno/${encodeURIComponent(alunoNome)}`);
             if (!response.ok) {
                 throw new Error('Erro ao carregar os horários');
@@ -137,8 +159,6 @@ class AcademySyncApp {
     showErrorModal(errorMessage) {
         this.modalBody.innerHTML = `<div class="error-container"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 8V12" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 16H12.01" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Erro ao carregar os horários</h3><p>${errorMessage}</p></div>`;
     }
-
-    // --- MÉTODOS NOVOS PARA OS BLOCOS DE HORÁRIO (INTEGRADOS) ---
 
     setupBlocoHorario() {
         const container = document.getElementById('blocos-container');
@@ -190,19 +210,7 @@ class AcademySyncApp {
     }
 }
 
-// Inicializar a aplicação quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', () => {
     new AcademySyncApp();
 });
 
-// Utilitários globais para debugging
-window.AcademySync = {
-    debug: {
-        log: (message, data) => {
-            console.log(`[AcademySync] ${message}`, data);
-        },
-        error: (message, error) => {
-            console.error(`[AcademySync] ${message}`, error);
-        }
-    }
-};

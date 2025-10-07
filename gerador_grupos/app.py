@@ -1,11 +1,30 @@
 import os
 import pickle
+import json
 from flask import (Flask, request, render_template, session, redirect, url_for, flash, send_file, render_template_string)
 from werkzeug.utils import secure_filename
 import pandas as pd
 from io import BytesIO
 import uuid
+from functools import wraps
+import secrets
+import string
+import shutil 
 
+# --- Gerenciamento de Usuários (Arquivo JSON) ---
+USERS_FILE = 'users.json'
+
+def load_users():
+    """Carrega os usuários do arquivo JSON. Se o arquivo não existir, retorna um dicionário vazio."""
+    if not os.path.exists(USERS_FILE):
+        return {}
+    with open(USERS_FILE, 'r') as f:
+        return json.load(f)
+
+def save_users(users_data):
+    """Salva o dicionário de usuários no arquivo JSON."""
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users_data, f, indent=4)
 
 from services.pdf_parser import processar_pdfs_para_dataframe
 from services.group_generator import formar_grupos
@@ -15,6 +34,7 @@ from services.analytics_manager import calcular_ranking_disponibilidade
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
+from werkzeug.security import check_password_hash, generate_password_hash
 
 template_dir = os.path.abspath(os.path.dirname(__file__))
 
@@ -28,6 +48,22 @@ app.config['SESSION_DATA_FOLDER'] = 'session_data'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['SESSION_DATA_FOLDER'], exist_ok=True)
 
+# --- Funções de Autenticação e Decorators ---
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def get_user_data_folder():
+    """Retorna o caminho para a pasta de dados do usuário logado."""
+    if 'username' in session:
+        user_folder = os.path.join(app.config['SESSION_DATA_FOLDER'], session['username'])
+        os.makedirs(user_folder, exist_ok=True)
+        return user_folder
+    return None
 
 def grupos_para_dataframe(grupos):
     linhas = []
@@ -62,10 +98,142 @@ def _get_nome_membro(membro: any) -> str:
         return membro.get('nome', '')
     return str(membro)
 
-# --- Rotas Principais ---
+# --- Rotas de Autenticação ---
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        users = load_users()
 
+        if username in users:
+            flash('Este nome de usuário já existe.', 'danger')
+            return redirect(url_for('register'))
+
+        # Salva a senha criptografada dentro de um dicionário
+        hashed_password = generate_password_hash(password)
+        users[username] = {'password': hashed_password} 
+        save_users(users)
+
+        flash('Conta criada com sucesso! Faça o login.', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        users_data = load_users()
+
+        if username in users_data and check_password_hash(users_data[username]['password'], password):
+            # Define a sessão para o usuário logado
+            session['username'] = username
+
+            try:
+                # Pega a pasta de uploads do usuário
+                user_uploads_folder = get_user_data_folder()
+                
+                if os.path.exists(user_uploads_folder):
+                    # Lista tudo que está dentro da pasta
+                    for filename in os.listdir(user_uploads_folder):
+                        file_path = os.path.join(user_uploads_folder, filename)
+                        
+                        # Remove o item, seja ele um arquivo ou uma pasta
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                            
+            except Exception as e:
+                # Se a limpeza falhar, apenas avisa no console, mas não impede o login
+                print(f"AVISO: Falha ao limpar a pasta de uploads para '{username}'. Erro: {e}")
+
+            flash('Login bem-sucedido!', 'success')
+            return redirect(url_for('index'))
+        else:
+            flash('Usuário ou senha inválidos.', 'error')
+            
+    return render_template('login.html')
+
+@app.route('/change_password', methods=['POST'])
+@login_required
+def change_password():
+    username = session.get('username')
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+
+    if new_password != confirm_password:
+        flash('A nova senha e a confirmação não correspondem.', 'danger')
+        return redirect(url_for('index'))
+
+    users = load_users()
+    user_data = users.get(username)
+
+    if user_data and check_password_hash(user_data['password'], current_password):
+        hashed_new_password = generate_password_hash(new_password)
+        users[username]['password'] = hashed_new_password 
+        save_users(users)
+        flash('Senha alterada com sucesso!', 'success')
+    else:
+        flash('A senha atual está incorreta.', 'danger')
+
+    return redirect(url_for('index'))
+
+@app.route('/logout')
+def logout():
+    try:
+        # Verifica se o usuário estava logado e se um arquivo CSV foi gerado
+        if 'username' in session and 'base_data_filename' in session:
+            
+            user_data_folder = get_user_data_folder()
+            filename_to_delete = session.get('base_data_filename')
+
+            if user_data_folder and filename_to_delete:
+                filepath = os.path.join(user_data_folder, filename_to_delete)
+                
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    
+    except Exception as e:
+        # Imprime um erro no console do servidor se a limpeza falhar, mas não impede o logout
+        print(f"AVISO: Não foi possível remover o arquivo de sessão. Erro: {e}")
+
+    session.clear()
+    flash('Você foi desconectado.', 'info')
+    return redirect(url_for('login'))
+
+# --- ROTA PARA ESQUECI A SENHA ---
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        username = request.form['username']
+        users = load_users()
+
+        if username in users:
+            # Gera uma nova senha aleatória
+            new_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for i in range(10))
+            
+            # SALVA a nova senha de forma segura
+            hashed_new_password = generate_password_hash(new_password)
+            users[username]['password'] = hashed_new_password
+            save_users(users)
+
+            flash(f'Sua nova senha é: {new_password}. Anote-a e faça o login.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Usuário não encontrado.', 'danger')
+    
+    return render_template('forgot_password.html')
+
+# --- Rotas Principais ---
 @app.route('/', methods=['GET', 'POST'])
+@login_required # Este decorator FORÇA o login para acessar a esta página
 def index():
+    user_data_folder = get_user_data_folder()
+    if not user_data_folder:
+        return redirect(url_for('login'))
     if request.method == 'POST':
         action = request.form.get('action')
         
@@ -76,6 +244,9 @@ def index():
                 return redirect(request.url)
 
             filepaths = []
+            upload_folder_user = os.path.join(user_data_folder, 'uploads')
+            os.makedirs(upload_folder_user, exist_ok=True)
+
             for file in files:
                 filename = secure_filename(file.filename)
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -86,7 +257,7 @@ def index():
     
             if base_df is not None and not base_df.empty:
                 session_filename = f"{uuid.uuid4()}.csv"
-                session_filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], session_filename)
+                session_filepath = os.path.join(user_data_folder, session_filename)
                 base_df.to_csv(session_filepath, index=False)
                 session['base_data_filename'] = session_filename
                 flash(f'{len(base_df["aluno"].unique())} alunos processados com sucesso!', 'success')
@@ -101,7 +272,7 @@ def index():
                 flash('Primeiro processe os arquivos PDF.', 'error')
                 return redirect(url_for('index'))
             
-            data_filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], data_filename)
+            data_filepath = os.path.join(user_data_folder, data_filename)
             try:
                 base_df = pd.read_csv(data_filepath)
             except FileNotFoundError:
@@ -156,7 +327,7 @@ def index():
                 flash(msg, 'warning')
 
             result_filename = f"{uuid.uuid4()}.pkl"
-            result_filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], result_filename)
+            result_filepath = os.path.join(user_data_folder, result_filename)
             with open(result_filepath, 'wb') as f:
                 pickle.dump(result, f)
             
@@ -169,7 +340,7 @@ def index():
     base_data_info, groups_result, ranking_data = None, None, None
     data_filename = session.get('base_data_filename')
     if data_filename:
-        filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], data_filename)
+        filepath = os.path.join(user_data_folder, data_filename)
         if os.path.exists(filepath):
             df = pd.read_csv(filepath)
             alunos = sorted([str(a).replace('_', ' ') for a in df['aluno'].unique()])
@@ -178,7 +349,7 @@ def index():
 
     result_filename = session.get('groups_result_filename')
     if result_filename:
-        filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], result_filename)
+        filepath = os.path.join(user_data_folder, result_filename)
         if os.path.exists(filepath):
             with open(filepath, 'rb') as f:
                 groups_result = pickle.load(f)
@@ -220,13 +391,14 @@ def index():
 @app.route('/trocar_aluno', methods=['POST'])
 def trocar_aluno():
     # 1. Carregar dados da sessão
+    user_data_folder = get_user_data_folder()
     result_filename = session.get('groups_result_filename')
     
     if not result_filename:
         flash('Sessão expirada ou dados não encontrados. Por favor, gere os grupos novamente.', 'error')
         return redirect(url_for('index'))
 
-    filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], result_filename)
+    filepath = os.path.join(user_data_folder, result_filename)
     if not os.path.exists(filepath):
         flash('Arquivo de dados da sessão não encontrado. Por favor, gere os grupos novamente.', 'error')
         return redirect(url_for('index'))
@@ -269,19 +441,23 @@ def trocar_aluno():
     return redirect(url_for('index'))
 
 @app.route('/clear')
+@login_required 
 def clear_session():
-    for folder in [app.config['UPLOAD_FOLDER'], app.config['SESSION_DATA_FOLDER']]:
-        for filename in os.listdir(folder):
-            os.remove(os.path.join(folder, filename))
-    session.clear()
-    flash('Todos os dados foram limpos.', 'success')
+    user_data_folder = get_user_data_folder()
+    if user_data_folder and os.path.exists(user_data_folder):
+        shutil.rmtree(user_data_folder)
+    session.pop('base_data_filename', None)
+    session.pop('groups_result_filename', None)
+    
+    flash('Os dados dos PDFs foram limpos com sucesso!', 'success')
     return redirect(url_for('index'))
 
 @app.route('/download/csv')
 def download_csv():
+    user_data_folder = get_user_data_folder()
     result_filename = session.get('groups_result_filename')
     if not result_filename: return "Nenhum grupo gerado.", 404
-    filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], result_filename)
+    filepath = os.path.join(user_data_folder, result_filename)
     with open(filepath, 'rb') as f:
         result = pickle.load(f)
     df = grupos_para_dataframe(result['grupos'])
@@ -290,9 +466,10 @@ def download_csv():
 
 @app.route('/download/pdf')
 def download_pdf():
+    user_data_folder = get_user_data_folder()
     result_filename = session.get('groups_result_filename')
     if not result_filename: return "Nenhum grupo gerado.", 404
-    filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], result_filename)
+    filepath = os.path.join(user_data_folder, result_filename)
     with open(filepath, 'rb') as f:
         result = pickle.load(f)
     pdf_buffer = montar_pdf_grupos(result['grupos'])
@@ -300,11 +477,12 @@ def download_pdf():
 
 @app.route('/aluno/<nome_aluno>')
 def get_aluno_schedule(nome_aluno):
+    user_data_folder = get_user_data_folder()
     data_filename = session.get('base_data_filename')
     if not data_filename:
         return render_template_string("<h3>Erro</h3><p>Dados não encontrados na sessão.</p>"), 404
 
-    filepath = os.path.join(app.config['SESSION_DATA_FOLDER'], data_filename)
+    filepath = os.path.join(user_data_folder, data_filename)
     if not os.path.exists(filepath):
         return render_template_string("<h3>Erro</h3><p>Arquivo de dados da sessão não encontrado.</p>"), 404
 
