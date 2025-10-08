@@ -1,5 +1,9 @@
 Flask
 pandas
+werkzeug
 openpyxl
-tabula-py
 reportlab
+uuid
+pickle-mixin
+tabula-py
+gunicorn
