@@ -1,0 +1,28 @@
+<div class="schedule-header">
+    <h2>Horários de {{ aluno }}</h2>
+</div>
+
+<table class="schedule-table">
+    <thead>
+        <tr>
+            <th>Horário</th>
+            {% for dia in schedule.columns %}
+                <th>{{ dia }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for horario, row in schedule.iterrows() %}
+            <tr>
+                <td>{{ horario }}</td>
+                {% for materia in row %}
+                    {% if materia == '---' %}
+                        <td class="livre"></td>
+                    {% else %}
+                        <td class="ocupado">{{ materia }}</td>
+                    {% endif %}
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
