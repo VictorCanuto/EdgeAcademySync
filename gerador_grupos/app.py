@@ -524,4 +524,4 @@ def get_aluno_schedule(nome_aluno):
     return render_template("_aluno_schedule.html", aluno=nome_aluno, schedule=schedule_pivot)
 
 if __name__ == '__main__':
-    app.run(debug=True, use_reloader=False)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
