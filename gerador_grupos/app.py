@@ -19,8 +19,10 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
 
+import re
+
 from services.pdf_parser import processar_pdfs_para_dataframe
-from services.group_generator import formar_grupos
+from services.group_generator import formar_grupos, horarios_conflitam
 from services.group_manager import sugerir_trocas, executar_troca
 from services.analytics_manager import calcular_ranking_disponibilidade
 
@@ -412,11 +414,40 @@ def update_student_schedule():
             result = pickle.loads(user.groups_result)
             slots_por_aluno = result.get('slots_por_aluno', {})
             
-            if aluno_key not in slots_por_aluno:
-                slots_por_aluno[aluno_key] = {}
+            # Recomputar a disponibilidade deste aluno para todos os blocos cadastrados
+            slots_por_aluno[aluno_key] = set()
+            blocos = result.get('blocos', [])
+            
+            # Obter as aulas ocupadas do aluno do DataFrame atualizado
+            aluno_df = df[df['aluno'].str.lower() == aluno_key.lower()]
+            aluno_busy = aluno_df[aluno_df['materia'] != '---']
+            
+            # Agrupar horários ocupados por dia
+            ocupados_dia = {}
+            for _, row in aluno_busy.iterrows():
+                d_val = str(row['dia'])
+                if d_val not in ocupados_dia:
+                    ocupados_dia[d_val] = []
+                ocupados_dia[d_val].append(row['horario'])
                 
-            # Atualizar slot de disponibilidade no cache (True = Livre, False = Ocupado)
-            slots_por_aluno[aluno_key][(dia_abrev, horario)] = (novo_status == 'free')
+            for b in blocos:
+                nome_bloco = b.get("nome")
+                ini = int(b["inicio"])
+                fim = int(b["fim"])
+                dias = b.get("dias") or b.get("dia") or []
+                if isinstance(dias, str):
+                    dias = [d.strip() for d in dias.split(",") if d.strip()]
+                label = f"{nome_bloco} ({ini:02d}h-{fim:02d}h)"
+                
+                for dia in dias:
+                    busy_hours = ocupados_dia.get(dia, [])
+                    livre = True
+                    for h in busy_hours:
+                        if horarios_conflitam(h, ini, fim):
+                            livre = False
+                            break
+                    if livre:
+                        slots_por_aluno[aluno_key].add((dia, label))
             
             # Encontrar grupo do aluno
             grupos = result.get('grupos', [])
@@ -432,8 +463,14 @@ def update_student_schedule():
                 g_horario_str = aluno_grupo.get('Horário')
                 if g_dia == dia_abrev:
                     try:
-                        h_inicio = int(g_horario_str.split(' - ')[0].split(':')[0])
-                        h_fim = int(g_horario_str.split(' - ')[1].split(':')[0])
+                        # Extrai horas usando regex (compatível com os blocos)
+                        match = re.search(r'(\d+)h-(\d+)h', g_horario_str)
+                        if match:
+                            h_inicio = int(match.group(1))
+                            h_fim = int(match.group(2))
+                        else:
+                            h_inicio = int(g_horario_str.split(' - ')[0].split(':')[0])
+                            h_fim = int(g_horario_str.split(' - ')[1].split(':')[0])
                         if horario >= h_inicio and horario < h_fim:
                             conflito_gerado = True
                             grupo_afetado = aluno_grupo.get('Grupo')

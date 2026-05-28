@@ -4,6 +4,27 @@
 const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 const HORARIOS = Array.from({length: 16}, (_, i) => i + 7); // De 07h até 22h
 
+// Função auxiliar para converter o texto do horário (ex: "Manhã (09h-11h)" ou "09:00 - 11:00") em início/fim inteiros
+function parseHorarioHours(horarioStr) {
+    if (!horarioStr) return { inicio: 9, fim: 11 };
+    
+    // Tenta formato compactado ex: "Manhã (09h-11h)" ou "Extra (14h-17h)"
+    const match = horarioStr.match(/(\d+)h-(\d+)h/);
+    if (match) {
+        return { inicio: parseInt(match[1]), fim: parseInt(match[2]) };
+    }
+    
+    // Fallback para o formato "09:00 - 11:00"
+    try {
+        const parts = horarioStr.split(' - ');
+        const inicio = parseInt(parts[0].split(':')[0]);
+        const fim = parseInt(parts[1].split(':')[0]);
+        return { inicio, fim };
+    } catch (e) {
+        return { inicio: 9, fim: 11 };
+    }
+}
+
 // Estado local para a planilha geral carregada do servidor
 let studentSchedules = {};
 
@@ -319,7 +340,8 @@ function renderKanban() {
 
     grupos.forEach(g => {
         // Encontrar bloco correspondente
-        const bloco = blocos.find(b => b.id === `b${g.Grupo}`) || { dia: g.Dia, inicio: parseInt(g.Horário.split(' - ')[0]), fim: parseInt(g.Horário.split(' - ')[1]) };
+        const hours = parseHorarioHours(g.Horário);
+        const bloco = blocos.find(b => b.id === `b${g.Grupo}`) || { dia: g.Dia, inicio: hours.inicio, fim: hours.fim };
         const hasConflict = activeConflicts.some(c => c.alunoGrupo === g.Grupo);
         
         const col = document.createElement('div');
@@ -509,11 +531,8 @@ function isStudentCompatibleWithGroup(alunoNome, grupoNum) {
     const diaAbrevMap = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'};
     const diaCompleto = diaAbrevMap[g.Dia] || g.Dia;
     
-    let hInicio = 9, hFim = 11;
-    try {
-        hInicio = int = parseInt(g.Horário.split(' - ')[0].split(':')[0]);
-        hFim = int = parseInt(g.Horário.split(' - ')[1].split(':')[0]);
-    } catch(e) {}
+    const hours = parseHorarioHours(g.Horário);
+    let hInicio = hours.inicio, hFim = hours.fim;
 
     const agenda = studentSchedules[alunoNome] || {};
     
