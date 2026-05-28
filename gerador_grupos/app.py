@@ -26,6 +26,33 @@ from services.group_generator import formar_grupos, horarios_conflitam
 from services.group_manager import sugerir_trocas, executar_troca
 from services.analytics_manager import calcular_ranking_disponibilidade
 
+HORARIOS_PADRAO = {
+    7: "07:30 - 08:20",
+    8: "08:20 - 09:10",
+    9: "09:20 - 10:10",
+    10: "10:10 - 11:00",
+    11: "11:10 - 12:00",
+    12: "12:00 - 12:50",
+    13: "13:30 - 14:20",
+    14: "14:20 - 15:10",
+    15: "15:20 - 16:10",
+    16: "16:10 - 17:00",
+    17: "17:10 - 18:00",
+    18: "18:00 - 18:50"
+}
+
+def obter_hora_inicio(horario_val):
+    if pd.isna(horario_val):
+        return None
+    try:
+        val_str = str(horario_val).strip()
+        if ':' in val_str:
+            return int(val_str.split(':')[0])
+        else:
+            return int(float(val_str))
+    except (ValueError, TypeError, IndexError):
+        return None
+
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import cm
@@ -341,14 +368,13 @@ def get_schedules_json():
             nome_limpo = str(row['aluno']).replace('_', ' ')
             dia_completo = dias_completos.get(row['dia'], row['dia'])
             
-            try:
-                horario = int(row['horario'])
-            except (ValueError, TypeError):
+            horario_int = obter_hora_inicio(row['horario'])
+            if horario_int is None:
                 continue
                 
             materia = str(row['materia'])
             
-            key = f"{dia_completo}_{horario}"
+            key = f"{dia_completo}_{horario_int}"
             if nome_limpo in schedules:
                 if pd.isna(row['materia']) or materia == '---' or materia.strip() == '':
                     schedules[nome_limpo][key] = 'free'
@@ -382,9 +408,10 @@ def update_student_schedule():
         dia_abrev_map = {'Segunda': 'Seg', 'Terça': 'Ter', 'Quarta': 'Qua', 'Quinta': 'Qui', 'Sexta': 'Sex', 'Sábado': 'Sab'}
         dia_abrev = dia_abrev_map.get(dia, dia)
         
-        # Filtrar o aluno com tratamento de underline
+        # Filtrar o aluno com tratamento de underline e comparação flexível de horário
         aluno_key = aluno_nome.replace(' ', '_')
-        condicao = (df['aluno'].str.lower() == aluno_key.lower()) & (df['dia'] == dia_abrev) & (df['horario'] == horario)
+        cond_horario = df['horario'].apply(lambda h: obter_hora_inicio(h) == horario)
+        condicao = (df['aluno'].str.lower() == aluno_key.lower()) & (df['dia'] == dia_abrev) & cond_horario
         
         materia_val = '---'
         if novo_status == 'class':
@@ -397,8 +424,9 @@ def update_student_schedule():
         if not df[condicao].empty:
             df.loc[condicao, 'materia'] = materia_val
         else:
-            # Caso a célula não exista na base, criar uma nova linha
-            new_row = pd.DataFrame([{'aluno': aluno_key, 'dia': dia_abrev, 'horario': horario, 'materia': materia_val}])
+            # Caso a célula não exista na base, criar uma nova linha formatada
+            horario_salvar = HORARIOS_PADRAO.get(horario, f"{horario:02d}:00 - {horario:02d}:50")
+            new_row = pd.DataFrame([{'aluno': aluno_key, 'dia': dia_abrev, 'horario': horario_salvar, 'materia': materia_val}])
             df = pd.concat([df, new_row], ignore_index=True)
             
         # Salvar CSV atualizado

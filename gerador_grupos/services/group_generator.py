@@ -10,20 +10,35 @@ from typing import List, Dict, Tuple, Any, Set, Optional, Union
 def _parse_interval(hh: int) -> datetime.time:
     return datetime.strptime(f"{hh:02d}:00", "%H:%M").time()
 
-def horarios_conflitam(horario_a: str, inicio: int, fim: int) -> bool:
-    """Verifica se 'horario_a' (ex.: '09:20 - 10:10') conflita com o intervalo [inicio, fim] (em horas inteiras)."""
+def horarios_conflitam(horario_a: Any, inicio: int, fim: int) -> bool:
+    """Verifica se 'horario_a' (ex.: '09:20 - 10:10' ou 9 ou '9') conflita com o intervalo [inicio, fim] (em horas inteiras)."""
+    if horario_a is None:
+        return False
+        
+    horario_str = str(horario_a).strip()
+    if "-" in horario_str:
+        try:
+            from datetime import datetime
+            def _parse_time(s: str):
+                return datetime.strptime(s.strip(), "%H:%M").time()
+
+            ini_a, fim_a = [x.strip() for x in horario_str.split("-")]
+            ini_a, fim_a = _parse_time(ini_a), _parse_time(fim_a)
+
+            ini_b = datetime.strptime(f"{inicio:02d}:00", "%H:%M").time()
+            fim_b = datetime.strptime(f"{fim:02d}:00", "%H:%M").time()
+
+            return ini_a < fim_b and fim_a > ini_b
+        except Exception:
+            pass
+            
     try:
-        from datetime import datetime
-        def _parse_time(s: str):
-            return datetime.strptime(s.strip(), "%H:%M").time()
-
-        ini_a, fim_a = [x.strip() for x in horario_a.split("-")]
-        ini_a, fim_a = _parse_time(ini_a), _parse_time(fim_a)
-
-        ini_b = datetime.strptime(f"{inicio:02d}:00", "%H:%M").time()
-        fim_b = datetime.strptime(f"{fim:02d}:00", "%H:%M").time()
-
-        return ini_a < fim_b and fim_a > ini_b
+        if ':' in horario_str:
+            hora_inicio = int(horario_str.split(':')[0])
+        else:
+            hora_inicio = int(float(horario_str))
+        
+        return hora_inicio < fim and (hora_inicio + 1) > inicio
     except Exception:
         return False
 
