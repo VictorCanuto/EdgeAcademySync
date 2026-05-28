@@ -164,6 +164,47 @@ def verify_reset_token(token, expiration=900): # 15 minutos
         return None
 
 def enviar_email_recuperacao(email_destino, link_recuperacao):
+    # Tentar via SendGrid Web API se SENDGRID_API_KEY estiver presente (evita bloqueios de porta SMTP do Render Free)
+    sendgrid_api_key = os.environ.get('SENDGRID_API_KEY')
+    if sendgrid_api_key:
+        import requests
+        url = "https://api.sendgrid.com/v3/mail/send"
+        headers = {
+            "Authorization": f"Bearer {sendgrid_api_key}",
+            "Content-Type": "application/json"
+        }
+        mail_username = os.environ.get('MAIL_USERNAME', 'noreply.academysync@gmail.com')
+        mail_sender_name = "AcademySync"
+        
+        payload = {
+            "personalizations": [
+                {
+                    "to": [{"email": email_destino}],
+                    "subject": "Recuperação de Senha - AcademySync"
+                }
+            ],
+            "from": {
+                "email": mail_username,
+                "name": mail_sender_name
+            },
+            "content": [
+                {
+                    "type": "text/plain",
+                    "value": f"Olá,\n\nVocê solicitou a redefinição de sua senha no AcademySync.\nPara redefinir sua senha, clique no link abaixo (válido por 15 minutos):\n\n{link_recuperacao}\n\nSe você não solicitou esta redefinição, por favor ignore este e-mail.\n\nAtenciosamente,\nEquipe AcademySync"
+                }
+            ]
+        }
+        try:
+            res = requests.post(url, json=payload, headers=headers, timeout=10)
+            if res.status_code in (200, 201, 202):
+                print(f"E-mail via SendGrid enviado com sucesso para {email_destino}!")
+                return True
+            else:
+                print(f"Erro SendGrid API (Status {res.status_code}): {res.text}")
+        except Exception as e:
+            print(f"Falha ao chamar SendGrid API: {e}")
+
+    # Fallback para o SMTP clássico
     mail_server = os.environ.get('MAIL_SERVER')
     mail_port = os.environ.get('MAIL_PORT')
     mail_username = os.environ.get('MAIL_USERNAME')

@@ -12,3 +12,4 @@ psycopg2-binary
 itsdangerous
 python-dotenv
 pypdf
+requests
