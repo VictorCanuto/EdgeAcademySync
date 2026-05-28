@@ -196,9 +196,9 @@ Equipe AcademySync
     try:
         port = int(mail_port)
         if port == 465:
-            server = smtplib.SMTP_SSL(mail_server, port)
+            server = smtplib.SMTP_SSL(mail_server, port, timeout=10)
         else:
-            server = smtplib.SMTP(mail_server, port)
+            server = smtplib.SMTP(mail_server, port, timeout=10)
             server.starttls()
             
         server.login(mail_username, mail_password)
