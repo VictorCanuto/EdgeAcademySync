@@ -298,7 +298,8 @@ def forgot_password():
                 return redirect(url_for('login'))
             else:
                 if app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite') or not os.environ.get('MAIL_SERVER'):
-                    flash(f'[DEBUG LOCAL] Erro SMTP ou servidor não configurado. Link de redefinição: {link_recuperacao}', 'warning')
+                    flash('Servidor de e-mail não configurado (Modo de Demonstração).', 'warning')
+                    return render_template('forgot_password.html', link_recuperacao=link_recuperacao, local_debug=True)
                 else:
                     flash('Erro ao enviar e-mail de recuperação. Tente novamente mais tarde.', 'danger')
         else:
