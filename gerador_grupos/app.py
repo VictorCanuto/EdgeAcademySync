@@ -306,6 +306,155 @@ def reset_password(token):
     return render_template('reset_password.html', token=token)
 
 
+# --- API de Horários para UI/UX Dinâmica ---
+
+@app.route('/aluno/schedules_json')
+@login_required
+def get_schedules_json():
+    user = User.query.filter_by(username=session['username']).first()
+    if not user or not user.base_data:
+        return json.dumps({}), 200
+        
+    try:
+        df = pd.read_csv(BytesIO(user.base_data))
+        
+        # Mapear dias da semana
+        dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
+        
+        # Estruturar dados por aluno
+        schedules = {}
+        
+        # Inicializar todos os alunos
+        alunos_unicos = sorted(df['aluno'].unique())
+        for aluno in alunos_unicos:
+            nome_limpo = aluno.replace('_', ' ')
+            schedules[nome_limpo] = {}
+            # Inicializar com free
+            for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']:
+                for h in range(7, 23):
+                    schedules[nome_limpo][f"{dia}_{h}"] = 'free'
+                    
+        # Preencher do DataFrame
+        for _, row in df.iterrows():
+            nome_limpo = str(row['aluno']).replace('_', ' ')
+            dia_completo = dias_completos.get(row['dia'], row['dia'])
+            
+            try:
+                horario = int(row['horario'])
+            except (ValueError, TypeError):
+                continue
+                
+            materia = str(row['materia'])
+            
+            key = f"{dia_completo}_{horario}"
+            if nome_limpo in schedules:
+                if pd.isna(row['materia']) or materia == '---' or materia.strip() == '':
+                    schedules[nome_limpo][key] = 'free'
+                elif 'Acompanhamento' in materia or materia == 'P':
+                    schedules[nome_limpo][key] = 'follow'
+                else:
+                    # Qualquer outro texto de matéria indica aula ocupada (X)
+                    schedules[nome_limpo][key] = 'class'
+                    
+        return json.dumps(schedules), 200
+    except Exception as e:
+        return json.dumps({"error": str(e)}), 500
+
+
+@app.route('/aluno/update_schedule', methods=['POST'])
+@login_required
+def update_student_schedule():
+    user = User.query.filter_by(username=session['username']).first()
+    if not user or not user.base_data:
+        return json.dumps({"error": "Dados não encontrados"}), 404
+        
+    data = request.json
+    aluno_nome = data.get('aluno')
+    dia = data.get('dia')
+    horario = int(data.get('horario'))
+    novo_status = data.get('status')
+    
+    try:
+        df = pd.read_csv(BytesIO(user.base_data))
+        
+        dia_abrev_map = {'Segunda': 'Seg', 'Terça': 'Ter', 'Quarta': 'Qua', 'Quinta': 'Qui', 'Sexta': 'Sex', 'Sábado': 'Sab'}
+        dia_abrev = dia_abrev_map.get(dia, dia)
+        
+        # Filtrar o aluno com tratamento de underline
+        aluno_key = aluno_nome.replace(' ', '_')
+        condicao = (df['aluno'].str.lower() == aluno_key.lower()) & (df['dia'] == dia_abrev) & (df['horario'] == horario)
+        
+        materia_val = '---'
+        if novo_status == 'class':
+            materia_val = 'Aula de Graduação'
+        elif novo_status == 'follow':
+            materia_val = 'Acompanhamento Individual'
+        elif novo_status != 'free':
+            materia_val = novo_status # Rótulo customizado
+            
+        if not df[condicao].empty:
+            df.loc[condicao, 'materia'] = materia_val
+        else:
+            # Caso a célula não exista na base, criar uma nova linha
+            new_row = pd.DataFrame([{'aluno': aluno_key, 'dia': dia_abrev, 'horario': horario, 'materia': materia_val}])
+            df = pd.concat([df, new_row], ignore_index=True)
+            
+        # Salvar CSV atualizado
+        csv_buffer = BytesIO()
+        df.to_csv(csv_buffer, index=False, encoding='utf-8')
+        user.base_data = csv_buffer.getvalue()
+        
+        # Se houver grupos formados, atualizar o cache de compatibilidade e detectar conflito
+        conflito_gerado = False
+        grupo_afetado = None
+        
+        if user.groups_result:
+            result = pickle.loads(user.groups_result)
+            slots_por_aluno = result.get('slots_por_aluno', {})
+            
+            if aluno_key not in slots_por_aluno:
+                slots_por_aluno[aluno_key] = {}
+                
+            # Atualizar slot de disponibilidade no cache (True = Livre, False = Ocupado)
+            slots_por_aluno[aluno_key][(dia_abrev, horario)] = (novo_status == 'free')
+            
+            # Encontrar grupo do aluno
+            grupos = result.get('grupos', [])
+            aluno_grupo = None
+            for g in grupos:
+                membros_nomes = [_get_nome_membro(m) for m in g.get('Membros', [])]
+                if aluno_nome.lower() in [m.lower() for m in membros_nomes]:
+                    aluno_grupo = g
+                    break
+            
+            if aluno_grupo and novo_status != 'free':
+                g_dia = aluno_grupo.get('Dia')
+                g_horario_str = aluno_grupo.get('Horário')
+                if g_dia == dia_abrev:
+                    try:
+                        h_inicio = int(g_horario_str.split(' - ')[0].split(':')[0])
+                        h_fim = int(g_horario_str.split(' - ')[1].split(':')[0])
+                        if horario >= h_inicio and horario < h_fim:
+                            conflito_gerado = True
+                            grupo_afetado = aluno_grupo.get('Grupo')
+                    except Exception:
+                        pass
+            
+            result['slots_por_aluno'] = slots_por_aluno
+            user.groups_result = pickle.dumps(result)
+            
+        db.session.commit()
+        return json.dumps({
+            "success": True,
+            "conflito": conflito_gerado,
+            "grupo": grupo_afetado
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return json.dumps({"error": str(e)}), 500
+
+
 # --- Rotas Principais ---
 @app.route('/', methods=['GET', 'POST'])
 @login_required # Este decorator FORÇA o login para acessar a esta página
@@ -405,6 +554,7 @@ def index():
                 return redirect(url_for('index'))
 
             result = formar_grupos(base_df, num_grupos=num_grupos, blocos=blocos)
+            result['blocos'] = blocos
             
             alunos_sem_grupo = result.get('alunos_sem_grupo')
             if alunos_sem_grupo:

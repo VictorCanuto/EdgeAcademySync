@@ -1,564 +1,399 @@
 <!DOCTYPE html>
-<html lang="pt-pt">
-
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AcademySync - Gerador de Grupos</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
-    <div class="container">
-        <header class="app-header">
-            <div class="logo-container">
+
+    <!-- ==========================================================================
+       BARRA DE NAVEGAÇÃO SUPERIOR (HEADER)
+       ========================================================================== -->
+    <header class="main-header" id="app-header">
+        <div class="logo-block">
+            <div class="logo-icon">A</div>
+            <div class="logo-text">
                 <h1>AcademySync</h1>
-                <p class="tagline">Organize grupos de estudo de forma inteligente</p>
-            </div>
-            {% if session.username %}
-            <img src="{{ url_for('static', filename='edge-academy-logo.png') }}" alt="Edge Academy Logo"
-                class="main-header-logo">
-            <div class="user-info">
-                <span>Bem-vindo(a), <strong>{{ session.username }}</strong></span>
-                <button id="change-password-btn" class="btn btn-secondary">Mudar Senha</button>
-                <a href="{{ url_for('logout') }}" class="btn btn-outline">Logout</a>
-            </div>
-            {% endif %}
-        </header>
-
-        <div class="card card-primary">
-            <div class="card-header">
-                <div class="step-indicator">1</div>
-                <h2>Carregar atestados em formato PDF</h2>
-            </div>
-            <div class="card-body">
-                <form method="post" enctype="multipart/form-data" class="upload-form" novalidate>
-                    <input type="hidden" name="action" value="process_pdfs">
-                    <div class="file-input-container">
-                        <input type="file" id="pdf-files" name="pdf_files" multiple required accept=".pdf"
-                            class="file-input-hidden">
-                        <label for="pdf-files" class="file-input-label">
-                            <span>Selecionar ficheiros PDF</span>
-                        </label>
-                        <div class="file-list" id="file-list"></div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-full" id="process-pdfs-btn">
-                        <span class="btn-text">Processar PDFs</span>
-                        <span class="btn-loading btn-loading-inline">Processando...</span>
-                    </button>
-                </form>
-
-                <!-- Mensagens flash -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                    <div class="flash flash-{{ category }}">
-                        <div class="flash-icon">
-                            {% if category == 'success' %}
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            {% else %}
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 8V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                <path d="M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                <path
-                                    d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                            </svg>
-                            {% endif %}
-                        </div>
-                        <span class="flash-text">{{ message }}</span>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% endif %}
-                {% endwith %}
+                <p>Edge Academy Study Groups</p>
             </div>
         </div>
 
         {% if base_data_info %}
-        <!-- Visualização Individual - Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2>Visualização Individual</h2>
-                <p class="card-description">Clique no nome de um aluno para ver a sua grade de horários completa</p>
-            </div>
-            <div class="card-body">
-                <div class="aluno-list">
-                    {% for aluno in base_data_info.lista_alunos %}
-                    <a href="#" class="aluno-card" data-aluno-nome="{{ aluno }}">
-                        <div class="aluno-avatar">
-                            {{ aluno[0]|upper }}
-                        </div>
-                        <span class="aluno-name">{{ aluno }}</span>
-                    </a>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Ranking de Disponibilidade -->
-        {% if ranking_data %}
-        <div class="card">
-            <div class="card-header">
-                <h2>Ranking de Disponibilidade</h2>
-            </div>
-            <div class="card-body">
-                <div class="ranking-container">
-                    <div class="ranking-column">
-                        <div class="ranking-header">
-                            <h3>Mais Disponíveis</h3>
-                            <div class="ranking-badge positive">Mais Livres</div>
-                        </div>
-                        <div class="ranking-table-container">
-                            <table class="ranking-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Aluno</th>
-                                        <th>Horários Livres</th>
-                                        <th>% Livre</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for index, aluno_data in ranking_data.mais_disponiveis.iterrows() %}
-                                    <tr>
-                                        <td class="ranking-position">{{ loop.index }}</td>
-                                        <td class="aluno-cell">
-                                            <div class="aluno-avatar small">{{ aluno_data.aluno[0]|upper }}</div>
-                                            <span>{{ aluno_data.aluno }}</span>
-                                        </td>
-                                        <td>{{ aluno_data.horarios_livres }}</td>
-                                        <td>
-                                            <div class="percent-bar-container">
-                                                <div class="percent-bar percent-bar-inline"
-                                                    data-width="{{ aluno_data.percentual_livre }}"></div>
-                                                <span class="percent-value">{{ aluno_data.percentual_livre }}%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="ranking-column">
-                        <div class="ranking-header">
-                            <h3>Menos Disponíveis</h3>
-                            <div class="ranking-badge negative">Menos Livres</div>
-                        </div>
-                        <div class="ranking-table-container">
-                            <table class="ranking-table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Aluno</th>
-                                        <th>Horários Livres</th>
-                                        <th>% Livre</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for index, aluno_data in ranking_data.menos_disponiveis.iterrows() %}
-                                    <tr>
-                                        <td class="ranking-position">{{ loop.index }}</td>
-                                        <td class="aluno-cell">
-                                            <div class="aluno-avatar small">{{ aluno_data.aluno[0]|upper }}</div>
-                                            <span>{{ aluno_data.aluno }}</span>
-                                        </td>
-                                        <td>{{ aluno_data.horarios_livres }}</td>
-                                        <td>
-                                            <div class="percent-bar-container">
-                                                <div class="percent-bar percent-bar-inline"
-                                                    data-width="{{ aluno_data.percentual_livre }}"></div>
-                                                <span class="percent-value">{{ aluno_data.percentual_livre }}%</span>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div id="active-turma-indicator" style="font-weight: 700; font-size: 1.1rem; color: var(--color-primary);">
+            Turma Ativa: <span id="active-turma-name">Sua Turma Principal</span>
         </div>
         {% endif %}
 
-        <!-- Geração de Grupos - Card -->
-        <div class="card card-secondary">
-            <div class="card-header">
-                <div class="step-indicator">2</div>
-                <h2>Formar Grupos</h2>
+        <div class="header-actions">
+            <!-- Switch Modo Claro/Escuro -->
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="checkbox-theme">
+                    <input type="checkbox" id="checkbox-theme">
+                    <div class="slider">
+                        <span style="font-size: 10px; margin-left: 5px;">☀️</span>
+                        <span style="font-size: 10px; margin-right: 5px;">🌙</span>
+                    </div>
+                </label>
             </div>
-            <div class="card-body">
-                <div class="metrics">
-                    <div class="metric-item">
-                        <div class="metric-value">{{ base_data_info.alunos }}</div>
-                        <div class="metric-label">Alunos Únicos</div>
+
+            <!-- Botão de Alertas (Apenas se houver grupos ativos) -->
+            {% if groups_result %}
+            <button id="alert-drawer-toggle" class="btn btn-secondary" style="padding: 6px 12px; position: relative;">
+                ⚠️ Alertas
+                <span id="alerts-count-badge" style="position: absolute; top: -6px; right: -6px; background: var(--color-danger); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: bold;">0</span>
+            </button>
+            {% endif %}
+
+            <!-- Info do Usuário -->
+            {% if session.username %}
+            <div class="user-widget">
+                <div class="user-avatar">{{ session.username[0]|upper }}</div>
+                <div class="user-name">{{ session.username }}</div>
+                <button id="change-password-btn" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.8rem;" onclick="openChangePasswordModal()">Senha</button>
+                <a href="{{ url_for('logout') }}" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.8rem; text-decoration: none;">Sair</a>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- ==========================================================================
+       ESTADO A: NENHUM PDF PROCESSADO (TELA DE UPLOAD)
+       ========================================================================== -->
+    {% if not base_data_info %}
+    <main class="wizard-wrapper">
+        <div class="glass-panel wizard-card">
+            <div class="wizard-steps-indicator">
+                <div class="wizard-step-circle active">1</div>
+                <div style="width: 60px; height: 2px; background: var(--border-color); align-self: center; margin-top:-4px;"></div>
+                <div class="wizard-step-circle">2</div>
+            </div>
+
+            <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 8px;">Carregar Atestados / Horários</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px;">Envie os horários dos estudantes em formato PDF para começar a formar os grupos.</p>
+
+            <form method="post" enctype="multipart/form-data" id="upload-form-real">
+                <input type="hidden" name="action" value="process_pdfs">
+                
+                <div class="form-group">
+                    <label class="form-label">Horários dos Alunos (PDFs)</label>
+                    <div class="drag-drop-area" id="drag-drop-area-real">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                        </svg>
+                        <p>Arraste arquivos PDF aqui ou clique para selecionar</p>
+                        <span>Múltiplos arquivos são aceitos</span>
+                        <input type="file" id="pdf-files-real" name="pdf_files" multiple required accept=".pdf" style="display: none;">
                     </div>
-                    <div class="metric-item">
-                        <div class="metric-value">{{ base_data_info.dias }}</div>
-                        <div class="metric-label">Dias</div>
-                    </div>
-                    <div class="metric-item">
-                        <div class="metric-value">{{ base_data_info.horarios }}</div>
-                        <div class="metric-label">Horários</div>
-                    </div>
+                    <div class="selected-files-list" id="selected-files-list-real"></div>
                 </div>
 
-                <form method="post" class="groups-form">
-                    <input type="hidden" name="action" value="generate_groups">
-                    <div class="form-group">
-                        <label for="num-grupos" class="form-label">Número de grupos</label>
-                        <input type="number" id="num-grupos" name="num_grupos"
-                            value="{{ session.get('form_input', {}).get('num_grupos', 3) }}" min="1" max="20"
-                            class="form-input">
+                <div style="display: flex; justify-content: flex-end; margin-top: 30px;">
+                    <button type="submit" class="btn btn-primary" id="process-btn-real" style="padding: 12px 24px;">Processar PDFs ➜</button>
+                </div>
+            </form>
+        </div>
+    </main>
+    {% endif %}
+
+    <!-- ==========================================================================
+       ESTADO B: PDFS PROCESSADOS MAS SEM GRUPOS GERADOS (CONFIGURAÇÃO)
+       ========================================================================== -->
+    {% if base_data_info and not groups_result %}
+    <main class="wizard-wrapper" id="config-groups-panel">
+        <div class="glass-panel wizard-card">
+            <div class="wizard-steps-indicator">
+                <div class="wizard-step-circle completed">1</div>
+                <div style="width: 60px; height: 2px; background: var(--color-success); align-self: center; margin-top:-4px;"></div>
+                <div class="wizard-step-circle active">2</div>
+            </div>
+
+            <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 8px;">Configurações de Agrupamento</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+                🔍 <strong>{{ base_data_info.alunos }} estudantes</strong> detectados nos PDFs. Configure os parâmetros abaixo:
+            </p>
+
+            <form method="post" id="groups-config-form">
+                <input type="hidden" name="action" value="generate_groups">
+                
+                <div class="form-group">
+                    <label class="form-label" for="num_grupos">Quantidade de Grupos Desejados</label>
+                    <input type="number" id="num_grupos" name="num_grupos" class="form-input" value="3" min="1" max="15" required>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <label class="form-label" style="margin-bottom:0;">Blocos de Horários da Imersão</label>
+                        <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="addNewConfigBlock()">+ Adicionar Bloco</button>
                     </div>
 
-                    <div class="form-section">
-                        <h3>Blocos de Horários</h3>
-                        <p class="form-description">Defina os blocos de horários para formação dos grupos.</p>
-
-                        <div id="blocos-container">
-                            <div class="bloco-card">
-                                <div class="bloco-fields">
-                                    <div class="form-group">
-                                        <label class="form-label" for="bloco_nome_1">Nome do bloco</label>
-                                        <select name="bloco_nome[]" id="bloco_nome_1" class="form-select" required>
-                                            {% for nome in nomes_blocos_opcoes %}
-                                            <option value="{{ nome }}">{{ nome }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-group">
-                                            <label class="form-label" for="bloco_inicio_1">Início (h)</label>
-                                            <select name="bloco_inicio[]" id="bloco_inicio_1" class="form-select"
-                                                required>
-                                                {% for hora in horarios_disponiveis %}
-                                                <option value="{{ hora }}">{{ "%02d:00" | format(hora) }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label" for="bloco_fim_1">Fim (h)</label>
-                                            <select name="bloco_fim[]" id="bloco_fim_1" class="form-select" required>
-                                                {% for hora in horarios_disponiveis %}
-                                                <option value="{{ hora }}" {% if hora==12 %}selected{% endif %}>{{
-                                                    "%02d:00" | format(hora) }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label class="form-label" for="bloco_dias_1">Dia da semana</label>
-                                        <select name="bloco_dias[]" id="bloco_dias_1" class="form-select" required>
-                                            {% for dia in dias_semana_opcoes %}
-                                            <option value="{{ dia.valor }}">{{ dia.texto }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-
-                                    <button type="button" class="btn-remove" style="display: none;">&times;</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button type="button" class="btn btn-secondary btn-add">+ Adicionar Bloco</button>
-                    </div>
-
-                    <div id="bloco-template" style="display: none;">
-                        <div class="bloco-card">
-                            <div class="bloco-fields">
-                                <div class="form-group">
-                                    <label class="form-label">Nome do bloco</label>
-                                    <select name="bloco_nome[]" class="form-select" required>
-                                        {% for nome in nomes_blocos_opcoes %}
-                                        <option value="{{ nome }}">{{ nome }}</option>
+                    <div class="wizard-blocks-container" id="config-blocks-list">
+                        <!-- Bloco Inicial Padrão -->
+                        <div class="bloco-edit-card" id="config-bloco-card-0">
+                            <button type="button" class="bloco-remove-btn" onclick="this.parentElement.remove()">&times;</button>
+                            <div class="bloco-edit-grid">
+                                <div>
+                                    <label class="form-label" style="font-size:0.75rem;">Nome do Bloco</label>
+                                    <select name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                                        {% for opcao in nomes_blocos_opcoes %}
+                                        <option value="{{ opcao }}">{{ opcao }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label class="form-label">Início (h)</label>
-                                        <select name="bloco_inicio[]" class="form-select" required>
-                                            {% for hora in horarios_disponiveis %}
-                                            <option value="{{ hora }}">{{ "%02d:00" | format(hora) }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Fim (h)</label>
-                                        <select name="bloco_fim[]" class="form-select" required>
-                                            {% for hora in horarios_disponiveis %}
-                                            <option value="{{ hora }}" {% if hora==18 %}selected{% endif %}>{{ "%02d:00"
-                                                | format(hora) }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
+                                <div>
+                                    <label class="form-label" style="font-size:0.75rem;">Início</label>
+                                    <select name="bloco_inicio[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                                        {% for hora in horarios_disponiveis %}
+                                        <option value="{{ hora }}" {% if hora == 9 %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Dia da semana</label>
-                                    <select name="bloco_dias[]" class="form-select" required>
+                                <div>
+                                    <label class="form-label" style="font-size:0.75rem;">Fim</label>
+                                    <select name="bloco_fim[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                                        {% for hora in horarios_disponiveis %}
+                                        <option value="{{ hora }}" {% if hora == 11 %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="form-label" style="font-size:0.75rem;">Dia da Semana</label>
+                                    <select name="bloco_dias[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
                                         {% for dia in dias_semana_opcoes %}
                                         <option value="{{ dia.valor }}">{{ dia.texto }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <button type="button" class="btn-remove">&times;</button>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="form-actions">
-                        <button type="submit" name="action" value="generate_groups" class="btn btn-success">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M22 11.08V12C21.9988 14.1564 21.3005 16.2547 20.0093 17.9818C18.7182 19.709 16.9033 20.9725 14.8354 21.5839C12.7674 22.1953 10.5573 22.1219 8.53447 21.3746C6.51168 20.6273 4.78465 19.2461 3.61096 17.4371C2.43727 15.628 1.87979 13.4881 2.02168 11.3363C2.16356 9.18455 2.99721 7.13631 4.39828 5.49706C5.79935 3.85781 7.69279 2.71537 9.79619 2.24013C11.8996 1.7649 14.1003 1.98232 16.07 2.85999"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                <path d="M22 4L12 14.01L9 11.01" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            Gerar Grupos
-                        </button>
-                        <a href="{{ url_for('clear_session') }}" class="btn btn-danger">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path d="M3 6H5H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                <path
-                                    d="M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6H19Z"
-                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                <path d="M10 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                                <path d="M14 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                    stroke-linejoin="round" />
-                            </svg>
-                            Limpar PDFs
-                        </a>
+                <div style="display: flex; justify-content: space-between; margin-top: 30px;">
+                    <a href="{{ url_for('clear_session') }}" class="btn btn-secondary" style="text-decoration: none;">Limpar PDFs</a>
+                    <button type="submit" class="btn btn-primary" style="background: var(--color-success);">Gerar Grupos & Criar Workspace</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Template invisível de novos blocos usado pelo JS -->
+    <div id="new-block-template" style="display: none;">
+        <div class="bloco-edit-grid">
+            <div>
+                <label class="form-label" style="font-size:0.75rem;">Nome do Bloco</label>
+                <select name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                    {% for opcao in nomes_blocos_opcoes %}
+                    <option value="{{ opcao }}">{{ opcao }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label" style="font-size:0.75rem;">Início</label>
+                <select name="bloco_inicio[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                    {% for hora in horarios_disponiveis %}
+                    <option value="{{ hora }}" {% if hora == 10 %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label" style="font-size:0.75rem;">Fim</label>
+                <select name="bloco_fim[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                    {% for hora in horarios_disponiveis %}
+                    <option value="{{ hora }}" {% if hora == 12 %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label" style="font-size:0.75rem;">Dia da Semana</label>
+                <select name="bloco_dias[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                    {% for dia in dias_semana_opcoes %}
+                    <option value="{{ dia.valor }}">{{ dia.texto }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ==========================================================================
+       ESTADO C: GRUPOS FORMADOS (WORKSPACE DASHBOARD COMPLETO)
+       ========================================================================== -->
+    {% if base_data_info and groups_result %}
+    <div id="view-workspace" style="display: flex; flex-direction: column; flex: 1;">
+        <!-- Workspace Header -->
+        <div class="workspace-header">
+            <div class="workspace-title-bar">
+                <a href="{{ url_for('clear_session') }}" class="back-dash-btn" onclick="return confirm('Tem certeza de que deseja limpar os PDFs e redefinir o sistema?');">
+                    🗑️ Limpar Workspace / Recomeçar
+                </a>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <!-- Reconfigurar grupos de forma dinâmica -->
+                <button class="btn btn-secondary" onclick="showConfigPanelFromWorkspace()">
+                    ⚙️ Reconfigurar Grupos
+                </button>
+                
+                <!-- Dropdown de Exportação Unificado -->
+                <div class="export-dropdown" id="export-dropdown-wrapper">
+                    <button class="btn btn-primary" onclick="toggleExportMenu()">
+                        ⬇️ Exportar Grupos
+                    </button>
+                    <div class="export-menu">
+                        <a href="{{ url_for('download_csv') }}" class="export-item" style="text-decoration:none;">Planilha Geral (CSV)</a>
+                        <a href="{{ url_for('download_pdf') }}" class="export-item" style="text-decoration:none;">Calendário de Grupos (PDF)</a>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Abas -->
+        <nav class="tab-nav-bar">
+            <button class="tab-btn active" id="tab-btn-spreadsheet" onclick="switchTab('spreadsheet')">📅 Planilha Geral de Horários</button>
+            <button class="tab-btn" id="tab-btn-groups" onclick="switchTab('groups')">👥 Gerenciador de Grupos</button>
+        </nav>
+
+        <!-- Conteúdo do Workspace -->
+        <div class="workspace-content">
+            <!-- ABA 1: PLANILHA GERAL -->
+            <section class="tab-view active" id="tab-view-spreadsheet">
+                <div class="glass-panel spreadsheet-card">
+                    <!-- Barra de Legenda -->
+                    <div class="legend-bar">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--cell-free-bg); border: 1px solid var(--border-color);"></div>
+                            <span>Livre (L)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--cell-class-bg); border: 1px solid var(--border-color);"></div>
+                            <span>Aulas de Graduação (X)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--cell-follow-bg); border: 1px solid var(--border-color);"></div>
+                            <span>Acompanhamento (P)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(139, 92, 246, 0.2); border: 1px dashed #8b5cf6;"></div>
+                            <span>Compromisso Customizado (Sigla)</span>
+                        </div>
+                        <div class="legend-item" style="margin-left: auto; color: var(--text-muted);">
+                            <span>* Clique em qualquer célula para alterar o compromisso do aluno.</span>
+                        </div>
+                    </div>
+
+                    <!-- Tabela Grid -->
+                    <div class="table-wrapper">
+                        <table class="styled-table" id="spreadsheet-main-table">
+                            <!-- Injetado via JS dinamicamente por Fetch -->
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 2: KANBAN -->
+            <section class="tab-view" id="tab-view-groups">
+                <div class="kanban-wrapper" id="kanban-columns-container">
+                    <!-- Injetado via JS do appState -->
+                </div>
+
+                <!-- Alunos Fora de Grupo -->
+                <div class="glass-panel banco-removidos-card">
+                    <h4>📥 Alunos Fora de Grupo (Sem Reunião)</h4>
+                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 12px;">Arraste estudantes para cá para removê-los temporariamente de seus grupos.</p>
+                    <div class="banco-removidos-container" id="banco-removidos-dropzone" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'banco')">
+                        <!-- Injetado via JS -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal de Reconfiguração Rápida em Workspace (GET base_data_info e groups_result simultâneos) -->
+    <div class="modal-overlay" id="reconfig-groups-modal-overlay">
+        <div class="glass-panel modal-card" style="max-width: 550px;">
+            <div class="modal-header">
+                <h3>⚙️ Reconfigurar Grupos</h3>
+                <button class="modal-close" onclick="closeConfigPanelFromWorkspace()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{{ url_for('index') }}">
+                    <input type="hidden" name="action" value="generate_groups">
+                    <div class="form-group">
+                        <label class="form-label" for="reconfig_num_grupos">Quantidade de Grupos Desejados</label>
+                        <input type="number" id="reconfig_num_grupos" name="num_grupos" class="form-input" value="{{ groups_result.grupos|length }}" min="1" max="15" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <label class="form-label">Blocos de Horários</label>
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="addNewReconfigBlock()">+ Adicionar Bloco</button>
+                        </div>
+                        
+                        <div class="wizard-blocks-container" id="reconfig-blocks-list" style="max-height: 200px;">
+                            {% if groups_result.blocos %}
+                                {% for b in groups_result.blocos %}
+                                <div class="bloco-edit-card" id="reconfig-bloco-card-{{ loop.index0 }}">
+                                    <button type="button" class="bloco-remove-btn" onclick="this.parentElement.remove()">&times;</button>
+                                    <div class="bloco-edit-grid">
+                                        <div>
+                                            <label class="form-label" style="font-size:0.75rem;">Nome do Bloco</label>
+                                            <select name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                                                {% for opcao in nomes_blocos_opcoes %}
+                                                <option value="{{ opcao }}" {% if b.nome == opcao %}selected{% endif %}>{{ opcao }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size:0.75rem;">Início</label>
+                                            <select name="bloco_inicio[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                                                {% for hora in horarios_disponiveis %}
+                                                <option value="{{ hora }}" {% if b.inicio == hora %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size:0.75rem;">Fim</label>
+                                            <select name="bloco_fim[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                                                {% for hora in horarios_disponiveis %}
+                                                <option value="{{ hora }}" {% if b.fim == hora %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="form-label" style="font-size:0.75rem;">Dia da Semana</label>
+                                            <select name="bloco_dias[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                                                {% for dia in dias_semana_opcoes %}
+                                                <option value="{{ dia.valor }}" {% if b.dias and b.dias[0] == dia.valor %}selected{% endif %}>{{ dia.texto }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; background: var(--color-success);">Recalcular Grupos</button>
                 </form>
             </div>
         </div>
-        {% endif %}
-
-        <!-- Resultados -->
-        {% if groups_result %}
-        <div class="card card-results">
-            <div class="card-header">
-                <h2>Resultados</h2>
-                <div class="download-buttons">
-                    <a href="{{ url_for('download_csv') }}" class="btn btn-outline">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                            <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                            <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                            <path d="M10 9H9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                        Baixar CSV
-                    </a>
-                    <a href="{{ url_for('download_pdf') }}" class="btn btn-outline">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M14 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V8L14 2Z"
-                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M14 2V8H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                            <path d="M16 13H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                            <path d="M16 17H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                            <path d="M10 9H9H8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                        Baixar PDF
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="groups-container">
-                    {% for group in groups_result.grupos|sort(attribute='Grupo') %}
-                    <div class="group-card">
-                        <div class="group-header">
-                            <h3>Grupo {{ group.Grupo }}</h3>
-                            <div class="group-schedule">
-                                <span class="schedule-badge">{{ group.Dia }}</span>
-                                <span class="schedule-badge">{{ group.Horário }}</span>
-                            </div>
-                        </div>
-                        <div class="group-members">
-                            {% for membro in group.Membros|sort(attribute='nome') %}
-                            <div class="member-item">
-                                <div class="member-info">
-                                    <div class="aluno-avatar small">{{ membro.nome[0]|upper }}</div>
-                                    <span class="member-name">{{ membro.nome }}</span>
-                                </div>
-                                <div class="member-actions">
-                                    <details class="sugestoes">
-                                        <summary class="sugestoes-toggle">
-                                            <span>Sugestões</span>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                                                xmlns="http://www.w3.org/2000/svg">
-                                                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2"
-                                                    stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                        </summary>
-                                        <div class="sugestoes-content">
-                                            {% set sugs = membro.sugestoes %}
-                                            {% if not sugs.mover_para_grupo and not sugs.troca_simples %}
-                                            <p class="no-suggestions">Nenhuma sugestão disponível para este aluno.</p>
-
-                                            {% else %}
-                                            {% if sugs.mover_para_grupo %}
-                                            <div class="suggestion-category">
-                                                <h6>Mover Aluno</h6>
-                                                {% for mover in sugs.mover_para_grupo %}
-                                                <form method="post" action="{{ url_for('trocar_aluno') }}"
-                                                    class="suggestion-form">
-                                                    <input type="hidden" name="aluno_a" value="{{ membro.nome }}">
-                                                    <input type="hidden" name="grupo_a_id" value="{{ group.Grupo }}">
-                                                    <input type="hidden" name="grupo_b_id"
-                                                        value="{{ mover.grupo_b_id }}">
-                                                    <button type="submit" class="btn btn-suggestion">
-                                                        Mover para <strong>Grupo {{ mover.grupo_b_id }}</strong>
-                                                    </button>
-                                                </form>
-                                                {% endfor %}
-                                            </div>
-                                            {% endif %}
-
-                                            {% if sugs.troca_simples %}
-                                            <div class="suggestion-category">
-                                                <h6>Trocar Aluno</h6>
-                                                {% for troca in sugs.troca_simples %}
-                                                <form method="post" action="{{ url_for('trocar_aluno') }}"
-                                                    class="suggestion-form">
-                                                    <input type="hidden" name="aluno_a" value="{{ membro.nome }}">
-                                                    <input type="hidden" name="grupo_a_id" value="{{ group.Grupo }}">
-                                                    <input type="hidden" name="aluno_b" value="{{ troca.aluno_b }}">
-                                                    <input type="hidden" name="grupo_b_id"
-                                                        value="{{ troca.grupo_b_id }}">
-                                                    <button type="submit" class="btn btn-suggestion">
-                                                        Trocar com <strong>{{ troca.aluno_b }}</strong>
-
-                                                        <span style="white-space: nowrap;">
-                                                            (Grupo {{ troca.grupo_b_id }})
-                                                        </span>
-                                                    </button>
-                                                </form>
-                                                {% endfor %}
-                                            </div>
-                                            {% endif %}
-
-                                            {% endif %}
-                                        </div>
-                                    </details>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 
-    <!-- Modal -->
-    <div id="schedule-modal" class="modal">
-        <div class="modal-content">
+    <!-- Modal Mudar Senha -->
+    <div id="change-password-modal" class="modal-overlay">
+        <div class="glass-panel modal-card" style="max-width: 420px;">
             <div class="modal-header">
-                <h2 id="modal-title">Horários do Aluno</h2>
-                <span class="close-button">&times;</span>
-            </div>
-            <div id="modal-body" class="modal-body">
-                <!-- Conteúdo carregado via JavaScript -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Jmodal -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const modal = document.getElementById('schedule-modal');
-            const modalBody = document.getElementById('modal-body');
-            const closeButton = document.querySelector('.close-button');
-
-            function closeModal() {
-                modal.style.display = 'none';
-                modalBody.innerHTML = '';
-            }
-
-            closeButton.addEventListener('click', closeModal);
-            window.addEventListener('click', (event) => {
-                if (event.target === modal) {
-                    closeModal();
-                }
-            });
-
-            document.querySelectorAll('.aluno-link').forEach(link => {
-                link.addEventListener('click', (event) => {
-                    event.preventDefault();
-                    const alunoNome = event.target.dataset.alunoNome;
-                    
-                    modalBody.innerHTML = '<p>A carregar horários...</p>';
-                    modal.style.display = 'block';
-
-                    fetch(`/aluno/${encodeURIComponent(alunoNome)}`)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('A resposta da rede não foi bem-sucedida.');
-                            }
-                            return response.text();
-                        })
-                        .then(html => {
-                            modalBody.innerHTML = html;
-                        })
-                        .catch(error => {
-                            modalBody.innerHTML = `<p>Erro ao carregar os horários: ${error}</p>`;
-                        });
-                });
-            });
-        });
-    </script>
-
-    <div id="change-password-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title-change">Mudar Senha</h2>
-                <span class="close-button" id="close-change-password-modal">&times;</span>
+                <h2>Mudar Senha</h2>
+                <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <form action="{{ url_for('change_password') }}" method="POST">
                     <div class="form-group">
                         <label for="current_password" class="form-label">Senha Atual</label>
-                        <input type="password" id="current_password" name="current_password" class="form-input"
-                            required>
+                        <input type="password" id="current_password" name="current_password" class="form-input" required>
                     </div>
                     <div class="form-group">
                         <label for="new_password" class="form-label">Nova Senha</label>
@@ -566,17 +401,98 @@
                     </div>
                     <div class="form-group">
                         <label for="confirm_password" class="form-label">Confirmar Nova Senha</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-input"
-                            required>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" required>
                     </div>
-                    <button type="submit" class="btn btn-primary btn-full">Salvar Alterações</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Salvar Alterações</button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript separado -->
+    <!-- Popover Planilha -->
+    <div class="popover-menu" id="popover-schedule-menu">
+        <div class="popover-header">
+            <span>Alterar Compromisso:</span>
+            <span id="popover-student-name" style="font-weight: bold; display: block; margin-top: 2px;">Aluno</span>
+            <span id="popover-time-info" style="font-size: 0.75rem; color: var(--text-muted);">Segunda-feira - 08:00</span>
+        </div>
+        <div class="popover-actions">
+            <button class="popover-btn btn-opt-free" onclick="updateCellStatus('free')">
+                <span>🟢</span> Marcar como Livre (L)
+            </button>
+            <button class="popover-btn btn-opt-class" onclick="updateCellStatus('class')">
+                <span>🔴</span> Aula de Graduação (X)
+            </button>
+            <button class="popover-btn btn-opt-follow" onclick="updateCellStatus('follow')">
+                <span>🟡</span> Acompanhamento (P)
+            </button>
+        </div>
+        
+        <div class="popover-custom-area">
+            <div class="popover-custom-title">Compromisso Customizado</div>
+            <div class="popover-custom-fields">
+                <input type="text" id="custom-label" class="form-input" placeholder="Ex: Psicóloga" style="padding: 6px 10px; font-size: 0.8rem;">
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="custom-sigla" class="form-input" placeholder="Sigla (1 letra)" maxlength="1" style="padding: 6px 10px; font-size: 0.8rem; width: 60px; text-transform: uppercase; text-align: center;">
+                    <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; flex: 1;" onclick="updateCellStatus('custom')">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Painel Gaveta de Alertas -->
+    <div class="alerts-drawer" id="alerts-sidebar-drawer">
+        <div class="drawer-header">
+            <h3>⚠️ Pendências (Conflitos)</h3>
+            <button class="drawer-close" onclick="toggleAlertDrawer(false)">&times;</button>
+        </div>
+        <div class="alerts-list" id="alerts-drawer-list">
+            <!-- Cards de Alertas injetados via JS -->
+        </div>
+    </div>
+
+    <!-- Modal Compatibilidade do Grupo -->
+    <div class="modal-overlay" id="group-details-modal">
+        <div class="glass-panel modal-card">
+            <div class="modal-header">
+                <h3 id="modal-group-title">Grupo 1 - Calendário de Compatibilidade</h3>
+                <button class="modal-close" onclick="closeGroupModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+                    Esta grade sobrepõe os calendários de todos os membros do grupo. Os horários marcados em <span style="color: var(--color-success); font-weight: bold;">Verde</span> indicam as janelas em que <strong>todos</strong> os alunos estão simultaneamente livres para a imersão.
+                </p>
+
+                <div class="table-wrapper">
+                    <table class="group-matrix-table" id="group-matrix-compatibility-table">
+                        <!-- Grade de Sincronia injetada via JS -->
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Container de Toasters -->
+    <div class="toast-container" id="toast-messages-container"></div>
+
+    <!-- ==========================================================================
+       DADOS FLASK PARA JAVASCRIPT
+       ========================================================================== -->
+    <script>
+        window.flaskData = {
+            hasBaseData: {{ 'true' if base_data_info else 'false' }},
+            hasGroups: {{ 'true' if groups_result else 'false' }},
+            username: "{{ session.username }}",
+            turmaNome: "Sua Turma Principal",
+            listaAlunos: {{ base_data_info.lista_alunos|tojson|safe if base_data_info else '[]' }},
+            grupos: {{ groups_result.grupos|tojson|safe if (groups_result and groups_result.grupos) else '[]' }},
+            alunosSemGrupo: {{ groups_result.alunos_sem_grupo|tojson|safe if (groups_result and groups_result.alunos_sem_grupo) else '[]' }},
+            blocos: {{ groups_result.blocos|tojson|safe if (groups_result and groups_result.blocos) else '[]' }}
+        };
+    </script>
+
+    <!-- JavaScript dinâmico principal -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
-
 </html>

@@ -1,54 +1,98 @@
 <!DOCTYPE html>
-<html lang="pt-pt">
-
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registro - AcademySync</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+<body>
 
-<body class="login-body">
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <img src="{{ url_for('static', filename='edge-academy-logo.png') }}" alt="Edge Academy Logo"class="login-logo">
+    <header class="main-header">
+        <div class="logo-block">
+            <div class="logo-icon">A</div>
+            <div class="logo-text">
                 <h1>AcademySync</h1>
-                <p>Crie sua conta para começar</p>
+                <p>Edge Academy Study Groups</p>
             </div>
-            <div class="login-body-content">
-                <form method="post">
-                    <div class="form-group">
-                        <label for="username" class="form-label">Usuário</label>
-                        <input type="text" id="username" name="username" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email" class="form-label">E-mail</label>
-                        <input type="email" id="email" name="email" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password" class="form-label">Senha</label>
-                        <input type="password" id="password" name="password" class="form-input" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-full">Criar Conta</button>
-                </form>
+        </div>
+    </header>
 
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                <div class="flash-messages" style="margin-top: 20px;">
-                    {% for category, message in messages %}
-                    <div class="flash flash-{{ category }}">{{ message }}</div>
-                    {% endfor %}
+    <main class="auth-container">
+        <div class="glass-panel auth-card">
+            <div class="auth-header">
+                <h2>Criar nova conta</h2>
+                <p>Crie sua conta corporativa no AcademySync</p>
+            </div>
+            
+            <form method="post">
+                <div class="form-group">
+                    <label class="form-label" for="username">Usuário</label>
+                    <input type="text" id="username" name="username" class="form-input" placeholder="Nome de usuário" required>
                 </div>
-                {% endif %}
-                {% endwith %}
+                <div class="form-group">
+                    <label class="form-label" for="email">E-mail corporativo</label>
+                    <input type="email" id="email" name="email" class="form-input" placeholder="exemplo@edge.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">Senha</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Mínimo 8 caracteres" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Criar Conta</button>
+            </form>
 
-                <p style="text-align: center; margin-top: 20px; color: #6c757d;">
+            <div class="form-footer">
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
                     Já tem uma conta? <a href="{{ url_for('login') }}">Faça login</a>
                 </p>
             </div>
         </div>
-    </div>
-</body>
+    </main>
 
+    <div class="toast-container" id="toast-messages-container"></div>
+    <script>
+        function showToast(title, desc, type = 'info') {
+            const container = document.getElementById('toast-messages-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            let icon = '⚠️';
+            let border = 'var(--color-danger)';
+            
+            if (type === 'success') { icon = '✅'; border = 'var(--color-success)'; }
+            else if (type === 'info') { icon = 'ℹ️'; border = 'var(--color-secondary)'; }
+            
+            toast.style.borderLeftColor = border;
+            toast.innerHTML = `
+                <div style="font-size: 1.2rem;">${icon}</div>
+                <div class="toast-content">
+                    <h5>${title}</h5>
+                    <p>${desc}</p>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    let cat = '{{ category }}';
+                    let type = cat === 'error' || cat === 'danger' ? 'danger' : (cat === 'success' ? 'success' : 'info');
+                    showToast(type === 'danger' ? 'Erro de Cadastro' : 'Notificação', '{{ message }}', type);
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+        });
+    </script>
+</body>
 </html>

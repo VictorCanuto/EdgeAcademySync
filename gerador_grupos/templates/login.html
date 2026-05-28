@@ -1,55 +1,103 @@
 <!DOCTYPE html>
-<html lang="pt-pt">
-
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - AcademySync</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+<body>
 
-<body class="login-body">
-    <div class="login-container">
-        <div class="login-card">
-            <div class="login-header">
-                <img src="{{ url_for('static', filename='edge-academy-logo.png') }}" alt="Edge Academy Logo"
-                    class="login-logo">
+    <!-- Header simplificado para login/cadastro -->
+    <header class="main-header">
+        <div class="logo-block">
+            <div class="logo-icon">A</div>
+            <div class="logo-text">
                 <h1>AcademySync</h1>
-                <p>Acesse sua conta para continuar</p>
+                <p>Edge Academy Study Groups</p>
             </div>
-            <div class="login-body-content">
-                <form method="post">
-                    <div class="form-group">
-                        <label for="username" class="form-label">Usuário</label>
-                        <input type="text" id="username" name="username" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password" class="form-label">Senha</label>
-                        <input type="password" id="password" name="password" class="form-input" required>
-                    </div>
+        </div>
+    </header>
 
-                    <div class="form-extra">
-                        <a href="{{ url_for('forgot_password') }}" class="forgot-password-link">Esqueceu a senha?</a>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-full">Entrar</button>
-                </form>
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                <div class="flash-messages" style="margin-top: 20px; color: #FF0000;">
-                    {% for category, message in messages %}
-                    <div class="flash flash-{{ category }}">{{ message }}</div>
-                    {% endfor %}
+    <main class="auth-container">
+        <div class="glass-panel auth-card">
+            <div class="auth-header">
+                <h2>Acesse sua conta</h2>
+                <p>Entre com seus dados do AcademySync</p>
+            </div>
+            
+            <form method="post">
+                <div class="form-group">
+                    <label class="form-label" for="username">Usuário</label>
+                    <input type="text" id="username" name="username" class="form-input" placeholder="Nome de usuário" required>
                 </div>
-                {% endif %}
-                {% endwith %}
+                <div class="form-group">
+                    <label class="form-label" for="password">Senha</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="••••••••" required>
+                </div>
+                
+                <div style="text-align: right; margin-bottom: 15px;">
+                    <a href="{{ url_for('forgot_password') }}" style="color: var(--color-primary); text-decoration: none; font-size: 0.85rem; font-weight: 600;">Esqueceu a senha?</a>
+                </div>
 
-                <p style="text-align: center; margin-top: 20px; color: #6c757d;">
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Entrar</button>
+            </form>
+
+            <div class="form-footer">
+                <p style="color: var(--text-muted); font-size: 0.9rem;">
                     Não tem uma conta? <a href="{{ url_for('register') }}">Registre-se</a>
                 </p>
             </div>
         </div>
-    </div>
-</body>
+    </main>
 
+    <!-- Container para Toasts de erro se houver mensagens flash -->
+    <div class="toast-container" id="toast-messages-container"></div>
+    <script>
+        // Função simples para exibir toast na tela de login
+        function showToast(title, desc, type = 'info') {
+            const container = document.getElementById('toast-messages-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            let icon = '⚠️';
+            let border = 'var(--color-danger)';
+            
+            if (type === 'success') { icon = '✅'; border = 'var(--color-success)'; }
+            else if (type === 'info') { icon = 'ℹ️'; border = 'var(--color-secondary)'; }
+            
+            toast.style.borderLeftColor = border;
+            toast.innerHTML = `
+                <div style="font-size: 1.2rem;">${icon}</div>
+                <div class="toast-content">
+                    <h5>${title}</h5>
+                    <p>${desc}</p>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verificar mensagens flash injetadas pelo Flask
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    let cat = '{{ category }}';
+                    let type = cat === 'error' || cat === 'danger' ? 'danger' : (cat === 'success' ? 'success' : 'info');
+                    showToast(type === 'danger' ? 'Erro de Acesso' : 'Notificação', '{{ message }}', type);
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            // Aplicar preferência de modo escuro salva no localStorage
+            if (localStorage.getItem('theme') === 'dark') {
+                document.body.classList.add('dark-mode');
+            }
+        });
+    </script>
+</body>
 </html>

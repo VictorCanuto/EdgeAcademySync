@@ -18,3 +18,7 @@ temp_processing/
 # OS
 .DS_Store
 Thumbs.db
+
+# Dev Sandbox (UI/UX)
+dev_ui_ux/
+

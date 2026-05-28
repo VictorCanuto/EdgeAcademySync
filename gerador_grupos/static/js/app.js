@@ -1,216 +1,984 @@
-class AcademySyncApp {
-    constructor() {
-        this.modal = document.getElementById('schedule-modal');
-        this.modalBody = document.getElementById('modal-body');
-        this.modalTitle = document.getElementById('modal-title');
+// ==========================================================================
+// CONFIGURAÇÕES GLOBAIS DA AGENDA
+// ==========================================================================
+const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+const HORARIOS = Array.from({length: 16}, (_, i) => i + 7); // De 07h até 22h
 
-        this.closeButton = this.modal ? this.modal.querySelector('.close-button') : null;
+// Estado local para a planilha geral carregada do servidor
+let studentSchedules = {};
 
-        this.changePasswordModal = document.getElementById('change-password-modal');
-        this.openChangePasswordBtn = document.getElementById('change-password-btn');
-        this.closeChangePasswordBtn = this.changePasswordModal ? this.changePasswordModal.querySelector('.close-button') : null;
+// Estado para o Popover de Edição
+let activePopover = {
+    alunoNome: null,
+    dia: null,
+    horario: null,
+    targetCell: null
+};
+
+// Lista local de conflitos (calculada dinamicamente)
+let activeConflicts = [];
+
+// ==========================================================================
+// INICIALIZAÇÃO DA APLICAÇÃO
+// ==========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    setupGlobalEventListeners();
+
+    // Ligar interface de arquivos do Passo 1 se visível
+    setupDragDropWizard();
+
+    // Inicializar Workspace se o usuário possuir base_data
+    if (window.flaskData.hasBaseData) {
+        // Carregar horários via Fetch API
+        loadSchedulesFromServer().then(() => {
+            if (window.flaskData.hasGroups) {
+                // Recuperar última aba ativa ou padrão
+                const lastTab = localStorage.getItem('academysync_active_tab') || 'spreadsheet';
+                switchTab(lastTab);
+            } else {
+                // Se só tem base_data e sem grupos, renderiza o painel de configurações
+                initBlocksListInWizard();
+            }
+        });
+    }
+
+    // Verificar mensagens flash
+    displayFlaskFlashMessages();
+});
+
+// ==========================================================================
+// CONTROLE DE TEMA (CLARO/ESCURO)
+// ==========================================================================
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const themeCheckbox = document.getElementById('checkbox-theme');
+    
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (themeCheckbox) themeCheckbox.checked = true;
+    } else {
+        document.body.classList.remove('dark-mode');
+        if (themeCheckbox) themeCheckbox.checked = false;
+    }
+
+    if (themeCheckbox) {
+        themeCheckbox.addEventListener('change', () => {
+            if (themeCheckbox.checked) {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+    }
+}
+
+// ==========================================================================
+// CONTROLE DE FLUXO DE ABAS DO WORKSPACE
+// ==========================================================================
+function switchTab(tabName) {
+    const tabBtnSpreadsheet = document.getElementById('tab-btn-spreadsheet');
+    const tabBtnGroups = document.getElementById('tab-btn-groups');
+    const tabViewSpreadsheet = document.getElementById('tab-view-spreadsheet');
+    const tabViewGroups = document.getElementById('tab-view-groups');
+
+    if (tabBtnSpreadsheet) tabBtnSpreadsheet.className = tabName === 'spreadsheet' ? 'tab-btn active' : 'tab-btn';
+    if (tabBtnGroups) tabBtnGroups.className = tabName === 'groups' ? 'tab-btn active' : 'tab-btn';
+
+    if (tabViewSpreadsheet) tabViewSpreadsheet.className = tabName === 'spreadsheet' ? 'tab-view active' : 'tab-view';
+    if (tabViewGroups) tabViewGroups.className = tabName === 'groups' ? 'tab-view active' : 'tab-view';
+
+    localStorage.setItem('academysync_active_tab', tabName);
+
+    if (tabName === 'spreadsheet') {
+        renderSpreadsheet();
+    } else {
+        renderKanban();
+    }
+}
+
+// ==========================================================================
+// CARREGAR DADOS DOS HORÁRIOS VIA FETCH
+// ==========================================================================
+async function loadSchedulesFromServer() {
+    try {
+        const response = await fetch('/aluno/schedules_json');
+        if (response.ok) {
+            studentSchedules = await response.json();
+            recalculateConflicts();
+        }
+    } catch (error) {
+        console.error('Erro ao buscar agendas do servidor:', error);
+    }
+}
+
+// ==========================================================================
+// RENDERIZAR PLANILHA GERAL DE HORÁRIOS (HTML5 DINÂMICO)
+// ==========================================================================
+function renderSpreadsheet() {
+    const table = document.getElementById('spreadsheet-main-table');
+    if (!table) return;
+    table.innerHTML = '';
+
+    const listAlunos = window.flaskData.listaAlunos;
+    if (listAlunos.length === 0) return;
+
+    // Header 1: Dias da Semana
+    const trDays = document.createElement('tr');
+    trDays.innerHTML = `<th rowspan="2" style="position: sticky; left:0; z-index:11; background: var(--bg-card);">Estudantes</th>`;
+    DIAS_SEMANA.forEach(dia => {
+        trDays.innerHTML += `<th colspan="${HORARIOS.length}">${dia}</th>`;
+    });
+    table.appendChild(trDays);
+
+    // Header 2: Horários
+    const trHours = document.createElement('tr');
+    DIAS_SEMANA.forEach(() => {
+        HORARIOS.forEach(hora => {
+            trHours.innerHTML += `<th style="font-size: 0.72rem; font-weight: 500; min-width: 42px;">${String(hora).padStart(2, '0')}h</th>`;
+        });
+    });
+    table.appendChild(trHours);
+
+    // Linhas dos estudantes
+    listAlunos.forEach(alunoNome => {
+        const tr = document.createElement('tr');
+
+        // Célula fixa do estudante
+        const tdName = document.createElement('td');
+        tdName.className = 'aluno-name-cell';
         
-        this.init();
-    }
-
-    init() {
-        console.log('AcademySync App inicializado');
-        this.setupModal();
-        this.setupFileUpload();
-        this.setupFormSubmissions();
-        this.setupAlunoCards();
-        this.setupBlocoHorario(); 
-        this.setupChangePasswordModal();
-    }
-
-    setupChangePasswordModal() {
-        if (!this.changePasswordModal || !this.openChangePasswordBtn || !this.closeChangePasswordBtn) {
-            return;
-        }
-
-        this.openChangePasswordBtn.addEventListener('click', () => {
-            this.changePasswordModal.style.display = 'flex';
+        // Descobrir grupo do estudante
+        const grupoInfo = window.flaskData.grupos.find(g => {
+            return g.Membros.some(m => m.nome.toLowerCase() === alunoNome.toLowerCase());
         });
+        
+        tdName.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div class="user-avatar" style="width:24px; height:24px; font-size:0.75rem; background: var(--color-primary); color:white;">
+                    ${alunoNome[0].toUpperCase()}
+                </div>
+                <div>
+                    <div>${alunoNome}</div>
+                    <span style="font-size: 0.7rem; color: var(--text-muted); font-weight:500;">
+                        ${grupoInfo ? `Grupo ${grupoInfo.Grupo}` : 'Sem Grupo'}
+                    </span>
+                </div>
+            </div>
+        `;
+        tr.appendChild(tdName);
 
-        this.closeChangePasswordBtn.addEventListener('click', () => {
-            this.changePasswordModal.style.display = 'none';
-        });
+        // Células de horários
+        const agendaAluno = studentSchedules[alunoNome] || {};
+        
+        DIAS_SEMANA.forEach(dia => {
+            HORARIOS.forEach(hora => {
+                const td = document.createElement('td');
+                td.className = 'sched-cell';
+                const key = `${dia}_${hora}`;
+                const state = agendaAluno[key] || 'free';
 
-        this.changePasswordModal.addEventListener('click', (event) => {
-            if (event.target === this.changePasswordModal) {
-                this.changePasswordModal.style.display = 'none';
-            }
-        });
-    }
+                if (state === 'free') {
+                    td.classList.add('free');
+                    td.innerText = 'L';
+                } else if (state === 'class') {
+                    td.classList.add('class');
+                    td.innerText = 'X';
+                } else if (state === 'follow') {
+                    td.classList.add('follow');
+                    td.innerText = 'P';
+                } else {
+                    td.classList.add('custom-comp');
+                    td.innerText = String(state).charAt(0).toUpperCase();
+                    td.title = state;
+                }
 
-    setupModal() {
-        this.closeButton.addEventListener('click', () => this.closeModal());
-        window.addEventListener('click', (event) => {
-            if (event.target === this.modal) {
-                this.closeModal();
-            }
-        });
-    }
+                // Evento clique do popover
+                td.addEventListener('click', (e) => {
+                    openPopover(e, alunoNome, dia, hora);
+                });
 
-    closeModal() {
-        this.modal.style.display = 'none';
-        this.modalBody.innerHTML = '';
-        this.modalTitle.textContent = 'Horários do Aluno';
-    }
-
-    setupFileUpload() {
-        const uploadForm = document.querySelector('.upload-form');
-        const fileInput = document.getElementById('pdf-files');
-        const fileList = document.getElementById('file-list');
-
-        if (uploadForm) {
-            uploadForm.addEventListener('submit', (e) => this.handleUploadSubmit(e));
-        }
-        if (fileInput && fileList) {
-            fileInput.addEventListener('change', () => this.handleFileSelection(fileInput, fileList));
-        }
-    }
-
-    handleUploadSubmit(e) {
-        const fileInput = document.getElementById('pdf-files');
-        if (fileInput.files.length === 0) {
-            e.preventDefault();
-            alert("Por favor, selecione pelo menos um PDF antes de processar.");
-            return false;
-        }
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        this.showLoadingState(submitBtn);
-    }
-
-    handleFileSelection(fileInput, fileList) {
-        fileList.innerHTML = '';
-        if (fileInput.files.length > 0) {
-            const fileCount = document.createElement('div');
-            fileCount.className = 'file-count';
-            fileCount.textContent = `${fileInput.files.length} ficheiro(s) selecionado(s)`;
-            fileList.appendChild(fileCount);
-            const maxFilesToShow = 3;
-            for (let i = 0; i < Math.min(fileInput.files.length, maxFilesToShow); i++) {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.textContent = fileInput.files[i].name;
-                fileList.appendChild(fileItem);
-            }
-            if (fileInput.files.length > maxFilesToShow) {
-                const moreFiles = document.createElement('div');
-                moreFiles.className = 'file-more';
-                moreFiles.textContent = `+ ${fileInput.files.length - maxFilesToShow} mais`;
-                fileList.appendChild(moreFiles);
-            }
-        }
-    }
-
-    setupFormSubmissions() {
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            if (form.classList.contains('upload-form')) return;
-            form.addEventListener('submit', (e) => {
-                const submitBtn = e.target.querySelector('button[type="submit"]');
-                this.showLoadingState(submitBtn);
+                tr.appendChild(td);
             });
         });
-    }
 
-    showLoadingState(submitBtn) {
-        if (!submitBtn) return;
-        const btnText = submitBtn.querySelector('.btn-text');
-        const btnLoading = submitBtn.querySelector('.btn-loading');
-        if (btnText && btnLoading) {
-            btnText.style.display = 'none';
-            btnLoading.style.display = 'inline-flex';
-        }
-        submitBtn.disabled = true;
-    }
+        table.appendChild(tr);
+    });
+}
 
-    setupAlunoCards() {
-        document.querySelectorAll('.aluno-card, .aluno-link').forEach(link => {
-            link.addEventListener('click', (e) => this.handleAlunoCardClick(e));
-        });
-    }
+// ==========================================================================
+// POPOVER FLUTUANTE DE EDIÇÃO
+// ==========================================================================
+function openPopover(event, alunoNome, dia, hora) {
+    event.stopPropagation();
+    
+    activePopover = {
+        alunoNome: alunoNome,
+        dia: dia,
+        horario: hora,
+        targetCell: event.currentTarget
+    };
 
-    handleAlunoCardClick(event) {
-        event.preventDefault();
-        const alunoNome = event.currentTarget.dataset.alunoNome;
-        this.modalBody.innerHTML = `<div class="loading-container"><div class="loading-spinner"></div><p>Carregando horários de ${alunoNome}...</p></div>`;
-        this.modalTitle.textContent = `Horários de ${alunoNome}`;
-        this.modal.style.display = 'flex';
-        this.fetchAlunoSchedule(alunoNome);
-    }
+    const popover = document.getElementById('popover-schedule-menu');
+    document.getElementById('popover-student-name').innerText = alunoNome;
+    document.getElementById('popover-time-info').innerText = `${dia}-feira às ${String(hora).padStart(2,'0')}:00`;
+    
+    document.getElementById('custom-label').value = '';
+    document.getElementById('custom-sigla').value = '';
 
-    async fetchAlunoSchedule(alunoNome) {
-        try {
-            const response = await fetch(`/aluno/${encodeURIComponent(alunoNome)}`);
-            if (!response.ok) {
-                throw new Error('Erro ao carregar os horários');
-            }
-            const html = await response.text();
-            this.modalBody.innerHTML = html;
-        } catch (error) {
-            console.error('Erro ao carregar horários:', error);
-            this.showErrorModal(error.message);
-        }
-    }
+    // Posicionar Popover
+    const rect = event.currentTarget.getBoundingClientRect();
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
-    showErrorModal(errorMessage) {
-        this.modalBody.innerHTML = `<div class="error-container"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 8V12" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 16H12.01" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><h3>Erro ao carregar os horários</h3><p>${errorMessage}</p></div>`;
-    }
+    popover.style.display = 'block';
+    
+    let leftPos = rect.left + scrollLeft - (popover.offsetWidth / 2) + (rect.width / 2);
+    let topPos = rect.top + scrollTop - popover.offsetHeight - 8;
 
-    setupBlocoHorario() {
-        const container = document.getElementById('blocos-container');
-        const addButton = document.querySelector('.btn-add');
+    if (leftPos < 10) leftPos = 10;
+    if (topPos < 10) topPos = rect.bottom + scrollTop + 8;
 
-        if (!container || !addButton) {
-            console.warn('Elementos para blocos de horário não encontrados.');
+    popover.style.left = `${leftPos}px`;
+    popover.style.top = `${topPos}px`;
+}
+
+function closePopover() {
+    const popover = document.getElementById('popover-schedule-menu');
+    if (popover) popover.style.display = 'none';
+    activePopover = { alunoNome: null, dia: null, horario: null, targetCell: null };
+}
+
+async function updateCellStatus(newStatus) {
+    const { alunoNome, dia, horario } = activePopover;
+    if (!alunoNome) return;
+
+    let statusValue = newStatus;
+    if (newStatus === 'custom') {
+        const label = document.getElementById('custom-label').value.trim();
+        const sigla = document.getElementById('custom-sigla').value.trim().toUpperCase();
+
+        if (!label || !sigla) {
+            alert('Preencha a descrição e a sigla do compromisso customizado.');
             return;
         }
-        
-        addButton.addEventListener('click', () => this.adicionarBloco());
-
-        container.addEventListener('click', (event) => {
-            const removeButton = event.target.closest('.btn-remove');
-            if (removeButton) {
-                this.removerBloco(removeButton);
-            }
-        });
-        
-        this.atualizarBotoesRemover();
+        statusValue = label;
     }
 
-    adicionarBloco() {
-        const container = document.getElementById('blocos-container');
-        const template = document.getElementById('bloco-template');
-        if (container && template) {
-            const clone = template.firstElementChild.cloneNode(true);
-            container.appendChild(clone);
-            this.atualizarBotoesRemover();
+    closePopover();
+
+    // Enviar alteração via POST para o Flask
+    try {
+        const response = await fetch('/aluno/update_schedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                aluno: alunoNome,
+                dia: dia,
+                horario: horario,
+                status: statusValue
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Atualizar cache local
+            if (!studentSchedules[alunoNome]) studentSchedules[alunoNome] = {};
+            studentSchedules[alunoNome][`${dia}_${horario}`] = statusValue;
+            
+            renderSpreadsheet();
+            recalculateConflicts();
+
+            if (data.conflito) {
+                showToast('Novo Conflito Gerado', `A agenda de ${alunoNome} agora conflita com a imersão do Grupo ${data.grupo}!`, 'danger');
+            } else {
+                showToast('Horário Atualizado', 'Alteração salva no banco de dados.', 'success');
+            }
+        } else {
+            showToast('Erro ao Salvar', 'Não foi possível atualizar o horário no servidor.', 'danger');
+        }
+    } catch (error) {
+        console.error('Erro de rede ao salvar horário:', error);
+        showToast('Erro de Conexão', 'Verifique a conexão de rede.', 'danger');
+    }
+}
+
+// ==========================================================================
+// GERENCIADOR DE GRUPOS (KANBAN DE COLUNAS & DRAG AND DROP)
+// ==========================================================================
+function renderKanban() {
+    const container = document.getElementById('kanban-columns-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const grupos = window.flaskData.grupos;
+    const blocos = window.flaskData.blocos;
+
+    grupos.forEach(g => {
+        // Encontrar bloco correspondente
+        const bloco = blocos.find(b => b.id === `b${g.Grupo}`) || { dia: g.Dia, inicio: parseInt(g.Horário.split(' - ')[0]), fim: parseInt(g.Horário.split(' - ')[1]) };
+        const hasConflict = activeConflicts.some(c => c.alunoGrupo === g.Grupo);
+        
+        const col = document.createElement('div');
+        col.className = 'glass-panel kanban-column';
+        if (hasConflict) {
+            col.classList.add('com-conflito');
+        }
+        col.id = `kanban-col-grupo-${g.Grupo}`;
+        
+        col.setAttribute('ondragover', 'allowDrop(event)');
+        col.setAttribute('ondragleave', 'handleDragLeave(event)');
+        col.setAttribute('ondrop', `handleDrop(event, ${g.Grupo})`);
+
+        col.innerHTML = `
+            <div class="column-header">
+                <div>
+                    <h3>Grupo ${g.Grupo}</h3>
+                    <span style="font-size:0.7rem; color: var(--text-muted); font-weight:600;">
+                        🗓️ ${g.Dia} (${g.Horário})
+                    </span>
+                </div>
+                <div class="grp-badge">${g.Membros.length} alunos</div>
+            </div>
+            
+            <div class="column-cards-container" id="column-cards-grp-${g.Grupo}"></div>
+            
+            <button class="btn btn-secondary" style="margin-top: 14px; font-size: 0.75rem; padding: 6px;" onclick="openGroupMatrix(${g.Grupo})">
+                👁️ Ver Compatibilidade
+            </button>
+        `;
+        container.appendChild(col);
+
+        const cardsContainer = document.getElementById(`column-cards-grp-${g.Grupo}`);
+        g.Membros.forEach(m => {
+            const card = createStudentCard(m.nome, g.Grupo);
+            cardsContainer.appendChild(card);
+        });
+    });
+
+    // Hidratar banco de alunos fora de grupo (Removidos)
+    const bancoContainer = document.getElementById('banco-removidos-dropzone');
+    if (bancoContainer) {
+        bancoContainer.innerHTML = '';
+        window.flaskData.alunosSemGrupo.forEach(alunoNome => {
+            const card = createStudentCard(alunoNome, null);
+            bancoContainer.appendChild(card);
+        });
+    }
+}
+
+function createStudentCard(alunoNome, grupoId) {
+    const card = document.createElement('div');
+    card.className = 'student-card';
+    card.setAttribute('draggable', 'true');
+    card.id = `stud-card-${alunoNome.replace(/\s+/g, '-')}`;
+
+    const temConflito = activeConflicts.some(c => c.alunoNome.toLowerCase() === alunoNome.toLowerCase());
+    if (temConflito) {
+        card.style.borderColor = 'var(--color-danger)';
+        card.style.background = 'rgba(239, 68, 68, 0.03)';
+    }
+
+    card.innerHTML = `
+        <div class="student-card-header">
+            <div class="stud-avatar" style="background:${temConflito ? 'var(--color-danger)' : 'var(--color-primary)'}">
+                ${alunoNome[0].toUpperCase()}
+            </div>
+            <span class="stud-name">${alunoNome}</span>
+            ${temConflito ? '<span style="font-size:0.9rem; margin-left:auto;">⚠️</span>' : ''}
+        </div>
+        <div class="sugestoes-block">
+            <button class="sugs-btn" onclick="toggleSugDropdown(event, '${alunoNome}', ${grupoId})">
+                <span>Sugestões de Troca</span>
+                <span style="font-size: 8px;">▼</span>
+            </button>
+            <div class="sugs-dropdown" id="sugs-dropdown-${alunoNome.replace(/\s+/g, '-')}"></div>
+        </div>
+    `;
+
+    // Ligar eventos Drag
+    card.addEventListener('dragstart', (e) => {
+        e.dataTransfer.setData('text/plain', alunoNome);
+        e.dataTransfer.setData('grupo-origem', String(grupoId));
+        card.classList.add('dragging');
+        highlightCompatibleColumns(alunoNome);
+    });
+
+    card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        clearColumnHighlights();
+    });
+
+    return card;
+}
+
+// Highlights durante o arrasto
+function highlightCompatibleColumns(alunoNome) {
+    const grupos = window.flaskData.grupos;
+    grupos.forEach(g => {
+        const col = document.getElementById(`kanban-col-grupo-${g.Grupo}`);
+        if (!col) return;
+
+        const isCompatible = isStudentCompatibleWithGroup(alunoNome, g.Grupo);
+        if (isCompatible) {
+            col.classList.add('compativel');
+        } else {
+            col.classList.add('incompativel');
+        }
+    });
+}
+
+function clearColumnHighlights() {
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        col.classList.remove('compativel');
+        col.classList.remove('incompativel');
+    });
+}
+
+function allowDrop(ev) {
+    ev.preventDefault();
+    const col = ev.currentTarget;
+    if (col.classList.contains('kanban-column') || col.id === 'banco-removidos-dropzone') {
+        col.style.boxShadow = 'inset 0 0 10px rgba(79, 70, 229, 0.15)';
+    }
+}
+
+function handleDragLeave(ev) {
+    ev.currentTarget.style.boxShadow = 'none';
+}
+
+function handleDrop(ev, destGrupo) {
+    ev.preventDefault();
+    ev.currentTarget.style.boxShadow = 'none';
+    
+    const alunoNome = ev.dataTransfer.getData('text/plain');
+    const origGrupoStr = ev.dataTransfer.getData('grupo-origem');
+    const origGrupo = origGrupoStr === 'null' ? null : parseInt(origGrupoStr);
+    const destGrupoVal = destGrupo === 'banco' ? null : destGrupo;
+
+    if (origGrupo === destGrupoVal) return;
+
+    // Executar a mudança no banco (POST para /trocar_aluno e reload)
+    executeMoveOnServer(alunoNome, origGrupo, destGrupoVal);
+}
+
+function executeMoveOnServer(alunoNome, grupoAId, grupoBId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/trocar_aluno';
+    
+    const inputA = document.createElement('input');
+    inputA.type = 'hidden';
+    inputA.name = 'aluno_a';
+    inputA.value = alunoNome;
+    form.appendChild(inputA);
+    
+    if (grupoAId !== null) {
+        const inputGrpA = document.createElement('input');
+        inputGrpA.type = 'hidden';
+        inputGrpA.name = 'grupo_a_id';
+        inputGrpA.value = String(grupoAId);
+        form.appendChild(inputGrpA);
+    }
+    
+    if (grupoBId !== null) {
+        const inputGrpB = document.createElement('input');
+        inputGrpB.type = 'hidden';
+        inputGrpB.name = 'grupo_b_id';
+        inputGrpB.value = String(grupoBId);
+        form.appendChild(inputGrpB);
+    }
+    
+    document.body.appendChild(form);
+    
+    // Salvar aba ativa para restaurar pós-refresh
+    localStorage.setItem('academysync_active_tab', 'groups');
+    form.submit();
+}
+
+// Lógica local de validação de compatibilidade
+function isStudentCompatibleWithGroup(alunoNome, grupoNum) {
+    const g = window.flaskData.grupos.find(x => x.Grupo === grupoNum);
+    const blocos = window.flaskData.blocos;
+    if (!g) return true;
+
+    // Mapear dia e hora
+    const diaAbrevMap = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'};
+    const diaCompleto = diaAbrevMap[g.Dia] || g.Dia;
+    
+    let hInicio = 9, hFim = 11;
+    try {
+        hInicio = int = parseInt(g.Horário.split(' - ')[0].split(':')[0]);
+        hFim = int = parseInt(g.Horário.split(' - ')[1].split(':')[0]);
+    } catch(e) {}
+
+    const agenda = studentSchedules[alunoNome] || {};
+    
+    for (let h = hInicio; h < hFim; h++) {
+        if (agenda[`${diaCompleto}_${h}`] !== 'free') {
+            return false; // Conflito detectado
         }
     }
+    return true;
+}
 
-    removerBloco(button) {
-        button.closest('.bloco-card').remove();
-        this.atualizarBotoesRemover();
+// ==========================================================================
+// CÁLCULO E DETECÇÃO DE CONFLITOS DE HORÁRIOS
+// ==========================================================================
+function recalculateConflicts() {
+    activeConflicts = [];
+    const grupos = window.flaskData.grupos;
+    if (grupos.length === 0) return;
+
+    grupos.forEach(g => {
+        g.Membros.forEach(m => {
+            const compat = isStudentCompatibleWithGroup(m.nome, g.Grupo);
+            if (!compat) {
+                activeConflicts.push({
+                    alunoNome: m.nome,
+                    alunoGrupo: g.Grupo,
+                    dia: g.Dia,
+                    horario: g.Horário
+                });
+            }
+        });
+    });
+
+    // Atualizar Badge de Notificações
+    const badge = document.getElementById('alerts-count-badge');
+    if (badge) badge.innerText = activeConflicts.length;
+
+    renderAlertsDrawer();
+}
+
+// ==========================================================================
+// GAVETA LATERAL DE PENDÊNCIAS (DRAWER)
+// ==========================================================================
+function toggleAlertDrawer(open) {
+    const drawer = document.getElementById('alerts-sidebar-drawer');
+    if (!drawer) return;
+    if (open) {
+        drawer.classList.add('open');
+    } else {
+        drawer.classList.remove('open');
+    }
+}
+
+function renderAlertsDrawer() {
+    const list = document.getElementById('alerts-drawer-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    if (activeConflicts.length === 0) {
+        list.innerHTML = `
+            <div style="text-align:center; padding: 40px 10px; color: var(--text-muted);">
+                <div style="font-size: 2rem; margin-bottom: 10px;">🎉</div>
+                <h5 style="font-size:0.9rem; font-weight:700; color: var(--text-main);">Tudo em ordem!</h5>
+                <p style="font-size:0.75rem; margin-top:4px;">Nenhum choque de horário nos grupos da turma.</p>
+            </div>
+        `;
+        return;
     }
 
-    atualizarBotoesRemover() {
-        const container = document.getElementById('blocos-container');
-        if (container) {
-            const blocos = container.getElementsByClassName('bloco-card');
-            for (let i = 0; i < blocos.length; i++) {
-                const btn = blocos[i].querySelector('.btn-remove');
-                if (btn) {
-                    btn.style.display = blocos.length > 1 ? 'inline-flex' : 'none';
-                }
-            }
+    activeConflicts.forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'alert-card';
+        card.innerHTML = `
+            <h6>Incompatibilidade de Horário</h6>
+            <p><strong>${c.alunoNome}</strong> colide com o horário do <strong>Grupo ${c.alunoGrupo}</strong> (${c.dia} das ${c.horario}).</p>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                <span class="alert-card-action" onclick="focusConflictStudent('${c.alunoNome}')">Localizar Aluno</span>
+            </div>
+        `;
+        list.appendChild(card);
+    });
+}
+
+function focusConflictStudent(alunoNome) {
+    toggleAlertDrawer(false);
+    
+    if (localStorage.getItem('academysync_active_tab') === 'spreadsheet') {
+        renderSpreadsheet();
+        showToast('Localizado', `Encontre a linha de ${alunoNome} na planilha geral.`, 'info');
+    } else {
+        const cardId = `stud-card-${alunoNome.replace(/\s+/g, '-')}`;
+        const card = document.getElementById(cardId);
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.style.transform = 'scale(1.08)';
+            setTimeout(() => card.style.transform = 'none', 1000);
         }
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    new AcademySyncApp();
-});
+// ==========================================================================
+// SUGESTÕES INTELIGENTES NO KANBAN CARD
+// ==========================================================================
+function toggleSugDropdown(event, alunoNome, grupoId) {
+    event.stopPropagation();
+    const dd = document.getElementById(`sugs-dropdown-${alunoNome.replace(/\s+/g, '-')}`);
+    if (!dd) return;
+    const isActive = dd.classList.contains('active');
+    
+    document.querySelectorAll('.sugs-dropdown').forEach(el => el.classList.remove('active'));
 
+    if (!isActive) {
+        dd.classList.add('active');
+        renderSuggestions(alunoNome, grupoId, dd);
+    }
+}
+
+function renderSuggestions(alunoNome, grupoId, container) {
+    container.innerHTML = '';
+    const grupos = window.flaskData.grupos;
+    
+    // Mapear compatibilidade direta com grupos
+    let compGrupos = [];
+    grupos.forEach(g => {
+        if (g.Grupo !== grupoId) {
+            if (isStudentCompatibleWithGroup(alunoNome, g.Grupo)) {
+                compGrupos.push(g.Grupo);
+            }
+        }
+    });
+
+    if (compGrupos.length === 0) {
+        // Tentar sugestão de trocas 1-para-1 a partir das sugestões vindas do Flask
+        const gOrig = grupos.find(x => x.Grupo === grupoId);
+        let m = gOrig ? gOrig.Membros.find(x => x.nome.toLowerCase() === alunoNome.toLowerCase()) : null;
+        
+        if (m && m.sugestoes && m.sugestoes.troca_simples && m.sugestoes.troca_simples.length > 0) {
+            m.sugestoes.troca_simples.forEach(t => {
+                const item = document.createElement('div');
+                item.className = 'sug-item';
+                item.innerHTML = `🔄 Trocar com <strong>${t.trocar_com}</strong> (Grupo ${t.grupo_destino})`;
+                
+                // Evento clique da troca
+                item.onclick = () => {
+                    executeSwapOnServer(alunoNome, grupoId, t.trocar_com, t.grupo_destino);
+                };
+                container.appendChild(item);
+            });
+        } else {
+            container.innerHTML = `<span style="font-size:0.7rem; color:var(--text-muted);">Sem opções viáveis. Modifique a planilha geral.</span>`;
+        }
+    } else {
+        compGrupos.forEach(gId => {
+            const item = document.createElement('div');
+            item.className = 'sug-item';
+            item.innerHTML = `➡️ Mover para <strong>Grupo ${gId}</strong> (Compatível)`;
+            item.onclick = () => {
+                executeMoveOnServer(alunoNome, grupoId, gId);
+            };
+            container.appendChild(item);
+        });
+    }
+}
+
+function executeSwapOnServer(alunoA, grupoA, alunoB, grupoB) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/trocar_aluno';
+    
+    const inputA = document.createElement('input');
+    inputA.type = 'hidden';
+    inputA.name = 'aluno_a';
+    inputA.value = alunoA;
+    form.appendChild(inputA);
+
+    const inputGrpA = document.createElement('input');
+    inputGrpA.type = 'hidden';
+    inputGrpA.name = 'grupo_a_id';
+    inputGrpA.value = String(grupoA);
+    form.appendChild(inputGrpA);
+    
+    const inputB = document.createElement('input');
+    inputB.type = 'hidden';
+    inputB.name = 'aluno_b';
+    inputB.value = alunoB;
+    form.appendChild(inputB);
+
+    const inputGrpB = document.createElement('input');
+    inputGrpB.type = 'hidden';
+    inputGrpB.name = 'grupo_b_id';
+    inputGrpB.value = String(grupoB);
+    form.appendChild(inputGrpB);
+
+    document.body.appendChild(form);
+    
+    localStorage.setItem('academysync_active_tab', 'groups');
+    form.submit();
+}
+
+// ==========================================================================
+// MODAL MATRIZ DE COMPATIBILIDADE DE GRUPOS (SÍNCRONIA DETALHADA)
+// ==========================================================================
+function openGroupMatrix(grupoNum) {
+    const modal = document.getElementById('group-details-modal');
+    if (!modal) return;
+
+    document.getElementById('modal-group-title').innerText = `Grupo ${grupoNum} - Calendário de Compatibilidade`;
+    const table = document.getElementById('group-matrix-compatibility-table');
+    table.innerHTML = '';
+
+    const g = window.flaskData.grupos.find(x => x.Grupo === grupoNum);
+    if (!g) return;
+
+    // Header horas
+    const trHeader = document.createElement('tr');
+    trHeader.innerHTML = `<th>Dia</th>`;
+    HORARIOS.forEach(h => {
+        trHeader.innerHTML += `<th>${String(h).padStart(2,'0')}h</th>`;
+    });
+    table.appendChild(trHeader);
+
+    // Linha dias
+    DIAS_SEMANA.forEach(dia => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td style="font-weight:700;">${dia}</td>`;
+
+        HORARIOS.forEach(h => {
+            let todosLivres = true;
+            let livresCount = 0;
+
+            g.Membros.forEach(m => {
+                const agenda = studentSchedules[m.nome] || {};
+                if (agenda[`${dia}_${h}`] === 'free') {
+                    livresCount++;
+                } else {
+                    todosLivres = false;
+                }
+            });
+
+            // Verificar se é o slot ativo de reuniões
+            const diaAbrevMap = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'};
+            const isImersao = (diaAbrevMap[g.Dia] === dia); // Comparação simplificada por dia
+
+            const td = document.createElement('td');
+            td.className = 'group-matrix-cell';
+            
+            if (todosLivres) {
+                td.className += ' free-sinc';
+                td.innerText = 'LIVRE';
+                td.style.fontSize = '0.62rem';
+                td.style.fontWeight = 'bold';
+                td.style.color = 'var(--cell-free-text)';
+            } else {
+                td.className += ' blocked-sinc';
+                td.innerText = `${livresCount}/${g.Membros.length}`;
+                td.style.fontSize = '0.65rem';
+                td.style.color = 'var(--cell-class-text)';
+            }
+
+            if (isImersao) {
+                td.style.border = '2px solid var(--color-primary)';
+            }
+
+            tr.appendChild(td);
+        });
+        table.appendChild(tr);
+    });
+
+    modal.classList.add('active');
+}
+
+function closeGroupModal() {
+    const modal = document.getElementById('group-details-modal');
+    if (modal) modal.classList.remove('active');
+}
+
+// ==========================================================================
+// MODAL RECONFIGURAÇÃO RÁPIDA & SENHA
+// ==========================================================================
+function showConfigPanelFromWorkspace() {
+    const modal = document.getElementById('reconfig-groups-modal-overlay');
+    if (modal) modal.classList.add('active');
+}
+
+function closeConfigPanelFromWorkspace() {
+    const modal = document.getElementById('reconfig-groups-modal-overlay');
+    if (modal) modal.classList.remove('active');
+}
+
+function openChangePasswordModal() {
+    const modal = document.getElementById('change-password-modal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeChangePasswordModal() {
+    const modal = document.getElementById('change-password-modal');
+    if (modal) modal.classList.remove('active');
+}
+
+function toggleExportMenu() {
+    const wrapper = document.getElementById('export-dropdown-wrapper');
+    if (wrapper) wrapper.classList.toggle('active');
+}
+
+// ==========================================================================
+// COMPONENTES AUXILIARES DO WIZARD DE CRIAÇÃO (PASSO 2)
+// ==========================================================================
+function addNewConfigBlock() {
+    const list = document.getElementById('config-blocks-list');
+    const temp = document.getElementById('new-block-template');
+    if (!list || !temp) return;
+
+    const idx = list.children.length;
+    const card = document.createElement('div');
+    card.className = 'bloco-edit-card';
+    card.id = `config-bloco-card-${idx}`;
+    card.innerHTML = `<button type="button" class="bloco-remove-btn" onclick="this.parentElement.remove()">&times;</button>`;
+    
+    const fields = temp.cloneNode(true);
+    fields.style.display = 'grid';
+    card.appendChild(fields);
+    list.appendChild(card);
+}
+
+function addNewReconfigBlock() {
+    const list = document.getElementById('reconfig-blocks-list');
+    const temp = document.getElementById('new-block-template');
+    if (!list || !temp) return;
+
+    const idx = list.children.length + 50;
+    const card = document.createElement('div');
+    card.className = 'bloco-edit-card';
+    card.id = `reconfig-bloco-card-${idx}`;
+    card.innerHTML = `<button type="button" class="bloco-remove-btn" onclick="this.parentElement.remove()">&times;</button>`;
+    
+    const fields = temp.cloneNode(true);
+    fields.style.display = 'grid';
+    card.appendChild(fields);
+    list.appendChild(card);
+}
+
+// Drag and drop do Passo 1 do Wizard
+function setupDragDropWizard() {
+    const dropArea = document.getElementById('drag-drop-area-real');
+    const fileInput = document.getElementById('pdf-files-real');
+    const list = document.getElementById('selected-files-list-real');
+    if (!dropArea || !fileInput) return;
+
+    dropArea.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+        renderFileList(e.target.files, list);
+    });
+
+    dropArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropArea.classList.add('drag-over');
+    });
+
+    dropArea.addEventListener('dragleave', () => {
+        dropArea.classList.remove('drag-over');
+    });
+
+    dropArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropArea.classList.remove('drag-over');
+        fileInput.files = e.dataTransfer.files;
+        renderFileList(e.dataTransfer.files, list);
+    });
+}
+
+function renderFileList(files, container) {
+    container.innerHTML = '';
+    Array.from(files).forEach(file => {
+        if (file.name.endsWith('.pdf')) {
+            const item = document.createElement('div');
+            item.className = 'selected-file-item';
+            item.innerHTML = `<span>📄 ${file.name}</span>`;
+            container.appendChild(item);
+        }
+    });
+}
+
+function initBlocksListInWizard() {
+    // Adiciona bloco extra por padrão no wizard se vazio
+    const list = document.getElementById('config-blocks-list');
+    if (list && list.children.length === 1) {
+        addNewConfigBlock();
+    }
+}
+
+// ==========================================================================
+// TOASTER NOTIFICATIONS SYSTEM
+// ==========================================================================
+function showToast(title, desc, type = 'info') {
+    const container = document.getElementById('toast-messages-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    let icon = 'ℹ️';
+    let border = 'var(--color-primary)';
+    
+    if (type === 'success') {
+        icon = '✅';
+        border = 'var(--color-success)';
+    } else if (type === 'danger') {
+        icon = '⚠️';
+        border = 'var(--color-danger)';
+    } else if (type === 'warning') {
+        icon = '⚠️';
+        border = 'var(--color-warning)';
+    } else if (type === 'info') {
+        icon = 'ℹ️';
+        border = 'var(--color-secondary)';
+    }
+    
+    toast.style.borderLeftColor = border;
+
+    toast.innerHTML = `
+        <div style="font-size: 1.2rem;">${icon}</div>
+        <div class="toast-content">
+            <h5>${title}</h5>
+            <p>${desc}</p>
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+    `;
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
+function displayFlaskFlashMessages() {
+    // Executa no carregamento da página para mostrar mensagens flash injetadas pelo Flask como Toasts
+    if (window.flaskData.flashMessages) {
+        window.flaskData.flashMessages.forEach(msg => {
+            let cat = msg.category;
+            let type = cat === 'error' || cat === 'danger' ? 'danger' : (cat === 'success' ? 'success' : (cat === 'warning' ? 'warning' : 'info'));
+            showToast(type === 'danger' ? 'Erro' : (type === 'success' ? 'Sucesso' : 'Notificação'), msg.message, type);
+        });
+    }
+}
+
+function setupGlobalEventListeners() {
+    // Clique fora fecha popover
+    document.addEventListener('click', (e) => {
+        const popover = document.getElementById('popover-schedule-menu');
+        if (popover && popover.style.display === 'block') {
+            const isInside = popover.contains(e.target);
+            const isCell = e.target.classList.contains('sched-cell');
+            if (!isInside && !isCell) {
+                closePopover();
+            }
+        }
+
+        const exp = document.getElementById('export-dropdown-wrapper');
+        if (exp && exp.classList.contains('active')) {
+            if (!exp.contains(e.target)) {
+                exp.classList.remove('active');
+            }
+        }
+    });
+}
