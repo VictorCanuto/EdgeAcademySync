@@ -293,15 +293,19 @@ def forgot_password():
             link_recuperacao = url_for('reset_password', token=token, _external=True)
             enviado = enviar_email_recuperacao(user.email, link_recuperacao)
             
+            # Verificar se estamos rodando em ambiente local de desenvolvimento
+            host_local = request.host.split(':')[0] in ('127.0.0.1', 'localhost')
+            is_local = app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite') or host_local
+
             if enviado:
                 flash('Um link de recuperação foi enviado para o seu e-mail.', 'success')
                 return redirect(url_for('login'))
             else:
-                if app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite') or not os.environ.get('MAIL_SERVER'):
-                    flash('Servidor de e-mail não configurado (Modo de Demonstração).', 'warning')
+                if is_local:
+                    flash('Servidor de e-mail não configurado (Modo de Demonstração Local).', 'warning')
                     return render_template('forgot_password.html', link_recuperacao=link_recuperacao, local_debug=True)
                 else:
-                    flash('Erro ao enviar e-mail de recuperação. Tente novamente mais tarde.', 'danger')
+                    flash('Erro ao enviar o e-mail de recuperação. Por favor, contate o administrador ou tente novamente mais tarde.', 'danger')
         else:
             flash('Se o e-mail estiver cadastrado, um link de recuperação será enviado.', 'info')
             return redirect(url_for('login'))
