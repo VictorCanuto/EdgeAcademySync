@@ -180,6 +180,18 @@ def formar_grupos(
             dias = list(dias)
         blocos_norm.append({"nome": nome, "inicio": ini, "fim": fim, "dias": dias})
 
+    # Pré-computa horários ocupados por aluno e dia para evitar filtros lentos do Pandas no loop
+    ocupados = {}
+    for aluno in todos_os_alunos:
+        for dia in ["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"]:
+            ocupados[(aluno, dia)] = []
+            
+    df_busy = df[df['materia'] != '---']
+    for _, row in df_busy.iterrows():
+        al_val = str(row['aluno'])
+        dia_val = str(row['dia'])
+        ocupados[(al_val, dia_val)] = ocupados.get((al_val, dia_val), []) + [row['horario']]
+
     tentativas = 0
     mapa_disponibilidade: Dict[Tuple[str, str], Set[str]] = {}
     slots_por_aluno: Dict[str, Set[Tuple[str, str]]] = {a: set() for a in todos_os_alunos}
@@ -197,7 +209,7 @@ def formar_grupos(
                 slot_id = (dia, label)
                 disponiveis = set()
                 for aluno in todos_os_alunos:
-                    busy = df[(df['aluno'] == aluno) & (df['dia'] == dia) & (df['materia'] != '---')]['horario']
+                    busy = ocupados.get((aluno, dia), [])
                     livre = True
                     for h in busy:
                         if horarios_conflitam(h, b['inicio'], b['fim']):
