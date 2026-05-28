@@ -97,73 +97,95 @@ def _processar_pdfs_fallback(pdf_paths: List[str]) -> Optional[pd.DataFrame]:
 
 def processar_pdfs_para_dataframe(pdf_paths: List[str]) -> Optional[pd.DataFrame]:
     """
-    Nova versão que tenta primeiro usar os módulos reorganizados (pdf_reader + pdf_processor)
-    e fallback para o método original se necessário
+    Tenta primeiro usar processamento baseado em pypdf (puro Python, sem dependência de Java).
+    Se falhar ou não encontrar registros, faz o fallback para o processamento via tabula.
     """
     if not pdf_paths:
         return None
-    
-    # Verifica se temos os módulos necessários para o novo método
+        
     try:
-        from .pdf_reader import ler_pdfs_para_excel
-        from .pdf_processor import processar_excel
-        TEM_MODULOS = True
-    except ImportError:
-        TEM_MODULOS = False
-        print("Módulos pdf_reader/pdf_processor não disponíveis, usando fallback")
-    
-    if not TEM_MODULOS:
-        return _processar_pdfs_fallback(pdf_paths)
-    
-    # Cria pasta temporária se necessário
-    temp_dir = "temp_processing"
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    try:
-        # Passo 1: Processar PDFs para Excel usando pdf_reader
-        # Precisamos criar uma pasta temporária com os PDFs para o ler_pdfs_para_excel
-        pdf_temp_dir = os.path.join(temp_dir, "pdfs")
-        os.makedirs(pdf_temp_dir, exist_ok=True)
+        import pypdf
         
-        # Copia os PDFs para a pasta temporária
-        for pdf_path in pdf_paths:
-            import shutil
-            shutil.copy2(pdf_path, pdf_temp_dir)
-        
-        excel_temp = os.path.join(temp_dir, "temp_consolidado.xlsx")
-        ler_pdfs_para_excel(pdf_temp_dir, excel_temp)
-        
-        # Verifica se o Excel foi criado
-        if not os.path.exists(excel_temp):
-            print("PDF Reader não conseguiu gerar o arquivo Excel, usando fallback")
-            return _processar_pdfs_fallback(pdf_paths)
-        
-        # Passo 2: Processar Excel para CSV usando pdf_processor
-        csv_temp = os.path.join(temp_dir, "temp_base.csv")
-        processar_excel(excel_temp, csv_temp)
-        
-        # Carregar resultado final
-        if os.path.exists(csv_temp):
-            df = pd.read_csv(csv_temp)
-            print(f"Processamento integrado bem-sucedido: {len(df)} registros")
-            return df
-        else:
-            print("PDF Processor não conseguiu gerar o CSV, usando fallback")
-            return _processar_pdfs_fallback(pdf_paths)
+        finais = []
+        for caminho_pdf in pdf_paths:
+            reader = pypdf.PdfReader(caminho_pdf)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text() + "\n"
+                
+            aluno_key = os.path.splitext(os.path.basename(caminho_pdf))[0]
+            
+            # Encontrar o início da tabela (cabeçalho de dias)
+            header_pattern = re.compile(r"dom\s+seg\s+ter\s+qua\s+qui\s+sex\s+sab", re.IGNORECASE)
+            match_header = header_pattern.search(text)
+            if not match_header:
+                continue
+                
+            table_start_idx = match_header.end()
+            table_text = text[table_start_idx:]
+            
+            # Encontrar todos os padrões de horário (HH:MM - HH:MM)
+            time_pattern = re.compile(r"(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})")
+            time_matches = list(time_pattern.finditer(table_text))
+            if not time_matches:
+                continue
+                
+            dias_semana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
+            dias_semana_map = {"Seg": "Seg", "Ter": "Ter", "Qua": "Qua", "Qui": "Qui", "Sex": "Sex", "Sab": "Sab"}
+            
+            rows = []
+            for idx, match in enumerate(time_matches):
+                start_time = match.group(1)
+                end_time = match.group(2)
+                horario_str = f"{start_time} - {end_time}"
+                
+                start_pos = match.end()
+                if idx + 1 < len(time_matches):
+                    end_pos = time_matches[idx + 1].start()
+                else:
+                    end_pos = len(table_text)
+                    
+                dados_raw = table_text[start_pos:end_pos].strip()
+                
+                # Truncar antes de rodapés ou outras páginas
+                for stop_word in ["ATENÇÃO", "sigaa", "NTI", "copyright", "srv", "sistema integrado", "portal do discente", "emitido em", "https://", "período letivo"]:
+                    stop_idx = dados_raw.lower().find(stop_word.lower())
+                    if stop_idx != -1:
+                        dados_raw = dados_raw[:stop_idx].strip()
+                        
+                # Limpar espaços extras
+                dados_raw = re.sub(r"\s+", " ", dados_raw)
+                tokens = dados_raw.split()
+                
+                if len(tokens) >= 7:
+                    tokens = tokens[:7]
+                    for d_idx, token_dado in enumerate(tokens):
+                        dia_nome = dias_semana[d_idx]
+                        if dia_nome in dias_semana_map:
+                            materia = token_dado
+                            if materia == '---' or not materia:
+                                materia = '---'
+                            rows.append({
+                                "aluno": aluno_key,
+                                "dia": dias_semana_map[dia_nome],
+                                "horario": horario_str,
+                                "materia": materia
+                            })
+                            
+            if rows:
+                finais.append(pd.DataFrame(rows))
+                
+        if finais:
+            base = pd.concat(finais, ignore_index=True)
+            base = base.drop_duplicates(subset=['aluno', 'dia', 'horario']).reset_index(drop=True)
+            print(f"Processamento via pypdf bem-sucedido: {len(base)} registros")
+            return base
             
     except Exception as e:
-        print(f"Erro no processamento integrado: {e}")
-        # Fallback para o método original
-        return _processar_pdfs_fallback(pdf_paths)
-    
-    finally:
-        # Limpeza opcional dos arquivos temporários
-        try:
-            import shutil
-            if os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir)
-        except:
-            pass  # Ignora erros na limpeza
+        print(f"Erro no processamento pypdf: {e}. Usando fallback para tabula...")
+        
+    # Se pypdf falhar ou não achar registros, usa o fallback original
+    return _processar_pdfs_fallback(pdf_paths)
 
 # Para compatibilidade com o app.py existente
 def processar_pdfs_para_dataframe_original(pdf_paths: List[str]) -> Optional[pd.DataFrame]:

@@ -11,3 +11,4 @@ Flask-SQLAlchemy
 psycopg2-binary
 itsdangerous
 python-dotenv
+pypdf
