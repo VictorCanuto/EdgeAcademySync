@@ -312,6 +312,20 @@ def forgot_password():
             
     return render_template('forgot_password.html')
 
+@app.route('/debug_smtp')
+def debug_smtp():
+    mail_server = os.environ.get('MAIL_SERVER')
+    mail_port = os.environ.get('MAIL_PORT')
+    mail_username = os.environ.get('MAIL_USERNAME')
+    mail_password = os.environ.get('MAIL_PASSWORD')
+    return json.dumps({
+        "MAIL_SERVER": mail_server,
+        "MAIL_PORT": mail_port,
+        "MAIL_USERNAME": mail_username,
+        "HAS_PASSWORD": bool(mail_password),
+        "PASSWORD_LENGTH": len(mail_password) if mail_password else 0
+    }), 200
+
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     email = verify_reset_token(token)
