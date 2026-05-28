@@ -306,6 +306,21 @@ def reset_password(token):
     return render_template('reset_password.html', token=token)
 
 
+@app.route('/debug_info')
+def debug_info():
+    import sys
+    try:
+        import pypdf
+        pypdf_ver = pypdf.__version__
+    except ImportError:
+        pypdf_ver = "Not installed"
+    return {
+        "python_version": sys.version,
+        "pypdf_version": pypdf_ver,
+        "database_uri": app.config['SQLALCHEMY_DATABASE_URI'].split('@')[-1] if app.config['SQLALCHEMY_DATABASE_URI'] else "None"
+    }
+
+
 # --- API de Horários para UI/UX Dinâmica ---
 
 @app.route('/aluno/schedules_json')
