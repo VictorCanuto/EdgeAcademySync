@@ -314,16 +314,47 @@ def forgot_password():
 
 @app.route('/debug_smtp')
 def debug_smtp():
+    import smtplib
+    from email.message import EmailMessage
+    import traceback
+    
     mail_server = os.environ.get('MAIL_SERVER')
     mail_port = os.environ.get('MAIL_PORT')
     mail_username = os.environ.get('MAIL_USERNAME')
     mail_password = os.environ.get('MAIL_PASSWORD')
+    mail_sender = os.environ.get('MAIL_DEFAULT_SENDER', mail_username)
+    
+    smtp_test_result = "Not tested"
+    
+    if all([mail_server, mail_port, mail_username, mail_password]):
+        try:
+            msg = EmailMessage()
+            msg['Subject'] = 'Diagnostic SMTP - AcademySync'
+            msg['From'] = mail_sender
+            msg['To'] = mail_username
+            msg.set_content("Teste de diagnóstico SMTP no Render.")
+            
+            port = int(mail_port)
+            if port == 465:
+                server = smtplib.SMTP_SSL(mail_server, port, timeout=10)
+            else:
+                server = smtplib.SMTP(mail_server, port, timeout=10)
+                server.starttls()
+                
+            server.login(mail_username, mail_password)
+            server.send_message(msg)
+            server.quit()
+            smtp_test_result = "Success!"
+        except Exception as e:
+            smtp_test_result = f"Failed: {str(e)} - {traceback.format_exc()}"
+            
     return json.dumps({
         "MAIL_SERVER": mail_server,
         "MAIL_PORT": mail_port,
         "MAIL_USERNAME": mail_username,
         "HAS_PASSWORD": bool(mail_password),
-        "PASSWORD_LENGTH": len(mail_password) if mail_password else 0
+        "PASSWORD_LENGTH": len(mail_password) if mail_password else 0,
+        "SMTP_TEST_RESULT": smtp_test_result
     }), 200
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
