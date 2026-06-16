@@ -832,6 +832,32 @@ function closeChangePasswordModal() {
     if (modal) modal.classList.remove('active');
 }
 
+function openSecurityQuestionModal() {
+    const modal = document.getElementById('security-question-modal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeSecurityQuestionModal() {
+    const modal = document.getElementById('security-question-modal');
+    if (modal) modal.classList.remove('active');
+}
+
+function toggleCustomQuestion(selectElement, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const inputField = container.querySelector('input');
+    if (selectElement.value === 'custom') {
+        container.style.display = 'block';
+        if (inputField) inputField.setAttribute('required', 'required');
+    } else {
+        container.style.display = 'none';
+        if (inputField) {
+            inputField.removeAttribute('required');
+            inputField.value = '';
+        }
+    }
+}
+
 function toggleExportMenu() {
     const wrapper = document.getElementById('export-dropdown-wrapper');
     if (wrapper) wrapper.classList.toggle('active');

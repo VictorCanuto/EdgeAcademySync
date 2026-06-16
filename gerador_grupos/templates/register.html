@@ -39,6 +39,28 @@
                     <input type="password" id="password" name="password" class="form-input" placeholder="Mínimo 8 caracteres" required>
                 </div>
                 
+                <div class="form-group">
+                    <label class="form-label" for="security_question">Pergunta de Segurança</label>
+                    <select id="security_question" name="security_question" class="form-input" required onchange="toggleCustomQuestion(this, 'custom-question-container')">
+                        <option value="Qual o nome do seu primeiro animal de estimação?">Qual o nome do seu primeiro animal de estimação?</option>
+                        <option value="Qual o nome da rua onde você cresceu?">Qual o nome da rua onde você cresceu?</option>
+                        <option value="Qual a sua cidade natal?">Qual a sua cidade natal?</option>
+                        <option value="Qual o nome da sua primeira escola?">Qual o nome da sua primeira escola?</option>
+                        <option value="Qual a sua comida favorita da infância?">Qual a sua comida favorita da infância?</option>
+                        <option value="custom">Escrever minha própria pergunta...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="custom-question-container" style="display: none;">
+                    <label class="form-label" for="custom_question_text">Sua Pergunta Personalizada</label>
+                    <input type="text" id="custom_question_text" name="custom_question_text" class="form-input" placeholder="Ex: Qual o ano do meu primeiro carro?">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="security_answer">Resposta de Segurança</label>
+                    <input type="text" id="security_answer" name="security_answer" class="form-input" placeholder="Sua resposta segura" required>
+                </div>
+                
                 <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Criar Conta</button>
             </form>
 
@@ -76,6 +98,19 @@
                 toast.style.opacity = '0';
                 setTimeout(() => toast.remove(), 300);
             }, 5000);
+        }
+
+        function toggleCustomQuestion(selectElement, containerId) {
+            const container = document.getElementById(containerId);
+            const inputField = container.querySelector('input');
+            if (selectElement.value === 'custom') {
+                container.style.display = 'block';
+                inputField.setAttribute('required', 'required');
+            } else {
+                container.style.display = 'none';
+                inputField.removeAttribute('required');
+                inputField.value = '';
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {

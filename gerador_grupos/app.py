@@ -88,6 +88,8 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    security_question = db.Column(db.String(256), nullable=True)
+    security_answer_hash = db.Column(db.String(256), nullable=True)
     
     # Armazenamento em banco de dados para evitar perda de dados por discos efêmeros
     base_data = db.Column(db.LargeBinary, nullable=True)      # Conteúdo do CSV consolidado
@@ -96,6 +98,18 @@ class User(db.Model):
 # Inicializa as tabelas do banco de dados se não existirem
 with app.app_context():
     db.create_all()
+    # Migração simples para adicionar colunas de pergunta de segurança caso não existam
+    try:
+        db.session.execute(db.text('ALTER TABLE users ADD COLUMN security_question VARCHAR(256)'))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        
+    try:
+        db.session.execute(db.text('ALTER TABLE users ADD COLUMN security_answer_hash VARCHAR(256)'))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 # --- Funções de Autenticação e Decorators ---
 def login_required(f):
@@ -257,6 +271,17 @@ def register():
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
+        
+        # Obter pergunta de segurança
+        security_q = request.form.get('security_question')
+        if security_q == 'custom':
+            security_q = request.form.get('custom_question_text')
+        
+        security_ans = request.form.get('security_answer')
+
+        if not security_q or not security_ans:
+            flash('Pergunta e resposta de segurança são obrigatórias.', 'danger')
+            return redirect(url_for('register'))
 
         user_exists = User.query.filter_by(username=username).first()
         if user_exists:
@@ -269,7 +294,15 @@ def register():
             return redirect(url_for('register'))
 
         hashed_password = generate_password_hash(password)
-        new_user = User(username=username, email=email, password_hash=hashed_password)
+        hashed_answer = generate_password_hash(security_ans.strip().lower())
+        
+        new_user = User(
+            username=username, 
+            email=email, 
+            password_hash=hashed_password,
+            security_question=security_q,
+            security_answer_hash=hashed_answer
+        )
         db.session.add(new_user)
         db.session.commit()
 
@@ -317,6 +350,33 @@ def change_password():
 
     return redirect(url_for('index'))
 
+@app.route('/configure_security', methods=['POST'])
+@login_required
+def configure_security():
+    username = session.get('username')
+    security_q = request.form.get('security_question')
+    if security_q == 'custom':
+        security_q = request.form.get('custom_question_text')
+        
+    security_ans = request.form.get('security_answer')
+    confirm_pwd = request.form.get('confirm_password_security')
+    
+    if not security_q or not security_ans or not confirm_pwd:
+        flash('Todos os campos são obrigatórios.', 'danger')
+        return redirect(url_for('index'))
+        
+    user = User.query.filter_by(username=username).first()
+    
+    if user and check_password_hash(user.password_hash, confirm_pwd):
+        user.security_question = security_q
+        user.security_answer_hash = generate_password_hash(security_ans.strip().lower())
+        db.session.commit()
+        flash('Pergunta de segurança configurada com sucesso!', 'success')
+    else:
+        flash('Senha de confirmação incorreta.', 'danger')
+        
+    return redirect(url_for('index'))
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -325,33 +385,57 @@ def logout():
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
+    step = 1
+    username_or_email = ""
+    question = ""
+    
     if request.method == 'POST':
-        email = request.form['email']
-        user = User.query.filter_by(email=email).first()
-
-        if user:
-            token = generate_reset_token(user.email)
-            link_recuperacao = url_for('reset_password', token=token, _external=True)
-            enviado = enviar_email_recuperacao(user.email, link_recuperacao)
+        action = request.form.get('action')
+        
+        if action == 'identify':
+            username_or_email = request.form.get('username_or_email', '').strip()
+            # Procurar por username ou email
+            user = User.query.filter((User.username == username_or_email) | (User.email == username_or_email)).first()
             
-            # Verificar se estamos rodando em ambiente local de desenvolvimento
-            host_local = request.host.split(':')[0] in ('127.0.0.1', 'localhost')
-            is_local = app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite') or host_local
-
-            if enviado:
-                flash('Um link de recuperação foi enviado para o seu e-mail.', 'success')
-                return redirect(url_for('login'))
-            else:
-                if is_local:
-                    flash('Servidor de e-mail não configurado (Modo de Demonstração Local).', 'warning')
-                    return render_template('forgot_password.html', link_recuperacao=link_recuperacao, local_debug=True)
+            if user:
+                if not user.security_question or not user.security_answer_hash:
+                    # Verificar se estamos rodando em ambiente local de desenvolvimento para gerar link de bypass
+                    host_local = request.host.split(':')[0] in ('127.0.0.1', 'localhost')
+                    is_local = app.config['SQLALCHEMY_DATABASE_URI'].startswith('sqlite') or host_local
+                    
+                    if is_local:
+                        token = generate_reset_token(user.email)
+                        link_recuperacao = url_for('reset_password', token=token, _external=True)
+                        flash('Sua conta não possui pergunta de segurança configurada. (Modo de Demonstração Local: use o link abaixo).', 'warning')
+                        return render_template('forgot_password.html', link_recuperacao=link_recuperacao, local_debug=True, step=1)
+                    else:
+                        flash('Esta conta foi criada antes do recurso de perguntas de segurança. Por favor, contate o administrador para redefinir sua senha.', 'danger')
+                        return render_template('forgot_password.html', step=1)
                 else:
-                    flash('Erro ao enviar o e-mail de recuperação. Por favor, contate o administrador ou tente novamente mais tarde.', 'danger')
-        else:
-            flash('Se o e-mail estiver cadastrado, um link de recuperação será enviado.', 'info')
-            return redirect(url_for('login'))
+                    # Ir para o passo 2
+                    return render_template('forgot_password.html', step=2, username=user.username, question=user.security_question)
+            else:
+                flash('Usuário ou e-mail não cadastrado.', 'danger')
+                return render_template('forgot_password.html', step=1)
+                
+        elif action == 'verify':
+            username = request.form.get('username', '').strip()
+            answer = request.form.get('security_answer', '').strip()
             
-    return render_template('forgot_password.html')
+            user = User.query.filter_by(username=username).first()
+            if user:
+                if user.security_answer_hash and check_password_hash(user.security_answer_hash, answer.lower()):
+                    # Resposta correta! Gera o token de reset e redireciona
+                    token = generate_reset_token(user.email)
+                    return redirect(url_for('reset_password', token=token))
+                else:
+                    flash('Resposta incorreta. Tente novamente.', 'danger')
+                    return render_template('forgot_password.html', step=2, username=user.username, question=user.security_question)
+            else:
+                flash('Erro ao processar a solicitação.', 'danger')
+                return redirect(url_for('forgot_password'))
+                
+    return render_template('forgot_password.html', step=step)
 
 @app.route('/debug_smtp')
 def debug_smtp():
