@@ -313,13 +313,14 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        username_or_email = request.form['username_or_email'].strip()
         password = request.form['password']
         
-        user = User.query.filter_by(username=username).first()
+        # Buscar por username ou email
+        user = User.query.filter((User.username == username_or_email) | (User.email == username_or_email)).first()
 
         if user and check_password_hash(user.password_hash, password):
-            session['username'] = username
+            session['username'] = user.username # Mantém username na sessão para compatibilidade
             flash('Login bem-sucedido!', 'success')
             return redirect(url_for('index'))
         else:
