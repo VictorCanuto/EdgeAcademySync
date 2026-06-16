@@ -378,6 +378,31 @@ def configure_security():
         
     return redirect(url_for('index'))
 
+@app.route('/setup_recovery_question', methods=['POST'])
+@login_required
+def setup_recovery_question():
+    username = session.get('username')
+    security_q = request.form.get('security_question')
+    if security_q == 'custom':
+        security_q = request.form.get('custom_question_text')
+        
+    security_ans = request.form.get('security_answer')
+    
+    if not security_q or not security_ans:
+        flash('Pergunta e resposta de segurança são obrigatórias.', 'danger')
+        return redirect(url_for('index'))
+        
+    user = User.query.filter_by(username=username).first()
+    if user:
+        user.security_question = security_q
+        user.security_answer_hash = generate_password_hash(security_ans.strip().lower())
+        db.session.commit()
+        flash('Pergunta de segurança configurada com sucesso!', 'success')
+    else:
+        flash('Erro ao processar a solicitação.', 'danger')
+        
+    return redirect(url_for('index'))
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -857,13 +882,16 @@ def index():
         {"valor": "Sab", "texto": "Sábado"}
     ]
 
+    has_security_question = bool(user.security_question and user.security_answer_hash)
+
     return render_template('index.html', 
                            base_data_info=base_data_info, 
                            groups_result=groups_result, 
                            ranking_data=ranking_data,
                            horarios_disponiveis=horarios_disponiveis,
                            nomes_blocos_opcoes=nomes_blocos_opcoes,    
-                           dias_semana_opcoes=dias_semana_opcoes)     
+                           dias_semana_opcoes=dias_semana_opcoes,
+                           has_security_question=has_security_question)     
 
 @app.route('/trocar_aluno', methods=['POST'])
 @login_required
