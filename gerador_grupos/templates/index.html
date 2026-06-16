@@ -51,8 +51,6 @@
             <div class="user-widget">
                 <div class="user-avatar">{{ session.username[0]|upper }}</div>
                 <div class="user-name">{{ session.username }}</div>
-                <button id="change-password-btn" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.8rem;" onclick="openChangePasswordModal()">Senha</button>
-                <button id="security-question-btn" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.8rem;" onclick="openSecurityQuestionModal()">Recuperação</button>
                 <a href="{{ url_for('logout') }}" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.8rem; text-decoration: none;">Sair</a>
             </div>
             {% endif %}
@@ -383,73 +381,7 @@
         </div>
     </div>
 
-    <!-- Modal Mudar Senha -->
-    <div id="change-password-modal" class="modal-overlay">
-        <div class="glass-panel modal-card" style="max-width: 420px;">
-            <div class="modal-header">
-                <h2>Mudar Senha</h2>
-                <button class="modal-close" onclick="closeChangePasswordModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form action="{{ url_for('change_password') }}" method="POST">
-                    <div class="form-group">
-                        <label for="current_password" class="form-label">Senha Atual</label>
-                        <input type="password" id="current_password" name="current_password" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="new_password" class="form-label">Nova Senha</label>
-                        <input type="password" id="new_password" name="new_password" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm_password" class="form-label">Confirmar Nova Senha</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Salvar Alterações</button>
-                </form>
-            </div>
-        </div>
-    </div>
 
-    <!-- Modal Configurar Pergunta de Segurança -->
-    <div id="security-question-modal" class="modal-overlay">
-        <div class="glass-panel modal-card" style="max-width: 420px;">
-            <div class="modal-header">
-                <h2>Configurar Recuperação</h2>
-                <button class="modal-close" onclick="closeSecurityQuestionModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form action="{{ url_for('configure_security') }}" method="POST">
-                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">
-                        Configure uma pergunta e resposta para recuperar o acesso à sua conta se esquecer a senha.
-                    </p>
-                    <div class="form-group">
-                        <label for="security_question_modal" class="form-label">Escolha uma Pergunta</label>
-                        <select id="security_question_modal" name="security_question" class="form-input" required onchange="toggleCustomQuestion(this, 'custom-question-container-modal')">
-                            <option value="Qual o nome do seu primeiro animal de estimação?">Qual o nome do seu primeiro animal de estimação?</option>
-                            <option value="Qual o nome da rua onde você cresceu?">Qual o nome da rua onde você cresceu?</option>
-                            <option value="Qual a sua cidade natal?">Qual a sua cidade natal?</option>
-                            <option value="Qual o nome da sua primeira escola?">Qual o nome da sua primeira escola?</option>
-                            <option value="Qual a sua comida favorita da infância?">Qual a sua comida favorita da infância?</option>
-                            <option value="custom">Escrever minha própria pergunta...</option>
-                        </select>
-                    </div>
-                    <div class="form-group" id="custom-question-container-modal" style="display: none;">
-                        <label for="custom_question_text_modal" class="form-label">Sua Pergunta Personalizada</label>
-                        <input type="text" id="custom_question_text_modal" name="custom_question_text" class="form-input" placeholder="Ex: Qual o ano do meu primeiro carro?">
-                    </div>
-                    <div class="form-group">
-                        <label for="security_answer_modal" class="form-label">Sua Resposta</label>
-                        <input type="text" id="security_answer_modal" name="security_answer" class="form-input" placeholder="Sua resposta segura" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="confirm_password_security" class="form-label">Confirme sua Senha Atual</label>
-                        <input type="password" id="confirm_password_security" name="confirm_password_security" class="form-input" placeholder="Para confirmar sua identidade" required>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px;">Salvar Configurações</button>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <!-- Popover Planilha -->
     <div class="popover-menu" id="popover-schedule-menu">
