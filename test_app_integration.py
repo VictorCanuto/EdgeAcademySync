@@ -28,11 +28,28 @@ def test_flow():
             db.session.commit()
             print(f"Usuário antigo '{username}' removido para reiniciar testes.")
 
-    # Cadastrar novo usuário
+    # Cadastrar novo usuário com senhas diferentes (deve falhar)
+    response_mismatch = client.post('/register', data={
+        'username': username + "_fail",
+        'email': "fail_" + email,
+        'password': password,
+        'confirm_password': password + "_mismatch",
+        'security_question': 'Qual a sua cidade natal?',
+        'security_answer': 'São Paulo'
+    }, follow_redirects=True)
+    
+    assert response_mismatch.status_code == 200
+    with app.app_context():
+        failed_user = User.query.filter_by(username=username + "_fail").first()
+        assert failed_user is None, "Usuário com senhas incompatíveis foi incorretamente cadastrado"
+    print("[OK] Teste de impedimento de senhas incompatíveis passou com sucesso.")
+
+    # Cadastrar novo usuário com senhas iguais (deve ter sucesso)
     response = client.post('/register', data={
         'username': username,
         'email': email,
         'password': password,
+        'confirm_password': password,
         'security_question': 'Qual a sua cidade natal?',
         'security_answer': 'São Paulo'
     }, follow_redirects=True)

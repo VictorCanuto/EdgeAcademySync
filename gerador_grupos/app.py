@@ -298,6 +298,11 @@ def register():
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
+        confirm_password = request.form.get('confirm_password')
+        
+        if password != confirm_password:
+            flash('As senhas não coincidem.', 'danger')
+            return redirect(url_for('register'))
         
         # Obter pergunta de segurança
         security_q = request.form.get('security_question')
