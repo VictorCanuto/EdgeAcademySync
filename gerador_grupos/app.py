@@ -95,6 +95,18 @@ class User(db.Model):
     base_data = db.Column(db.LargeBinary, nullable=True)      # Conteúdo do CSV consolidado
     groups_result = db.Column(db.LargeBinary, nullable=True)  # Dicionário do Pickle serializado
 
+# Modelo de Turma
+class Turma(db.Model):
+    __tablename__ = 'turmas'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(120), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    base_data = db.Column(db.LargeBinary, nullable=True)      # Conteúdo do CSV consolidado
+    groups_result = db.Column(db.LargeBinary, nullable=True)  # Dicionário do Pickle serializado
+    
+    user = db.relationship('User', backref=db.backref('turmas', lazy=True, cascade="all, delete-orphan"))
+
 # Inicializa as tabelas do banco de dados se não existirem
 with app.app_context():
     db.create_all()
@@ -110,6 +122,21 @@ with app.app_context():
         db.session.commit()
     except Exception:
         db.session.rollback()
+
+    # Migração: mover base_data e groups_result do User para a Turma (se houver dados)
+    try:
+        users_with_data = User.query.filter((User.base_data != None) | (User.groups_result != None)).all()
+        for u in users_with_data:
+            # Se o usuário ainda não tem nenhuma turma, criamos a Turma Principal
+            if not u.turmas:
+                t = Turma(nome="Turma Principal", user_id=u.id, base_data=u.base_data, groups_result=u.groups_result)
+                db.session.add(t)
+            u.base_data = None
+            u.groups_result = None
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro na migração de Turmas: {e}")
 
 # --- Funções de Autenticação e Decorators ---
 def login_required(f):
@@ -538,15 +565,16 @@ def reset_password(token):
 
 # --- API de Horários para UI/UX Dinâmica ---
 
-@app.route('/aluno/schedules_json')
+@app.route('/aluno/schedules_json/<int:turma_id>')
 @login_required
-def get_schedules_json():
+def get_schedules_json(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    if not user or not user.base_data:
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.base_data:
         return json.dumps({}), 200
         
     try:
-        df = pd.read_csv(BytesIO(user.base_data))
+        df = pd.read_csv(BytesIO(turma.base_data))
         
         # Mapear dias da semana
         dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
@@ -590,11 +618,12 @@ def get_schedules_json():
         return json.dumps({"error": str(e)}), 500
 
 
-@app.route('/aluno/update_schedule', methods=['POST'])
+@app.route('/aluno/update_schedule/<int:turma_id>', methods=['POST'])
 @login_required
-def update_student_schedule():
+def update_student_schedule(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    if not user or not user.base_data:
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.base_data:
         return json.dumps({"error": "Dados não encontrados"}), 404
         
     data = request.json
@@ -604,7 +633,7 @@ def update_student_schedule():
     novo_status = data.get('status')
     
     try:
-        df = pd.read_csv(BytesIO(user.base_data))
+        df = pd.read_csv(BytesIO(turma.base_data))
         
         dia_abrev_map = {'Segunda': 'Seg', 'Terça': 'Ter', 'Quarta': 'Qua', 'Quinta': 'Qui', 'Sexta': 'Sex', 'Sábado': 'Sab'}
         dia_abrev = dia_abrev_map.get(dia, dia)
@@ -633,14 +662,14 @@ def update_student_schedule():
         # Salvar CSV atualizado
         csv_buffer = BytesIO()
         df.to_csv(csv_buffer, index=False, encoding='utf-8')
-        user.base_data = csv_buffer.getvalue()
+        turma.base_data = csv_buffer.getvalue()
         
         # Se houver grupos formados, atualizar o cache de compatibilidade e detectar conflito
         conflito_gerado = False
         grupo_afetado = None
         
-        if user.groups_result:
-            result = pickle.loads(user.groups_result)
+        if turma.groups_result:
+            result = pickle.loads(turma.groups_result)
             slots_por_aluno = result.get('slots_por_aluno', {})
             
             # Recomputar a disponibilidade deste aluno para todos os blocos cadastrados
@@ -707,7 +736,7 @@ def update_student_schedule():
                         pass
             
             result['slots_por_aluno'] = slots_por_aluno
-            user.groups_result = pickle.dumps(result)
+            turma.groups_result = pickle.dumps(result)
             
         db.session.commit()
         return json.dumps({
@@ -728,6 +757,80 @@ def index():
     user = User.query.filter_by(username=session['username']).first()
     if not user:
         return redirect(url_for('login'))
+        
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'create_turma':
+            nome = request.form.get('turma_nome', '').strip()
+            if not nome:
+                flash('O nome da turma não pode ser vazio.', 'error')
+                return redirect(url_for('index'))
+                
+            new_turma = Turma(nome=nome, user_id=user.id)
+            db.session.add(new_turma)
+            db.session.commit()
+            flash(f'Turma "{nome}" criada com sucesso!', 'success')
+            return redirect(url_for('index'))
+            
+        elif action == 'delete_turma':
+            turma_id = request.form.get('turma_id')
+            if not turma_id:
+                flash('ID da turma inválido.', 'error')
+                return redirect(url_for('index'))
+                
+            turma = Turma.query.filter_by(id=int(turma_id), user_id=user.id).first()
+            if turma:
+                db.session.delete(turma)
+                db.session.commit()
+                flash('Turma excluída com sucesso.', 'success')
+            else:
+                flash('Turma não encontrada.', 'error')
+            return redirect(url_for('index'))
+
+    # LÓGICA GET: Listar turmas
+    turmas = Turma.query.filter_by(user_id=user.id).all()
+    turmas_info = []
+    for t in turmas:
+        alunos_count = 0
+        if t.base_data:
+            try:
+                df = pd.read_csv(BytesIO(t.base_data))
+                alunos_count = len(df['aluno'].unique())
+            except Exception:
+                pass
+        
+        grupos_count = 0
+        if t.groups_result:
+            try:
+                res = pickle.loads(t.groups_result)
+                grupos_count = len(res.get('grupos', []))
+            except Exception:
+                pass
+                
+        turmas_info.append({
+            "id": t.id,
+            "nome": t.nome,
+            "alunos_count": alunos_count,
+            "grupos_count": grupos_count
+        })
+
+    has_security_question = bool(user.security_question and user.security_answer_hash)
+    return render_template('landing.html', 
+                           turmas=turmas_info, 
+                           has_security_question=has_security_question)
+
+@app.route('/turma/<int:turma_id>', methods=['GET', 'POST'])
+@login_required
+def view_turma(turma_id):
+    user = User.query.filter_by(username=session['username']).first()
+    if not user:
+        return redirect(url_for('login'))
+        
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma:
+        flash('Turma não encontrada.', 'error')
+        return redirect(url_for('index'))
         
     user_data_folder = get_user_data_folder()
     
@@ -764,27 +867,27 @@ def index():
                 # Salva o DataFrame no Banco de Dados em formato binário (CSV encoded bytes)
                 csv_buffer = BytesIO()
                 base_df.to_csv(csv_buffer, index=False, encoding='utf-8')
-                user.base_data = csv_buffer.getvalue()
+                turma.base_data = csv_buffer.getvalue()
                 db.session.commit()
                 
                 flash(f'{len(base_df["aluno"].unique())} alunos processados com sucesso!', 'success')
             else:
                 flash('Não foi possível extrair dados válidos dos PDFs.', 'error')
             
-            return redirect(url_for('index'))
+            return redirect(url_for('view_turma', turma_id=turma_id))
 
         elif action == 'generate_groups':
-            if not user.base_data:
+            if not turma.base_data:
                 flash('Primeiro processe os arquivos PDF.', 'error')
-                return redirect(url_for('index'))
+                return redirect(url_for('view_turma', turma_id=turma_id))
             
             try:
-                base_df = pd.read_csv(BytesIO(user.base_data))
+                base_df = pd.read_csv(BytesIO(turma.base_data))
             except Exception as e:
                 flash('Erro ao ler os dados de alunos salvos no banco. Processe os PDFs novamente.', 'error')
-                user.base_data = None
+                turma.base_data = None
                 db.session.commit()
-                return redirect(url_for('index'))
+                return redirect(url_for('view_turma', turma_id=turma_id))
 
             # Leitura dos blocos do formulário
             nomes_blocos = request.form.getlist('bloco_nome[]')
@@ -795,7 +898,7 @@ def index():
             blocos = []
             if not all([nomes_blocos, horas_inicio, horas_fim, dias_semana]):
                 flash('Erro ao ler os grupos. Tente novamente.', 'error')
-                return redirect(url_for('index'))
+                return redirect(url_for('view_turma', turma_id=turma_id))
 
             for i in range(len(nomes_blocos)):
                 try:
@@ -815,7 +918,7 @@ def index():
             
             if not blocos:
                 flash('Pelo menos um grupo válido é necessário.', 'error')
-                return redirect(url_for('index'))
+                return redirect(url_for('view_turma', turma_id=turma_id))
 
             num_grupos = len(blocos)
             result = formar_grupos(base_df, num_grupos=num_grupos, blocos=blocos)
@@ -832,30 +935,30 @@ def index():
                 flash(msg, 'warning')
 
             # Salva o resultado dos grupos no Banco de Dados em formato Pickle binário
-            user.groups_result = pickle.dumps(result)
+            turma.groups_result = pickle.dumps(result)
             db.session.commit()
             
             flash('Grupos gerados com sucesso!', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('view_turma', turma_id=turma_id))
 
     # --- LÓGICA GET ---
-    base_data_info, groups_result, ranking_data = None, None, None
+    base_data_info, groups_result_dict, ranking_data = None, None, None
     
-    if user.base_data:
+    if turma.base_data:
         try:
-            df = pd.read_csv(BytesIO(user.base_data))
+            df = pd.read_csv(BytesIO(turma.base_data))
             alunos = sorted([str(a).replace('_', ' ') for a in df['aluno'].unique()])
             base_data_info = {"alunos": len(alunos), "dias": len(df['dia'].unique()), "horarios": len(df['horario'].unique()), "lista_alunos": alunos}
             ranking_data = calcular_ranking_disponibilidade(df.copy())
         except Exception as e:
             print(f"Erro ao ler base_data do banco: {e}")
 
-    if user.groups_result:
+    if turma.groups_result:
         try:
-            groups_result = pickle.loads(user.groups_result)
+            groups_result_dict = pickle.loads(turma.groups_result)
             
-            grupos_originais = groups_result.get('grupos', [])
-            slots_por_aluno = groups_result.get('slots_por_aluno', {})
+            grupos_originais = groups_result_dict.get('grupos', [])
+            slots_por_aluno = groups_result_dict.get('slots_por_aluno', {})
             grupos_para_template = []
             for group in grupos_originais:
                 novo_grupo = group.copy()
@@ -866,7 +969,7 @@ def index():
                     membros_com_sugestoes.append({'nome': nome_aluno.replace('_', ' '), 'sugestoes': sugs})
                 novo_grupo['Membros'] = membros_com_sugestoes
                 grupos_para_template.append(novo_grupo)
-            groups_result['grupos'] = grupos_para_template
+            groups_result_dict['grupos'] = grupos_para_template
         except Exception as e:
             print(f"Erro ao carregar groups_result do banco: {e}")
 
@@ -884,27 +987,29 @@ def index():
     has_security_question = bool(user.security_question and user.security_answer_hash)
 
     return render_template('index.html', 
+                           turma=turma,
                            base_data_info=base_data_info, 
-                           groups_result=groups_result, 
+                           groups_result=groups_result_dict, 
                            ranking_data=ranking_data,
                            horarios_disponiveis=horarios_disponiveis,
                            nomes_blocos_opcoes=nomes_blocos_opcoes,    
                            dias_semana_opcoes=dias_semana_opcoes,
-                           has_security_question=has_security_question)     
+                           has_security_question=has_security_question)
 
-@app.route('/trocar_aluno', methods=['POST'])
+@app.route('/trocar_aluno/<int:turma_id>', methods=['POST'])
 @login_required
-def trocar_aluno():
+def trocar_aluno(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    if not user or not user.groups_result:
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.groups_result:
         flash('Dados de grupos não encontrados. Por favor, gere os grupos novamente.', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('view_turma', turma_id=turma_id))
 
     try:
-        result = pickle.loads(user.groups_result)
+        result = pickle.loads(turma.groups_result)
     except Exception as e:
         flash('Erro ao carregar os dados dos grupos do banco de dados.', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('view_turma', turma_id=turma_id))
     
     grupos = result['grupos']
     
@@ -922,14 +1027,14 @@ def trocar_aluno():
     # Verifica se os dados essenciais estão presentes
     if not aluno_a or not grupo_a_id or (aluno_b and not grupo_b_id) or (not aluno_b and not grupo_b_id):
         flash('Informação incompleta para realizar a movimentação.', 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('view_turma', turma_id=turma_id))
 
     # 3. Executar a lógica de troca/movimentação
     grupos_modificados = executar_troca(aluno_a, grupo_a_id, grupos, aluno_b, grupo_b_id)
     
     # 4. Salvar os novos dados no banco
     result['grupos'] = grupos_modificados
-    user.groups_result = pickle.dumps(result)
+    turma.groups_result = pickle.dumps(result)
     db.session.commit()
         
     if aluno_b:
@@ -937,15 +1042,16 @@ def trocar_aluno():
     else:
         flash(f'Aluno {aluno_a} movido para o Grupo {grupo_b_id} com sucesso!', 'success')
         
-    return redirect(url_for('index'))
+    return redirect(url_for('view_turma', turma_id=turma_id))
 
-@app.route('/clear')
+@app.route('/clear/<int:turma_id>')
 @login_required 
-def clear_session():
+def clear_session(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    if user:
-        user.base_data = None
-        user.groups_result = None
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if turma:
+        turma.base_data = None
+        turma.groups_result = None
         db.session.commit()
         
     user_data_folder = get_user_data_folder()
@@ -953,17 +1059,18 @@ def clear_session():
         shutil.rmtree(user_data_folder)
     
     flash('Os dados foram limpos com sucesso!', 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('view_turma', turma_id=turma_id))
 
-@app.route('/download/csv')
+@app.route('/download/csv/<int:turma_id>')
 @login_required
-def download_csv():
+def download_csv(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    if not user or not user.groups_result:
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
         
     try:
-        result = pickle.loads(user.groups_result)
+        result = pickle.loads(turma.groups_result)
     except Exception as e:
         return "Erro ao carregar dados do banco.", 500
         
@@ -971,30 +1078,32 @@ def download_csv():
     buffer = BytesIO(df.to_csv(index=False, encoding='utf-8').encode())
     return send_file(buffer, mimetype='text/csv', as_attachment=True, download_name='grupos.csv')
 
-@app.route('/download/pdf')
+@app.route('/download/pdf/<int:turma_id>')
 @login_required
-def download_pdf():
+def download_pdf(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    if not user or not user.groups_result:
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
         
     try:
-        result = pickle.loads(user.groups_result)
+        result = pickle.loads(turma.groups_result)
     except Exception as e:
         return "Erro ao carregar dados do banco.", 500
         
     pdf_buffer = montar_pdf_grupos(result['grupos'])
     return send_file(pdf_buffer, mimetype='application/pdf', as_attachment=True, download_name='grupos.pdf')
 
-@app.route('/aluno/<nome_aluno>')
+@app.route('/aluno/<nome_aluno>/<int:turma_id>')
 @login_required
-def get_aluno_schedule(nome_aluno):
+def get_aluno_schedule(nome_aluno, turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    if not user or not user.base_data:
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.base_data:
         return render_template_string("<h3>Erro</h3><p>Dados não encontrados no banco.</p>"), 404
 
     try:
-        df = pd.read_csv(BytesIO(user.base_data))
+        df = pd.read_csv(BytesIO(turma.base_data))
     except Exception as e:
         return render_template_string("<h3>Erro</h3><p>Erro ao ler dados do banco.</p>"), 500
     

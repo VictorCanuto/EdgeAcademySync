@@ -7,7 +7,7 @@ import shutil
 # Adiciona o diretório gerador_grupos ao PATH com prioridade para evitar importar o app.py do Streamlit
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'gerador_grupos'))
 
-from app import app, db, User
+from app import app, db, User, Turma
 
 def test_flow():
     print("Iniciando testes de integração da aplicação...")
@@ -52,7 +52,19 @@ def test_flow():
     assert response.status_code == 200
     with client.session_transaction() as sess:
         assert sess.get('username') == username, "Login falhou (username não está na sessão)"
-    print("[OK] Login do usuario realizado com sucesso.")
+    # 2.5 Criar uma Turma de teste
+    response = client.post('/', data={
+        'action': 'create_turma',
+        'turma_nome': 'Turma Teste E2E'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    
+    with app.app_context():
+        user = User.query.filter_by(username=username).first()
+        turma = Turma.query.filter_by(nome='Turma Teste E2E', user_id=user.id).first()
+        assert turma is not None, "Turma não foi criada com sucesso"
+        turma_id = turma.id
+    print("[OK] Criação de turma testada com sucesso.")
 
     # 3. Testar Upload de PDFs
     # Vamos pegar 3 arquivos do diretório pdfs
@@ -76,7 +88,7 @@ def test_flow():
     upload_data['action'] = 'process_pdfs'
     
     print(f"Enviando {len(pdf_files)} PDFs para processamento...")
-    response = client.post('/', data=upload_data, content_type='multipart/form-data', follow_redirects=True)
+    response = client.post(f'/turma/{turma_id}', data=upload_data, content_type='multipart/form-data', follow_redirects=True)
     
     # Fechar handlers
     for f in file_handlers:
@@ -85,11 +97,11 @@ def test_flow():
     assert response.status_code == 200
     print("[OK] Upload e processamento de PDFs concluido.")
     
-    # Verificar se os dados foram salvos no Neon DB
+    # Verificar se os dados foram salvos na Turma
     with app.app_context():
-        user = User.query.filter_by(username=username).first()
-        assert user.base_data is not None
-        print(f"[OK] Confirmado: Dados consolidados salvos no Banco de Dados (Tamanho: {len(user.base_data)} bytes).")
+        turma = Turma.query.get(turma_id)
+        assert turma.base_data is not None
+        print(f"[OK] Confirmado: Dados consolidados salvos no Banco de Dados da Turma (Tamanho: {len(turma.base_data)} bytes).")
 
     # 4. Testar Geração de Grupos
     # Enviar a requisição POST com 2 blocos de horário para gerar exatamente 2 grupos
@@ -102,32 +114,44 @@ def test_flow():
     }
     
     print("Gerando grupos de turmas...")
-    response = client.post('/', data=group_data, follow_redirects=True)
+    response = client.post(f'/turma/{turma_id}', data=group_data, follow_redirects=True)
     
     assert response.status_code == 200
     print("[OK] Logica de geracao de grupos executada.")
     
-    # Verificar se o Pickle do resultado foi salvo no Neon DB
+    # Verificar se o Pickle do resultado foi salvo na Turma
     with app.app_context():
-        user = User.query.filter_by(username=username).first()
-        assert user.groups_result is not None
-        result = pickle.loads(user.groups_result)
-        print(f"[OK] Confirmado: Grupos persistidos no Banco de Dados.")
+        turma = Turma.query.get(turma_id)
+        assert turma.groups_result is not None
+        result = pickle.loads(turma.groups_result)
+        print(f"[OK] Confirmado: Grupos persistidos no Banco de Dados da Turma.")
         print(f"  Turmas Geradas:")
         for g in result.get('grupos', []):
             membros = [m.get('nome') if isinstance(m, dict) else str(m) for m in g.get('Membros', [])]
             print(f"    - Grupo {g.get('Grupo')} ({g.get('Dia')} {g.get('Horário')}): {', '.join(membros)}")
 
     # 5. Testar download dos resultados
-    response = client.get('/download/csv')
+    response = client.get(f'/download/csv/{turma_id}')
     assert response.status_code == 200
     assert response.mimetype == 'text/csv'
     print("[OK] Download do CSV gerado com sucesso.")
 
-    response = client.get('/download/pdf')
+    response = client.get(f'/download/pdf/{turma_id}')
     assert response.status_code == 200
     assert response.mimetype == 'application/pdf'
     print("[OK] Download do PDF gerado com sucesso.")
+
+    # 5.5 Testar Exclusão de Turma
+    response = client.post('/', data={
+        'action': 'delete_turma',
+        'turma_id': str(turma_id)
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    
+    with app.app_context():
+        turma = Turma.query.get(turma_id)
+        assert turma is None, "Turma não foi excluída com sucesso"
+    print("[OK] Exclusão de turma testada com sucesso.")
 
     # 6. Limpeza do usuário de teste
     with app.app_context():

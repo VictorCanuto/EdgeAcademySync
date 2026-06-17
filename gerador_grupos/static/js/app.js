@@ -125,7 +125,7 @@ function switchTab(tabName) {
 // ==========================================================================
 async function loadSchedulesFromServer() {
     try {
-        const response = await fetch('/aluno/schedules_json');
+        const response = await fetch('/aluno/schedules_json/' + window.flaskData.turmaId);
         if (response.ok) {
             studentSchedules = await response.json();
             recalculateConflicts();
@@ -292,7 +292,7 @@ async function updateCellStatus(newStatus) {
 
     // Enviar alteração via POST para o Flask
     try {
-        const response = await fetch('/aluno/update_schedule', {
+        const response = await fetch('/aluno/update_schedule/' + window.flaskData.turmaId, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -490,7 +490,7 @@ function handleDrop(ev, destGrupo) {
 function executeMoveOnServer(alunoNome, grupoAId, grupoBId) {
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = '/trocar_aluno';
+    form.action = '/trocar_aluno/' + window.flaskData.turmaId;
     
     const inputA = document.createElement('input');
     inputA.type = 'hidden';
@@ -700,7 +700,7 @@ function renderSuggestions(alunoNome, grupoId, container) {
 function executeSwapOnServer(alunoA, grupoA, alunoB, grupoB) {
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = '/trocar_aluno';
+    form.action = '/trocar_aluno/' + window.flaskData.turmaId;
     
     const inputA = document.createElement('input');
     inputA.type = 'hidden';
