@@ -154,16 +154,11 @@
 
             <form method="post" id="groups-config-form">
                 <input type="hidden" name="action" value="generate_groups">
-                
-                <div class="form-group">
-                    <label class="form-label" for="num_grupos">Quantidade de Grupos Desejados</label>
-                    <input type="number" id="num_grupos" name="num_grupos" class="form-input" value="3" min="1" max="15" required>
-                </div>
 
                 <div class="form-group">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <label class="form-label" style="margin-bottom:0;">Blocos de Horários da Imersão</label>
-                        <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="addNewConfigBlock()">+ Adicionar Bloco</button>
+                        <label class="form-label" style="margin-bottom:0;">Grupos</label>
+                        <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="addNewConfigBlock()">+ Adicionar Grupo</button>
                     </div>
 
                     <div class="wizard-blocks-container" id="config-blocks-list">
@@ -172,7 +167,7 @@
                             <button type="button" class="bloco-remove-btn" onclick="this.parentElement.remove()">&times;</button>
                             <div class="bloco-edit-grid">
                                 <div>
-                                    <label class="form-label" style="font-size:0.75rem;">Nome do Bloco</label>
+                                    <label class="form-label" style="font-size:0.75rem;">Nome do Grupo</label>
                                     <select name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
                                         {% for opcao in nomes_blocos_opcoes %}
                                         <option value="{{ opcao }}">{{ opcao }}</option>
@@ -220,7 +215,7 @@
     <div id="new-block-template" style="display: none;">
         <div class="bloco-edit-grid">
             <div>
-                <label class="form-label" style="font-size:0.75rem;">Nome do Bloco</label>
+                <label class="form-label" style="font-size:0.75rem;">Nome do Grupo</label>
                 <select name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
                     {% for opcao in nomes_blocos_opcoes %}
                     <option value="{{ opcao }}">{{ opcao }}</option>
@@ -358,15 +353,11 @@
             <div class="modal-body">
                 <form method="post" action="{{ url_for('index') }}">
                     <input type="hidden" name="action" value="generate_groups">
-                    <div class="form-group">
-                        <label class="form-label" for="reconfig_num_grupos">Quantidade de Grupos Desejados</label>
-                        <input type="number" id="reconfig_num_grupos" name="num_grupos" class="form-input" value="{{ groups_result.grupos|length }}" min="1" max="15" required>
-                    </div>
                     
                     <div class="form-group">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                            <label class="form-label">Blocos de Horários</label>
-                            <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="addNewReconfigBlock()">+ Adicionar Bloco</button>
+                            <label class="form-label">Grupos</label>
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="addNewReconfigBlock()">+ Adicionar Grupo</button>
                         </div>
                         
                         <div class="wizard-blocks-container" id="reconfig-blocks-list" style="max-height: 200px;">
@@ -376,7 +367,7 @@
                                     <button type="button" class="bloco-remove-btn" onclick="this.parentElement.remove()">&times;</button>
                                     <div class="bloco-edit-grid">
                                         <div>
-                                            <label class="form-label" style="font-size:0.75rem;">Nome do Bloco</label>
+                                            <label class="form-label" style="font-size:0.75rem;">Nome do Grupo</label>
                                             <select name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
                                                 {% for opcao in nomes_blocos_opcoes %}
                                                 <option value="{{ opcao }}" {% if b.nome == opcao %}selected{% endif %}>{{ opcao }}</option>

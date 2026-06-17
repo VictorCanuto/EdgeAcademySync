@@ -786,8 +786,6 @@ def index():
                 db.session.commit()
                 return redirect(url_for('index'))
 
-            num_grupos = int(request.form.get('num_grupos', 3))
-            
             # Leitura dos blocos do formulário
             nomes_blocos = request.form.getlist('bloco_nome[]')
             horas_inicio = request.form.getlist('bloco_inicio[]')
@@ -796,7 +794,7 @@ def index():
 
             blocos = []
             if not all([nomes_blocos, horas_inicio, horas_fim, dias_semana]):
-                flash('Erro ao ler os blocos de horário. Tente novamente.', 'error')
+                flash('Erro ao ler os grupos. Tente novamente.', 'error')
                 return redirect(url_for('index'))
 
             for i in range(len(nomes_blocos)):
@@ -812,13 +810,14 @@ def index():
                     if all(bloco.values()): # Garante que nenhum campo está vazio
                         blocos.append(bloco)
                 except (ValueError, IndexError):
-                    flash(f'Bloco de horário inválido encontrado. Verifique os dados.', 'warning')
+                    flash(f'Grupo inválido encontrado. Verifique os dados.', 'warning')
                     continue
             
             if not blocos:
-                flash('Pelo menos um bloco de horário válido é necessário.', 'error')
+                flash('Pelo menos um grupo válido é necessário.', 'error')
                 return redirect(url_for('index'))
 
+            num_grupos = len(blocos)
             result = formar_grupos(base_df, num_grupos=num_grupos, blocos=blocos)
             result['blocos'] = blocos
             

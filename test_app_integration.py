@@ -32,19 +32,26 @@ def test_flow():
     response = client.post('/register', data={
         'username': username,
         'email': email,
-        'password': password
+        'password': password,
+        'security_question': 'Qual a sua cidade natal?',
+        'security_answer': 'São Paulo'
     }, follow_redirects=True)
     
     assert response.status_code == 200
+    with app.app_context():
+        user = User.query.filter_by(username=username).first()
+        assert user is not None, "Usuário não foi cadastrado com sucesso"
     print("[OK] Registro de usuario testado com sucesso.")
     
     # 2. Testar Login
     response = client.post('/login', data={
-        'username': username,
+        'username_or_email': username,
         'password': password
     }, follow_redirects=True)
     
     assert response.status_code == 200
+    with client.session_transaction() as sess:
+        assert sess.get('username') == username, "Login falhou (username não está na sessão)"
     print("[OK] Login do usuario realizado com sucesso.")
 
     # 3. Testar Upload de PDFs
@@ -85,14 +92,13 @@ def test_flow():
         print(f"[OK] Confirmado: Dados consolidados salvos no Banco de Dados (Tamanho: {len(user.base_data)} bytes).")
 
     # 4. Testar Geração de Grupos
-    # Vamos enviar a requisição POST para gerar 2 grupos com 1 bloco de horário (Manhã)
+    # Enviar a requisição POST com 2 blocos de horário para gerar exatamente 2 grupos
     group_data = {
         'action': 'generate_groups',
-        'num_grupos': '2',
-        'bloco_nome[]': ['Manhã'],
-        'bloco_inicio[]': ['8'],
-        'bloco_fim[]': ['12'],
-        'bloco_dias[]': ['Seg']
+        'bloco_nome[]': ['Manhã', 'Tarde'],
+        'bloco_inicio[]': ['8', '14'],
+        'bloco_fim[]': ['12', '18'],
+        'bloco_dias[]': ['Seg', 'Seg']
     }
     
     print("Gerando grupos de turmas...")
