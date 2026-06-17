@@ -83,6 +83,30 @@ def test_flow():
         turma_id = turma.id
     print("[OK] Criação de turma testada com sucesso.")
 
+    # 2.6 Testar Edição de Nome da Turma
+    response = client.post('/', data={
+        'action': 'edit_turma',
+        'turma_id': str(turma_id),
+        'turma_nome': 'Turma Teste E2E Alterada'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    
+    with app.app_context():
+        # Using Session.get instead of Query.get to satisfy the SQLAlchemy warning
+        from sqlalchemy import inspect
+        turma = db.session.get(Turma, turma_id)
+        assert turma.nome == 'Turma Teste E2E Alterada', "Nome da turma não foi editado com sucesso"
+    print("[OK] Edição de nome de turma testada com sucesso.")
+
+    # Voltar ao nome original
+    response = client.post('/', data={
+        'action': 'edit_turma',
+        'turma_id': str(turma_id),
+        'turma_nome': 'Turma Teste E2E'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+
+
     # 3. Testar Upload de PDFs
     # Vamos pegar 3 arquivos do diretório pdfs
     pdf_dir = os.path.join(os.path.dirname(__file__), 'pdfs')
@@ -116,7 +140,7 @@ def test_flow():
     
     # Verificar se os dados foram salvos na Turma
     with app.app_context():
-        turma = Turma.query.get(turma_id)
+        turma = db.session.get(Turma, turma_id)
         assert turma.base_data is not None
         print(f"[OK] Confirmado: Dados consolidados salvos no Banco de Dados da Turma (Tamanho: {len(turma.base_data)} bytes).")
 
@@ -138,7 +162,7 @@ def test_flow():
     
     # Verificar se o Pickle do resultado foi salvo na Turma
     with app.app_context():
-        turma = Turma.query.get(turma_id)
+        turma = db.session.get(Turma, turma_id)
         assert turma.groups_result is not None
         result = pickle.loads(turma.groups_result)
         print(f"[OK] Confirmado: Grupos persistidos no Banco de Dados da Turma.")
@@ -166,7 +190,7 @@ def test_flow():
     assert response.status_code == 200
     
     with app.app_context():
-        turma = Turma.query.get(turma_id)
+        turma = db.session.get(Turma, turma_id)
         assert turma is None, "Turma não foi excluída com sucesso"
     print("[OK] Exclusão de turma testada com sucesso.")
 

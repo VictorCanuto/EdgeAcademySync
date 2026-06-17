@@ -793,6 +793,23 @@ def index():
                 flash('Turma não encontrada.', 'error')
             return redirect(url_for('index'))
 
+        elif action == 'edit_turma':
+            turma_id = request.form.get('turma_id')
+            nome = request.form.get('turma_nome', '').strip()
+            if not turma_id or not nome:
+                flash('ID da turma ou nome inválido.', 'error')
+                return redirect(url_for('index'))
+                
+            turma = Turma.query.filter_by(id=int(turma_id), user_id=user.id).first()
+            if turma:
+                old_nome = turma.nome
+                turma.nome = nome
+                db.session.commit()
+                flash(f'Turma "{old_nome}" alterada para "{nome}" com sucesso.', 'success')
+            else:
+                flash('Turma não encontrada.', 'error')
+            return redirect(url_for('index'))
+
     # LÓGICA GET: Listar turmas
     turmas = Turma.query.filter_by(user_id=user.id).all()
     turmas_info = []

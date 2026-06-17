@@ -96,6 +96,25 @@
             color: var(--color-danger);
             background: rgba(239, 68, 68, 0.1);
         }
+        .turma-edit-btn {
+            position: absolute;
+            top: 20px;
+            right: 52px;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .turma-edit-btn:hover {
+            color: var(--color-primary);
+            background: rgba(79, 70, 229, 0.1);
+        }
         .add-turma-card {
             border: 2px dashed var(--border-color);
             background: rgba(255, 255, 255, 0.02);
@@ -249,6 +268,13 @@
                     <h3>{{ t.nome }}</h3>
                 </div>
                 
+                <button class="turma-edit-btn" onclick="openEditModal(event, {{ t.id }}, '{{ t.nome|escape }}')" title="Editar Nome da Turma">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+
                 <button class="turma-delete-btn" onclick="confirmDelete(event, {{ t.id }}, '{{ t.nome }}')" title="Excluir Turma">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"></polyline>
@@ -300,6 +326,27 @@
         </div>
     </div>
 
+    <!-- Modal para Editar Turma -->
+    <div class="modal-overlay" id="edit-turma-modal">
+        <div class="glass-panel modal-card" style="padding: 24px;">
+            <div class="modal-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-weight: 700;">Editar Nome da Turma</h3>
+                <button class="modal-close" onclick="closeEditModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('index') }}" method="POST">
+                    <input type="hidden" name="action" value="edit_turma">
+                    <input type="hidden" name="turma_id" id="edit-turma-id">
+                    <div class="form-group">
+                        <label for="edit_turma_nome" class="form-label">Nome da Turma</label>
+                        <input type="text" id="edit_turma_nome" name="turma_nome" class="form-input" placeholder="Ex: Turma Engenharia 2026-A" required autocomplete="off">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Salvar Alterações</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Formulário Invisível para Deletar Turma -->
     <form id="delete-turma-form" action="{{ url_for('index') }}" method="POST" style="display: none;">
         <input type="hidden" name="action" value="delete_turma">
@@ -316,6 +363,18 @@
         }
         function closeCreateModal() {
             document.getElementById('create-turma-modal').classList.remove('active');
+        }
+
+        function openEditModal(event, id, nome) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.getElementById('edit-turma-id').value = id;
+            document.getElementById('edit_turma_nome').value = nome;
+            document.getElementById('edit-turma-modal').classList.add('active');
+            document.getElementById('edit_turma_nome').focus();
+        }
+        function closeEditModal() {
+            document.getElementById('edit-turma-modal').classList.remove('active');
         }
 
         function confirmDelete(event, id, nome) {
