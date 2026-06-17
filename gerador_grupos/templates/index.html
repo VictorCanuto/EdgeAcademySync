@@ -168,11 +168,7 @@
                             <div class="bloco-edit-grid">
                                 <div>
                                     <label class="form-label" style="font-size:0.75rem;">Nome do Grupo</label>
-                                    <select name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
-                                        {% for opcao in nomes_blocos_opcoes %}
-                                        <option value="{{ opcao }}">{{ opcao }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <input type="text" name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" placeholder="Ex: Grupo A" value="Grupo 1" required>
                                 </div>
                                 <div>
                                     <label class="form-label" style="font-size:0.75rem;">Início</label>
@@ -216,11 +212,7 @@
         <div class="bloco-edit-grid">
             <div>
                 <label class="form-label" style="font-size:0.75rem;">Nome do Grupo</label>
-                <select name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
-                    {% for opcao in nomes_blocos_opcoes %}
-                    <option value="{{ opcao }}">{{ opcao }}</option>
-                    {% endfor %}
-                </select>
+                <input type="text" name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" placeholder="Ex: Grupo B" required>
             </div>
             <div>
                 <label class="form-label" style="font-size:0.75rem;">Início</label>
@@ -368,11 +360,7 @@
                                     <div class="bloco-edit-grid">
                                         <div>
                                             <label class="form-label" style="font-size:0.75rem;">Nome do Grupo</label>
-                                            <select name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
-                                                {% for opcao in nomes_blocos_opcoes %}
-                                                <option value="{{ opcao }}" {% if b.nome == opcao %}selected{% endif %}>{{ opcao }}</option>
-                                                {% endfor %}
-                                            </select>
+                                            <input type="text" name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" value="{{ b.nome }}" placeholder="Ex: Grupo A" required>
                                         </div>
                                         <div>
                                             <label class="form-label" style="font-size:0.75rem;">Início</label>
