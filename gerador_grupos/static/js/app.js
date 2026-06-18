@@ -1012,16 +1012,18 @@ function setupUploadProgress() {
                 }, 800);
             } else {
                 if (overlay) overlay.classList.remove('active');
+                console.error("Erro no upload de PDFs. Status:", xhr.status, "Texto:", xhr.statusText, "Resposta:", xhr.responseText);
                 showToast("Erro de Processamento", "Ocorreu um erro ao enviar e processar os PDFs.", "danger");
             }
         };
 
         xhr.onerror = () => {
             if (overlay) overlay.classList.remove('active');
+            console.error("Erro de conexão/rede no upload de PDFs.");
             showToast("Erro de Conexão", "Não foi possível conectar ao servidor para enviar os arquivos.", "danger");
         };
 
-        xhr.open('POST', form.action, true);
+        xhr.open('POST', form.getAttribute('action'), true);
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.send(formData);
     });
