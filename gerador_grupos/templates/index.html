@@ -468,6 +468,19 @@
     </div>
     {% endif %}
 
+    <!-- Overlay de Progresso de Upload de PDFs -->
+    <div class="progress-overlay" id="upload-progress-overlay">
+        <div class="glass-panel progress-card">
+            <div class="progress-spinner"></div>
+            <h4 id="progress-title">Enviando Atestados</h4>
+            <p id="progress-status">Preparando arquivos para envio...</p>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progress-bar-fill"></div>
+            </div>
+            <div class="progress-percentage" id="progress-percentage">0%</div>
+        </div>
+    </div>
+
     <!-- Container de Toasters -->
     <div class="toast-container" id="toast-messages-container"></div>
 

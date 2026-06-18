@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Ligar interface de arquivos do Passo 1 se visível
     setupDragDropWizard();
+    setupUploadProgress();
 
     // Inicializar Workspace se o usuário possuir base_data
     if (window.flaskData.hasBaseData) {
@@ -939,6 +940,78 @@ function renderFileList(files, container) {
             item.innerHTML = `<span>📄 ${file.name}</span>`;
             container.appendChild(item);
         }
+    });
+}
+
+function setupUploadProgress() {
+    const form = document.getElementById('upload-form-real');
+    if (!form) return;
+
+    form.addEventListener('submit', (e) => {
+        const fileInput = document.getElementById('pdf-files-real');
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            return; // let HTML5 validation handle empty file selection
+        }
+
+        e.preventDefault();
+
+        // Show overlay
+        const overlay = document.getElementById('upload-progress-overlay');
+        const title = document.getElementById('progress-title');
+        const status = document.getElementById('progress-status');
+        const barFill = document.getElementById('progress-bar-fill');
+        const percentage = document.getElementById('progress-percentage');
+
+        if (overlay) overlay.classList.add('active');
+        if (title) title.innerText = "Preparando Envio";
+        if (status) status.innerText = "Empacotando atestados para transmissão...";
+        if (barFill) barFill.style.width = "0%";
+        if (percentage) percentage.innerText = "0%";
+
+        const formData = new FormData(form);
+        const xhr = new XMLHttpRequest();
+
+        // Track upload progress
+        xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+                const percent = Math.round((event.loaded / event.total) * 100);
+                if (barFill) barFill.style.width = percent + "%";
+                if (percentage) percentage.innerText = percent + "%";
+
+                if (percent < 100) {
+                    if (title) title.innerText = "Enviando Atestados";
+                    if (status) status.innerText = `Enviando arquivos para o servidor: ${percent}% concluído.`;
+                } else {
+                    if (title) title.innerText = "Envio Concluído";
+                    if (status) status.innerText = "Arquivos recebidos com sucesso! Processando e extraindo horários...";
+                }
+            }
+        });
+
+        // Track response completion
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                if (status) status.innerText = "Processamento concluído com sucesso! Atualizando workspace...";
+                setTimeout(() => {
+                    if (xhr.responseURL) {
+                        window.location.href = xhr.responseURL;
+                    } else {
+                        window.location.reload();
+                    }
+                }, 800);
+            } else {
+                if (overlay) overlay.classList.remove('active');
+                showToast("Erro de Processamento", "Ocorreu um erro ao enviar e processar os PDFs.", "danger");
+            }
+        };
+
+        xhr.onerror = () => {
+            if (overlay) overlay.classList.remove('active');
+            showToast("Erro de Conexão", "Não foi possível conectar ao servidor para enviar os arquivos.", "danger");
+        };
+
+        xhr.open('POST', form.action, true);
+        xhr.send(formData);
     });
 }
 
