@@ -1,7 +1,7 @@
 import os
 import pickle
 import json
-from flask import (Flask, request, render_template, session, redirect, url_for, flash, send_file, render_template_string)
+from flask import (Flask, request, render_template, session, redirect, url_for, flash, send_file, render_template_string, jsonify)
 from werkzeug.utils import secure_filename
 import pandas as pd
 from io import BytesIO
@@ -863,7 +863,9 @@ def view_turma(turma_id):
             files = request.files.getlist('pdf_files')
             if not files or files[0].filename == '':
                 flash('Nenhum arquivo selecionado.', 'error')
-                return redirect(request.url)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return jsonify({"success": True, "redirect_url": url_for('view_turma', turma_id=turma_id)})
+                return redirect(url_for('view_turma', turma_id=turma_id))
 
             filepaths = []
             upload_folder_user = os.path.join(user_data_folder, 'uploads') if user_data_folder else 'uploads'
@@ -896,6 +898,8 @@ def view_turma(turma_id):
             else:
                 flash('Não foi possível extrair dados válidos dos PDFs.', 'error')
             
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({"success": True, "redirect_url": url_for('view_turma', turma_id=turma_id)})
             return redirect(url_for('view_turma', turma_id=turma_id))
 
         elif action == 'generate_groups':

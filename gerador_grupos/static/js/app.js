@@ -992,6 +992,17 @@ function setupUploadProgress() {
         xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
                 if (status) status.innerText = "Processamento concluído com sucesso! Atualizando workspace...";
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.success && response.redirect_url) {
+                        setTimeout(() => {
+                            window.location.href = response.redirect_url;
+                        }, 800);
+                        return;
+                    }
+                } catch (e) {
+                    // Fallback to standard redirect
+                }
                 setTimeout(() => {
                     if (xhr.responseURL) {
                         window.location.href = xhr.responseURL;
@@ -1011,6 +1022,7 @@ function setupUploadProgress() {
         };
 
         xhr.open('POST', form.action, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.send(formData);
     });
 }
