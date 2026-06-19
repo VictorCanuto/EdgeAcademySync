@@ -311,6 +311,27 @@
                         </div>
                     </div>
 
+                    <!-- Barra de Filtros -->
+                    <div class="spreadsheet-filters-bar">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label class="form-label" style="margin-bottom: 0; font-size: 0.85rem; white-space: nowrap;">📂 Filtrar Grupo:</label>
+                            <select id="filter-group-select" class="form-input" style="padding: 8px 12px; font-size: 0.85rem; width: 180px; min-width: 150px; background: rgba(255, 255, 255, 0.05);" onchange="handleGroupFilterChange(this.value)">
+                                <option value="all">Todos os Alunos</option>
+                                <option value="sem-grupo">Sem Grupo</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem; height: 38px;" onclick="openCompareModal()">
+                                🔍 Comparar Alunos
+                            </button>
+                        </div>
+
+                        <div id="filter-active-status" style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-left: auto;">
+                            <!-- Injetado via JS -->
+                        </div>
+                    </div>
+
                     <!-- Tabela Grid -->
                     <div class="table-wrapper">
                         <table class="styled-table" id="spreadsheet-main-table">
@@ -462,6 +483,34 @@
                     <table class="group-matrix-table" id="group-matrix-compatibility-table">
                         <!-- Grade de Sincronia injetada via JS -->
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Comparação de Alunos -->
+    <div class="modal-overlay" id="compare-students-modal-overlay">
+        <div class="glass-panel modal-card" style="max-width: 600px; width: 90%;">
+            <div class="modal-header">
+                <h3>🔍 Comparação de Alunos</h3>
+                <button class="modal-close" onclick="closeCompareModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+                    Selecione dois ou mais alunos para comparar seus horários lado a lado na planilha geral.
+                </p>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <input type="text" id="compare-search-input" class="form-input" placeholder="Buscar aluno pelo nome..." oninput="filterCompareList()">
+                </div>
+                <div class="compare-students-list-container" id="compare-students-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px; padding-right: 8px;">
+                    <!-- Preenchido dinamicamente via JS -->
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="btn btn-secondary" style="padding: 8px 12px; font-size: 0.8rem;" onclick="selectAllCompare(true)">Selecionar Todos</button>
+                        <button type="button" class="btn btn-secondary" style="padding: 8px 12px; font-size: 0.8rem;" onclick="selectAllCompare(false)">Limpar Seleção</button>
+                    </div>
+                    <button type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.9rem;" onclick="applyCompareFilter()">Aplicar Filtro</button>
                 </div>
             </div>
         </div>

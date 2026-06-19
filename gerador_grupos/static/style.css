@@ -1536,3 +1536,74 @@ body:not(.dark-mode) .progress-spinner {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* ==========================================================================
+   BARRA DE FILTROS E COMPARAÇÃO DE ESTUDANTES
+   ========================================================================== */
+.spreadsheet-filters-bar {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+body.dark-mode .spreadsheet-filters-bar {
+    background: rgba(15, 23, 42, 0.25);
+}
+
+.compare-students-list-container {
+    padding-right: 4px;
+}
+
+.compare-students-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
+    padding: 2px;
+}
+
+.compare-student-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+.compare-student-item:hover {
+    background: var(--border-color);
+    border-color: var(--border-color-hover);
+}
+.compare-student-item.selected {
+    background: rgba(79, 70, 229, 0.1);
+    border-color: var(--color-primary);
+}
+body.dark-mode .compare-student-item.selected {
+    background: rgba(99, 102, 241, 0.15);
+}
+
+.compare-student-item input[type="checkbox"] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+    margin: 0;
+}
+
+.compare-student-item label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+}

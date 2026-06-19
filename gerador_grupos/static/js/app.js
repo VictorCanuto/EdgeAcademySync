@@ -28,6 +28,10 @@ function parseHorarioHours(horarioStr) {
 // Estado local para a planilha geral carregada do servidor
 let studentSchedules = {};
 
+// Estado local de filtros para a planilha geral
+let activeGroupFilter = 'all';
+let selectedCompareStudents = new Set();
+
 // Estado para o Popover de Edição
 let activePopover = {
     alunoNome: null,
@@ -147,6 +151,41 @@ function renderSpreadsheet() {
     const listAlunos = window.flaskData.listaAlunos;
     if (listAlunos.length === 0) return;
 
+    // Inicializar os filtros da planilha
+    initSpreadsheetFilters();
+
+    // Filtrar a lista de alunos com base nos filtros ativos
+    const filteredAlunos = listAlunos.filter(alunoNome => {
+        // 1. Filtro de Grupo
+        if (activeGroupFilter !== 'all') {
+            const grupoInfo = window.flaskData.grupos.find(g => {
+                return g.Membros.some(m => m.nome.toLowerCase() === alunoNome.toLowerCase());
+            });
+            if (activeGroupFilter === 'sem-grupo') {
+                if (grupoInfo) return false;
+            } else {
+                if (!grupoInfo || String(grupoInfo.Grupo) !== String(activeGroupFilter)) return false;
+            }
+        }
+
+        // 2. Filtro de Comparação
+        if (selectedCompareStudents.size > 0) {
+            if (!selectedCompareStudents.has(alunoNome)) return false;
+        }
+
+        return true;
+    });
+
+    // Atualizar texto informativo de status do filtro
+    const statusText = document.getElementById('filter-active-status');
+    if (statusText) {
+        let text = `Mostrando ${filteredAlunos.length} de ${listAlunos.length} alunos`;
+        if (selectedCompareStudents.size > 0 || activeGroupFilter !== 'all') {
+            text += ` (Filtro Ativo - <a href="#" onclick="clearAllFilters(event)" style="color: var(--color-primary); text-decoration: none; font-weight: 600;">Limpar</a>)`;
+        }
+        statusText.innerHTML = text;
+    }
+
     // Criar thead e tbody
     let thead = table.querySelector('thead');
     if (!thead) {
@@ -182,7 +221,7 @@ function renderSpreadsheet() {
     thead.appendChild(trHours);
 
     // Linhas dos estudantes
-    listAlunos.forEach(alunoNome => {
+    filteredAlunos.forEach(alunoNome => {
         const tr = document.createElement('tr');
 
         // Célula fixa do estudante
@@ -1130,4 +1169,155 @@ function setupGlobalEventListeners() {
             }
         }
     });
+}
+
+// ==========================================================================
+// FILTROS E COMPARAÇÃO DE ALUNOS NA PLANILHA GERAL
+// ==========================================================================
+function initSpreadsheetFilters() {
+    const groupSelect = document.getElementById('filter-group-select');
+    if (!groupSelect) return;
+
+    // Se o dropdown já foi preenchido com os grupos, evite repopular para não perder seleção
+    if (groupSelect.children.length > 2) return;
+
+    const grupos = window.flaskData.grupos || [];
+    grupos.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g.Grupo;
+        opt.innerText = `Grupo ${g.Grupo}`;
+        groupSelect.appendChild(opt);
+    });
+}
+
+function handleGroupFilterChange(value) {
+    activeGroupFilter = value;
+    renderSpreadsheet();
+}
+
+function openCompareModal() {
+    const modal = document.getElementById('compare-students-modal-overlay');
+    if (modal) {
+        modal.classList.add('active');
+        // Limpar campo de busca
+        const searchInput = document.getElementById('compare-search-input');
+        if (searchInput) searchInput.value = '';
+        
+        populateCompareModalList();
+    }
+}
+
+function closeCompareModal() {
+    const modal = document.getElementById('compare-students-modal-overlay');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function populateCompareModalList() {
+    const container = document.getElementById('compare-students-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const listAlunos = window.flaskData.listaAlunos;
+    if (listAlunos.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">Nenhum aluno cadastrado.</p>';
+        return;
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'compare-students-grid';
+
+    listAlunos.forEach(alunoNome => {
+        const item = document.createElement('div');
+        item.className = 'compare-student-item';
+        if (selectedCompareStudents.has(alunoNome)) {
+            item.classList.add('selected');
+        }
+
+        const isChecked = selectedCompareStudents.has(alunoNome) ? 'checked' : '';
+
+        item.innerHTML = `
+            <input type="checkbox" id="chk-comp-${alunoNome}" value="${alunoNome}" ${isChecked} onchange="handleCompareCheckboxChange(this)">
+            <label for="chk-comp-${alunoNome}">${alunoNome}</label>
+        `;
+        
+        // Clicar no item todo também marca o checkbox
+        item.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
+                const chk = item.querySelector('input[type="checkbox"]');
+                chk.checked = !chk.checked;
+                handleCompareCheckboxChange(chk);
+            }
+        });
+
+        grid.appendChild(item);
+    });
+
+    container.appendChild(grid);
+}
+
+function handleCompareCheckboxChange(checkbox) {
+    const card = checkbox.closest('.compare-student-item');
+    if (!card) return;
+    
+    if (checkbox.checked) {
+        card.classList.add('selected');
+    } else {
+        card.classList.remove('selected');
+    }
+}
+
+function filterCompareList() {
+    const query = document.getElementById('compare-search-input').value.toLowerCase();
+    const items = document.querySelectorAll('.compare-student-item');
+    
+    items.forEach(item => {
+        const labelText = item.querySelector('label').innerText.toLowerCase();
+        if (labelText.includes(query)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function selectAllCompare(select) {
+    const checkboxes = document.querySelectorAll('#compare-students-list input[type="checkbox"]');
+    checkboxes.forEach(chk => {
+        const item = chk.closest('.compare-student-item');
+        // Só altera os que estão visíveis pela busca ativa
+        if (item && item.style.display !== 'none') {
+            chk.checked = select;
+            handleCompareCheckboxChange(chk);
+        }
+    });
+}
+
+function applyCompareFilter() {
+    const checkboxes = document.querySelectorAll('#compare-students-list input[type="checkbox"]');
+    selectedCompareStudents.clear();
+    
+    checkboxes.forEach(chk => {
+        if (chk.checked) {
+            selectedCompareStudents.add(chk.value);
+        }
+    });
+
+    closeCompareModal();
+    renderSpreadsheet();
+}
+
+function clearAllFilters(e) {
+    if (e) e.preventDefault();
+    
+    // Resetar filtro de grupo
+    const groupSelect = document.getElementById('filter-group-select');
+    if (groupSelect) groupSelect.value = 'all';
+    activeGroupFilter = 'all';
+
+    // Limpar comparação
+    selectedCompareStudents.clear();
+
+    renderSpreadsheet();
 }
