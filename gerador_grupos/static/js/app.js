@@ -147,22 +147,39 @@ function renderSpreadsheet() {
     const listAlunos = window.flaskData.listaAlunos;
     if (listAlunos.length === 0) return;
 
+    // Criar thead e tbody
+    let thead = table.querySelector('thead');
+    if (!thead) {
+        thead = document.createElement('thead');
+        table.appendChild(thead);
+    } else {
+        thead.innerHTML = '';
+    }
+
+    let tbody = table.querySelector('tbody');
+    if (!tbody) {
+        tbody = document.createElement('tbody');
+        table.appendChild(tbody);
+    } else {
+        tbody.innerHTML = '';
+    }
+
     // Header 1: Dias da Semana
     const trDays = document.createElement('tr');
-    trDays.innerHTML = `<th rowspan="2" style="position: sticky; left:0; z-index:11; background: var(--bg-card);">Estudantes</th>`;
+    trDays.innerHTML = `<th rowspan="2" class="sticky-header estudantes-header">Estudantes</th>`;
     DIAS_SEMANA.forEach(dia => {
-        trDays.innerHTML += `<th colspan="${HORARIOS.length}">${dia}</th>`;
+        trDays.innerHTML += `<th colspan="${HORARIOS.length}" class="sticky-header day-header">${dia}</th>`;
     });
-    table.appendChild(trDays);
+    thead.appendChild(trDays);
 
     // Header 2: Horários
     const trHours = document.createElement('tr');
     DIAS_SEMANA.forEach(() => {
         HORARIOS.forEach(hora => {
-            trHours.innerHTML += `<th style="font-size: 0.72rem; font-weight: 500; min-width: 42px;">${String(hora).padStart(2, '0')}h</th>`;
+            trHours.innerHTML += `<th class="sticky-header hour-header">${String(hora).padStart(2, '0')}h</th>`;
         });
     });
-    table.appendChild(trHours);
+    thead.appendChild(trHours);
 
     // Linhas dos estudantes
     listAlunos.forEach(alunoNome => {
@@ -226,7 +243,7 @@ function renderSpreadsheet() {
             });
         });
 
-        table.appendChild(tr);
+        tbody.appendChild(tr);
     });
 }
 

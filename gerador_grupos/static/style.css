@@ -731,6 +731,11 @@ input:checked + .slider:before {
     border-radius: 10px;
 }
 
+.spreadsheet-card .table-wrapper {
+    max-height: calc(100vh - 290px);
+    overflow-y: auto;
+}
+
 .styled-table {
     width: 100%;
     border-collapse: collapse;
@@ -742,8 +747,11 @@ input:checked + .slider:before {
     border: 1px solid var(--border-color);
 }
 .styled-table th {
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff; /* Fundo sólido para evitar transparência */
     font-weight: 600;
+}
+body.dark-mode .styled-table th {
+    background: #111a2e; /* Fundo sólido escuro */
 }
 .styled-table td.aluno-name-cell {
     text-align: left;
@@ -751,11 +759,41 @@ input:checked + .slider:before {
     min-width: 180px;
     position: sticky;
     left: 0;
-    background: var(--bg-card);
+    background: #ffffff; /* Fundo sólido para evitar vazamento horizontal */
     z-index: 10;
 }
 body.dark-mode .styled-table td.aluno-name-cell {
     background: #111a2e;
+}
+
+/* Classes para cabeçalhos fixos (sticky) na planilha */
+.styled-table th.sticky-header {
+    position: sticky;
+    box-sizing: border-box;
+    z-index: 20;
+}
+.styled-table th.estudantes-header {
+    left: 0;
+    top: 0;
+    z-index: 30; /* Fica acima das outras células fixas */
+}
+.styled-table th.day-header {
+    top: 0;
+}
+.styled-table th.hour-header {
+    top: 40px; /* Posiciona logo abaixo da linha dos dias */
+    font-size: 0.72rem;
+    font-weight: 500;
+    min-width: 42px;
+}
+
+/* Garante altura exata de 40px para a primeira linha do cabeçalho */
+.styled-table thead tr:first-child,
+.styled-table thead tr:first-child th.day-header,
+.styled-table thead tr:first-child th.estudantes-header {
+    height: 40px;
+    line-height: 20px;
+    padding: 10px 14px;
 }
 
 /* Células de Horários */
