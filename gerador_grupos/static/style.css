@@ -1607,3 +1607,31 @@ body.dark-mode .compare-student-item.selected {
     white-space: nowrap;
     width: 100%;
 }
+
+/* ==========================================================================
+   DIAS DA SEMANA MINIMIZÁVEIS (COLAPSÁVEIS)
+   ========================================================================== */
+.styled-table th.day-header {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.15s ease;
+}
+.styled-table th.day-header:hover {
+    background: linear-gradient(rgba(79, 70, 229, 0.15), rgba(79, 70, 229, 0.15)), #ffffff !important;
+}
+body.dark-mode .styled-table th.day-header:hover {
+    background: linear-gradient(rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.25)), #111a2e !important;
+}
+
+.styled-table td.collapsed-day-placeholder {
+    background-color: var(--cell-empty-bg) !important;
+    cursor: pointer;
+    min-width: 50px;
+    width: 50px;
+    height: 38px;
+    transition: background-color 0.15s ease;
+    border: 1px solid var(--border-color);
+}
+.styled-table td.collapsed-day-placeholder:hover {
+    background-color: var(--border-color-hover) !important;
+}

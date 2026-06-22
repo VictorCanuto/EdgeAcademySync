@@ -32,6 +32,19 @@ let studentSchedules = {};
 let activeGroupFilter = 'all';
 let selectedCompareStudents = new Set();
 
+// Estado local de colapso de dias da semana
+let collapsedDays = JSON.parse(localStorage.getItem('academysync_collapsed_days')) || [];
+
+// Mapeamento de nomes de dias completos para curtos
+const DIAS_CURTOS = {
+    'Segunda': 'Seg',
+    'Terça': 'Ter',
+    'Quarta': 'Qua',
+    'Quinta': 'Qui',
+    'Sexta': 'Sex',
+    'Sábado': 'Sáb'
+};
+
 // Estado para o Popover de Edição
 let activePopover = {
     alunoNome: null,
@@ -205,18 +218,47 @@ function renderSpreadsheet() {
 
     // Header 1: Dias da Semana
     const trDays = document.createElement('tr');
-    trDays.innerHTML = `<th rowspan="2" class="sticky-header estudantes-header">Estudantes</th>`;
+    
+    const thEstudantes = document.createElement('th');
+    thEstudantes.rowSpan = 2;
+    thEstudantes.className = 'sticky-header estudantes-header';
+    thEstudantes.innerText = 'Estudantes';
+    trDays.appendChild(thEstudantes);
+
     DIAS_SEMANA.forEach(dia => {
-        trDays.innerHTML += `<th colspan="${HORARIOS.length}" class="sticky-header day-header">${dia}</th>`;
+        const th = document.createElement('th');
+        th.className = 'sticky-header day-header';
+        
+        const isCollapsed = collapsedDays.includes(dia);
+        if (isCollapsed) {
+            th.colSpan = 1;
+            th.rowSpan = 2;
+            th.innerHTML = `${DIAS_CURTOS[dia]} <span style="font-size: 0.65rem; opacity: 0.7;">▸</span>`;
+            th.title = `Clique para expandir ${dia}-feira`;
+        } else {
+            th.colSpan = HORARIOS.length;
+            th.rowSpan = 1;
+            th.innerHTML = `${dia} <span style="font-size: 0.65rem; opacity: 0.7;">▾</span>`;
+            th.title = `Clique para minimizar ${dia}-feira`;
+        }
+
+        th.addEventListener('click', () => toggleDayCollapse(dia));
+        trDays.appendChild(th);
     });
     thead.appendChild(trDays);
 
     // Header 2: Horários
     const trHours = document.createElement('tr');
-    DIAS_SEMANA.forEach(() => {
-        HORARIOS.forEach(hora => {
-            trHours.innerHTML += `<th class="sticky-header hour-header">${String(hora).padStart(2, '0')}h</th>`;
-        });
+    DIAS_SEMANA.forEach(dia => {
+        const isCollapsed = collapsedDays.includes(dia);
+        if (!isCollapsed) {
+            HORARIOS.forEach(hora => {
+                const th = document.createElement('th');
+                th.className = 'sticky-header hour-header';
+                th.innerText = `${String(hora).padStart(2, '0')}h`;
+                trHours.appendChild(th);
+            });
+        }
     });
     thead.appendChild(trHours);
 
@@ -252,34 +294,43 @@ function renderSpreadsheet() {
         const agendaAluno = studentSchedules[alunoNome] || {};
         
         DIAS_SEMANA.forEach(dia => {
-            HORARIOS.forEach(hora => {
+            const isCollapsed = collapsedDays.includes(dia);
+            if (isCollapsed) {
                 const td = document.createElement('td');
-                td.className = 'sched-cell';
-                const key = `${dia}_${hora}`;
-                const state = agendaAluno[key] || 'free';
-
-                if (state === 'free') {
-                    td.classList.add('free');
-                    td.innerText = 'L';
-                } else if (state === 'class') {
-                    td.classList.add('class');
-                    td.innerText = 'X';
-                } else if (state === 'follow') {
-                    td.classList.add('follow');
-                    td.innerText = 'P';
-                } else {
-                    td.classList.add('custom-comp');
-                    td.innerText = String(state).charAt(0).toUpperCase();
-                    td.title = state;
-                }
-
-                // Evento clique do popover
-                td.addEventListener('click', (e) => {
-                    openPopover(e, alunoNome, dia, hora);
-                });
-
+                td.className = 'sched-cell collapsed-day-placeholder';
+                td.title = `${alunoNome} - Clique para expandir ${dia}-feira`;
+                td.addEventListener('click', () => toggleDayCollapse(dia));
                 tr.appendChild(td);
-            });
+            } else {
+                HORARIOS.forEach(hora => {
+                    const td = document.createElement('td');
+                    td.className = 'sched-cell';
+                    const key = `${dia}_${hora}`;
+                    const state = agendaAluno[key] || 'free';
+
+                    if (state === 'free') {
+                        td.classList.add('free');
+                        td.innerText = 'L';
+                    } else if (state === 'class') {
+                        td.classList.add('class');
+                        td.innerText = 'X';
+                    } else if (state === 'follow') {
+                        td.classList.add('follow');
+                        td.innerText = 'P';
+                    } else {
+                        td.classList.add('custom-comp');
+                        td.innerText = String(state).charAt(0).toUpperCase();
+                        td.title = state;
+                    }
+
+                    // Evento clique do popover
+                    td.addEventListener('click', (e) => {
+                        openPopover(e, alunoNome, dia, hora);
+                    });
+
+                    tr.appendChild(td);
+                });
+            }
         });
 
         tbody.appendChild(tr);
@@ -1319,5 +1370,16 @@ function clearAllFilters(e) {
     // Limpar comparação
     selectedCompareStudents.clear();
 
+    renderSpreadsheet();
+}
+
+function toggleDayCollapse(dia) {
+    const idx = collapsedDays.indexOf(dia);
+    if (idx > -1) {
+        collapsedDays.splice(idx, 1);
+    } else {
+        collapsedDays.push(dia);
+    }
+    localStorage.setItem('academysync_collapsed_days', JSON.stringify(collapsedDays));
     renderSpreadsheet();
 }
