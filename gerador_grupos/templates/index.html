@@ -210,39 +210,6 @@
         </div>
     </main>
 
-    <!-- Template invisível de novos blocos usado pelo JS -->
-    <div id="new-block-template" style="display: none;">
-        <div class="bloco-edit-grid">
-            <div>
-                <label class="form-label" style="font-size:0.75rem;">Nome do Grupo</label>
-                <input type="text" name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" placeholder="Ex: Grupo B" required>
-            </div>
-            <div>
-                <label class="form-label" style="font-size:0.75rem;">Início</label>
-                <select name="bloco_inicio[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
-                    {% for hora in horarios_disponiveis %}
-                    <option value="{{ hora }}" {% if hora == 10 %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="form-label" style="font-size:0.75rem;">Fim</label>
-                <select name="bloco_fim[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
-                    {% for hora in horarios_disponiveis %}
-                    <option value="{{ hora }}" {% if hora == 12 %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="form-label" style="font-size:0.75rem;">Dia da Semana</label>
-                <select name="bloco_dias[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
-                    {% for dia in dias_semana_opcoes %}
-                    <option value="{{ dia.valor }}">{{ dia.texto }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-    </div>
     {% endif %}
 
     <!-- ==========================================================================
@@ -516,6 +483,40 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Template invisível de novos blocos usado pelo JS (disponível globalmente em todos os estados) -->
+    <div id="new-block-template" style="display: none;">
+        <div class="bloco-edit-grid">
+            <div>
+                <label class="form-label" style="font-size:0.75rem;">Nome do Grupo</label>
+                <input type="text" name="bloco_nome[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" placeholder="Ex: Grupo B" required>
+            </div>
+            <div>
+                <label class="form-label" style="font-size:0.75rem;">Início</label>
+                <select name="bloco_inicio[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                    {% for hora in horarios_disponiveis %}
+                    <option value="{{ hora }}" {% if hora == 10 %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label" style="font-size:0.75rem;">Fim</label>
+                <select name="bloco_fim[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                    {% for hora in horarios_disponiveis %}
+                    <option value="{{ hora }}" {% if hora == 12 %}selected{% endif %}>{{ "%02d:00" | format(hora) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="form-label" style="font-size:0.75rem;">Dia da Semana</label>
+                <select name="bloco_dias[]" class="form-input" style="padding: 6px 10px; font-size:0.8rem;" required>
+                    {% for dia in dias_semana_opcoes %}
+                    <option value="{{ dia.valor }}">{{ dia.texto }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
 
     <!-- Overlay de Progresso de Upload de PDFs -->
     <div class="progress-overlay" id="upload-progress-overlay">
