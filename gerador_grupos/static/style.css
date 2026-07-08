@@ -251,6 +251,32 @@ body {
     font-weight: 500;
 }
 
+.header-menu {
+    list-style: none;
+    display: flex;
+    gap: 16px;
+}
+
+.header-menu-item {
+   padding: 8px 16px;
+}
+
+.header-menu-item a {
+    color: var(--text-main);
+    text-decoration: none;
+}
+
+.header-menu-item a:hover {
+    color: var(--color-primary-hover);
+}
+
+a.active{
+    color: var(--color-primary-hover);
+    font-weight: 600;
+    border-bottom: 2px solid var(--color-primary-hover);
+}
+
+
 .header-actions {
     display: flex;
     align-items: center;

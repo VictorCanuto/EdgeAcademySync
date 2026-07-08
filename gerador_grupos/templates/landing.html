@@ -193,6 +193,14 @@
             </div>
         </div>
 
+        <nav>
+            <ul class="header-menu">
+                <li class="header-menu-item"  ><a {% if request.path == '/' %} class="active" {% endif %} href="/">Home</a></li>
+                <li class="header-menu-item" ><a {% if request.path == '/alunos' %} class="active" {% endif %} href="/alunos">Alunos</a></li>
+                <li class="header-menu-item" ><a {% if request.path == '/turmas-imersao' %} class="active" {% endif %} href="/turmas-imersao">Turmas imersão</a></li>
+            </ul>
+        </nav>
+
         <div class="header-actions">
             <!-- Switch Modo Claro/Escuro -->
             <div class="theme-switch-wrapper">
