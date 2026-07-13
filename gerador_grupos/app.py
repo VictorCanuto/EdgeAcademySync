@@ -105,8 +105,32 @@ class Turma(db.Model):
     base_data = db.Column(db.LargeBinary, nullable=True)      # Conteúdo do CSV consolidado
     groups_result = db.Column(db.LargeBinary, nullable=True)  # Dicionário do Pickle serializado
     
+    em_imersao = db.Column(db.Boolean, default=False)
     user = db.relationship('User', backref=db.backref('turmas', lazy=True, cascade="all, delete-orphan"))
 
+
+class Grupo(db.Model):
+    __tablename__ = 'grupos'
+    id = db.Column(db.Integer, primary_key=True)
+    turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=False)
+    nome = db.Column(db.String(120), nullable=False)
+    dia = db.Column(db.String(120), nullable=False)
+    horario = db.Column(db.String(120), nullable=False)
+
+    turma = db.relationship('Turma', backref=db.backref('grupos', lazy=True, cascade="all, delete-orphan"))
+
+
+class Aluno(db.Model):
+    __tablename__ = 'alunos'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(120), nullable=False)
+    nome_custom = db.Column(db.String(120), nullable=True)
+    turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=True)
+    grupo_id = db.Column(db.Integer, db.ForeignKey('grupos.id'), nullable=True)
+   
+    turma = db.relationship('Turma', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
+    grupo = db.relationship('Grupo', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
+    
 # Inicializa as tabelas do banco de dados se não existirem
 with app.app_context():
     db.create_all()
