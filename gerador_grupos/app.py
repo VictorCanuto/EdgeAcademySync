@@ -108,7 +108,11 @@ class Turma(db.Model):
     em_imersao = db.Column(db.Boolean, default=False)
     user = db.relationship('User', backref=db.backref('turmas', lazy=True, cascade="all, delete-orphan"))
 
+<<<<<<< HEAD
 # Modelo de Grupo
+=======
+
+>>>>>>> a9e44cd09e6580b659360c4480e018587c8c48d3
 class Grupo(db.Model):
     __tablename__ = 'grupos'
     id = db.Column(db.Integer, primary_key=True)
@@ -116,10 +120,17 @@ class Grupo(db.Model):
     nome = db.Column(db.String(120), nullable=False)
     dia = db.Column(db.String(120), nullable=False)
     horario = db.Column(db.String(120), nullable=False)
+<<<<<<< HEAD
     
     turma = db.relationship('Turma', backref=db.backref('grupos', lazy=True, cascade="all, delete-orphan"))
 
 # Modelo de Aluno
+=======
+
+    turma = db.relationship('Turma', backref=db.backref('grupos', lazy=True, cascade="all, delete-orphan"))
+
+
+>>>>>>> a9e44cd09e6580b659360c4480e018587c8c48d3
 class Aluno(db.Model):
     __tablename__ = 'alunos'
     id = db.Column(db.Integer, primary_key=True)
@@ -127,10 +138,17 @@ class Aluno(db.Model):
     nome_custom = db.Column(db.String(120), nullable=True)
     turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=True)
     grupo_id = db.Column(db.Integer, db.ForeignKey('grupos.id'), nullable=True)
+<<<<<<< HEAD
     
     turma = db.relationship('Turma', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
     grupo = db.relationship('Grupo', backref=db.backref('alunos', lazy=True))
 
+=======
+   
+    turma = db.relationship('Turma', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
+    grupo = db.relationship('Grupo', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
+    
+>>>>>>> a9e44cd09e6580b659360c4480e018587c8c48d3
 # Inicializa as tabelas do banco de dados se não existirem
 with app.app_context():
     db.create_all()
