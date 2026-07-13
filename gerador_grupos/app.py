@@ -105,12 +105,36 @@ class Turma(db.Model):
     base_data = db.Column(db.LargeBinary, nullable=True)      # Conteúdo do CSV consolidado
     groups_result = db.Column(db.LargeBinary, nullable=True)  # Dicionário do Pickle serializado
     
+    em_imersao = db.Column(db.Boolean, default=False)
     user = db.relationship('User', backref=db.backref('turmas', lazy=True, cascade="all, delete-orphan"))
+
+# Modelo de Grupo
+class Grupo(db.Model):
+    __tablename__ = 'grupos'
+    id = db.Column(db.Integer, primary_key=True)
+    turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=False)
+    nome = db.Column(db.String(120), nullable=False)
+    dia = db.Column(db.String(120), nullable=False)
+    horario = db.Column(db.String(120), nullable=False)
+    
+    turma = db.relationship('Turma', backref=db.backref('grupos', lazy=True, cascade="all, delete-orphan"))
+
+# Modelo de Aluno
+class Aluno(db.Model):
+    __tablename__ = 'alunos'
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(120), nullable=False)
+    nome_custom = db.Column(db.String(120), nullable=True)
+    turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=True)
+    grupo_id = db.Column(db.Integer, db.ForeignKey('grupos.id'), nullable=True)
+    
+    turma = db.relationship('Turma', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
+    grupo = db.relationship('Grupo', backref=db.backref('alunos', lazy=True))
 
 # Inicializa as tabelas do banco de dados se não existirem
 with app.app_context():
     db.create_all()
-    # Migração simples para adicionar colunas de pergunta de segurança caso não existam
+    # Migrações simples de colunas para compatibilidade
     try:
         db.session.execute(db.text('ALTER TABLE users ADD COLUMN security_question VARCHAR(256)'))
         db.session.commit()
@@ -119,6 +143,12 @@ with app.app_context():
         
     try:
         db.session.execute(db.text('ALTER TABLE users ADD COLUMN security_answer_hash VARCHAR(256)'))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    try:
+        db.session.execute(db.text('ALTER TABLE turmas ADD COLUMN em_imersao BOOLEAN DEFAULT FALSE'))
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -290,6 +320,83 @@ Equipe AcademySync
     except Exception as e:
         print(f"ERRO ao enviar e-mail de recuperação para {email_destino}: {e}")
         return False
+
+def _normalize_name_for_match(name: str) -> str:
+    if not isinstance(name, str):
+        return ''
+    return name.replace('_', ' ').strip().lower()
+
+def sincronizar_tabelas_dos_alunos(turma_id, base_df):
+    if base_df is None or base_df.empty:
+        return
+    try:
+        alunos_novos_nomes = set(base_df['aluno'].unique())
+        
+        # Obter alunos existentes no banco para esta turma
+        alunos_existentes = Aluno.query.filter_by(turma_id=turma_id).all()
+        mapeamento_existentes = {a.nome: a for a in alunos_existentes}
+        
+        # 1. Deletar alunos que não estão mais na base
+        for nome_antigo, aluno_obj in list(mapeamento_existentes.items()):
+            if nome_antigo not in alunos_novos_nomes:
+                db.session.delete(aluno_obj)
+                
+        # 2. Inserir ou atualizar alunos novos
+        for nome_novo in alunos_novos_nomes:
+            if nome_novo not in mapeamento_existentes:
+                novo_aluno = Aluno(
+                    nome=nome_novo,
+                    nome_custom=nome_novo.replace('_', ' '),
+                    turma_id=turma_id
+                )
+                db.session.add(novo_aluno)
+                
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao sincronizar alunos: {e}")
+
+def sincronizar_tabelas_dos_grupos(turma_id, result):
+    try:
+        # a. Resetar todos os grupo_id dos alunos dessa turma para None
+        Aluno.query.filter_by(turma_id=turma_id).update({Aluno.grupo_id: None})
+        
+        # b. Deletar todos os grupos antigos dessa turma
+        Grupo.query.filter_by(turma_id=turma_id).delete()
+        db.session.commit()
+        
+        if not result or not result.get('grupos'):
+            return
+            
+        # c. Criar os novos grupos e associar os alunos
+        for g in result.get('grupos', []):
+            g_nome = f"Grupo {g['Grupo']}" if isinstance(g.get('Grupo'), (int, float)) else str(g.get('Grupo'))
+            grupo_db = Grupo(
+                turma_id=turma_id,
+                nome=g_nome,
+                dia=g.get('Dia', ''),
+                horario=g.get('Horário', '')
+            )
+            db.session.add(grupo_db)
+            db.session.flush() # para obter o grupo_db.id
+            
+            for membro_item in g.get('Membros', []):
+                nome_membro = _get_nome_membro(membro_item)
+                # Encontrar aluno e associar
+                aluno_db = Aluno.query.filter_by(turma_id=turma_id, nome=nome_membro).first()
+                if not aluno_db:
+                    # Tentar busca normalizada
+                    all_alunos = Aluno.query.filter_by(turma_id=turma_id).all()
+                    for al in all_alunos:
+                        if _normalize_name_for_match(al.nome) == _normalize_name_for_match(nome_membro):
+                            aluno_db = al
+                            break
+                if aluno_db:
+                    aluno_db.grupo_id = grupo_db.id
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao sincronizar grupos: {e}")
 
 # --- Rotas de Autenticação ---
 @app.route('/register', methods=['GET', 'POST'])
@@ -743,6 +850,9 @@ def update_student_schedule(turma_id):
             result['slots_por_aluno'] = slots_por_aluno
             turma.groups_result = pickle.dumps(result)
             
+            # Sincronizar tabelas relacionais de grupos e alunos
+            sincronizar_tabelas_dos_grupos(turma.id, result)
+            
         db.session.commit()
         return json.dumps({
             "success": True,
@@ -894,6 +1004,9 @@ def view_turma(turma_id):
                 turma.base_data = csv_buffer.getvalue()
                 db.session.commit()
                 
+                # Sincroniza alunos na tabela Aluno
+                sincronizar_tabelas_dos_alunos(turma.id, base_df)
+                
                 flash(f'{len(base_df["aluno"].unique())} alunos processados com sucesso!', 'success')
             else:
                 flash('Não foi possível extrair dados válidos dos PDFs.', 'error')
@@ -963,6 +1076,9 @@ def view_turma(turma_id):
             # Salva o resultado dos grupos no Banco de Dados em formato Pickle binário
             turma.groups_result = pickle.dumps(result)
             db.session.commit()
+            
+            # Sincroniza os novos grupos no banco de dados
+            sincronizar_tabelas_dos_grupos(turma.id, result)
             
             flash('Grupos gerados com sucesso!', 'success')
             return redirect(url_for('view_turma', turma_id=turma_id))
@@ -1062,6 +1178,9 @@ def trocar_aluno(turma_id):
     result['grupos'] = grupos_modificados
     turma.groups_result = pickle.dumps(result)
     db.session.commit()
+    
+    # Sincronizar tabelas relacionais de grupos e alunos
+    sincronizar_tabelas_dos_grupos(turma.id, result)
         
     if aluno_b:
         flash(f'Troca entre {aluno_a} e {aluno_b} realizada com sucesso!', 'success')
@@ -1078,6 +1197,11 @@ def clear_session(turma_id):
     if turma:
         turma.base_data = None
         turma.groups_result = None
+        
+        # Deletar todos os Alunos e Grupos desta turma do banco relacional
+        Aluno.query.filter_by(turma_id=turma_id).delete()
+        Grupo.query.filter_by(turma_id=turma_id).delete()
+        
         db.session.commit()
         
     user_data_folder = get_user_data_folder()

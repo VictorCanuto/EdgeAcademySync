@@ -177,6 +177,62 @@
         .modal-overlay.active .modal-card {
             transform: scale(1);
         }
+        /* Estilos do Segmented Control (Abas no Header) */
+        .header-tabs-container {
+            display: flex;
+            gap: 4px;
+            background: rgba(15, 23, 42, 0.04);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+        body.dark-mode .header-tabs-container {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .header-tab-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .header-tab-btn:hover {
+            color: var(--text-main);
+        }
+        .header-tab-btn.active {
+            background: var(--color-primary) !important;
+            color: var(--text-on-accent) !important;
+            box-shadow: var(--shadow-sm);
+        }
+        .header-tab-icon {
+            width: 18px;
+            height: 18px;
+            vertical-align: middle;
+            opacity: 0.65;
+            transition: all 0.2s ease;
+        }
+        .header-tab-btn:hover .header-tab-icon {
+            opacity: 0.9;
+        }
+        .header-tab-btn.active .header-tab-icon {
+            opacity: 1;
+            filter: brightness(0) invert(1);
+        }
+        body.dark-mode .header-tab-icon {
+            filter: invert(1);
+            opacity: 0.7;
+        }
+        body.dark-mode .header-tab-btn:hover .header-tab-icon {
+            opacity: 0.9;
+        }
+        body.dark-mode .header-tab-btn.active .header-tab-icon {
+            filter: brightness(0) invert(1);
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -193,13 +249,18 @@
             </div>
         </div>
 
-        <nav>
-            <ul class="header-menu">
-                <li class="header-menu-item"  ><a {% if request.path == '/' %} class="active" {% endif %} href="/">Home</a></li>
-                <li class="header-menu-item" ><a {% if request.path == '/alunos' %} class="active" {% endif %} href="/alunos">Alunos</a></li>
-                <li class="header-menu-item" ><a {% if request.path == '/turmas-imersao' %} class="active" {% endif %} href="/turmas-imersao">Turmas imersão</a></li>
-            </ul>
-        </nav>
+        <div class="header-tabs-container">
+            <button class="header-tab-btn" id="tab-btn-home" onclick="switchLandingTab('home')" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px;" title="Home">
+                <img src="{{ url_for('static', filename='images/apartment.png') }}" class="header-tab-icon" alt="Home">
+                <span>Home</span>
+            </button>
+            <button class="header-tab-btn active" id="tab-btn-imersao" onclick="switchLandingTab('imersao')">
+                Turmas
+            </button>
+            <button class="header-tab-btn" id="tab-btn-academy" onclick="switchLandingTab('academy')">
+                Alunos
+            </button>
+        </div>
 
         <div class="header-actions">
             <!-- Switch Modo Claro/Escuro -->
@@ -215,10 +276,16 @@
 
             <!-- Info do Usuário -->
             {% if session.username %}
-            <div class="user-widget">
-                <div class="user-avatar">{{ session.username[0]|upper }}</div>
-                <div class="user-name">{{ session.username }}</div>
-                <a href="{{ url_for('logout') }}" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.8rem; text-decoration: none;">Sair</a>
+            <div class="user-profile-menu" style="display: flex; align-items: center; gap: 16px; border-left: 1px solid var(--border-color); padding-left: 16px;">
+                <div class="user-avatar-block" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px;">
+                    <div class="user-avatar" style="margin: 0; width: 34px; height: 34px; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--border-color); color: var(--text-main);">
+                        {{ session.username[0]|upper }}
+                    </div>
+                    <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-main); line-height: 1;">
+                        {{ session.username.split()[0]|capitalize }}
+                    </span>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.85rem; text-decoration: none; font-weight: 600;">Sair</a>
             </div>
             {% endif %}
         </div>
@@ -264,71 +331,135 @@
     {% endif %}
 
     <main class="landing-container">
-        <div class="landing-title-section">
-            <h2>Suas Turmas</h2>
-            <p>Selecione uma turma para carregar horários, analisar a grade horária e gerar grupos de imersão de forma otimizada.</p>
-        </div>
+        <!-- Seção Home -->
+        <div id="home-section" style="display: none; padding: 20px 0;">
+            <!-- Frase de boas-vindas no canto superior esquerdo -->
+            <div class="home-welcome-section" style="text-align: left; margin-bottom: 40px;">
+                <h2 style="font-size: 2.2rem; font-weight: 800; color: var(--text-main); line-height: 1.2;">
+                    Bem-vindo ao AcademySync, {{ session.username.split()[0]|capitalize }}
+                </h2>
+            </div>
 
-        <div class="turmas-grid">
-            {% for t in turmas %}
-            <a href="{{ url_for('view_turma', turma_id=t.id) }}" class="glass-panel turma-card">
-                <div class="turma-card-header">
-                    <h3>{{ t.nome }}</h3>
+            <!-- Botões centrais em caixas retangulares separadas -->
+            <div class="home-center-content" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; margin: 40px auto 0 auto; width: 100%;">
+                <!-- Caixa do primeiro botão (+ Adicionar Turmas) -->
+                <div class="glass-panel" style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                    <button class="btn btn-primary" onclick="handleHomeAddTurmaClick()" style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
+                        + Adicionar Turmas
+                    </button>
                 </div>
                 
-                <button class="turma-edit-btn" onclick="openEditModal(event, {{ t.id }}, '{{ t.nome|escape }}')" title="Editar Nome da Turma">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                </button>
-
-                <button class="turma-delete-btn" onclick="confirmDelete(event, {{ t.id }}, '{{ t.nome }}')" title="Excluir Turma">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="3 6 5 6 21 6"></polyline>
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                    </svg>
-                </button>
-
-                <div class="turma-card-meta">
-                    {% if t.alunos_count > 0 %}
-                    <span class="meta-badge">{{ t.alunos_count }} Aluno(s)</span>
-                    {% else %}
-                    <span class="meta-badge empty">Sem alunos</span>
-                    {% endif %}
-
-                    {% if t.grupos_count > 0 %}
-                    <span class="meta-badge success">{{ t.grupos_count }} Grupo(s)</span>
-                    {% endif %}
+                <!-- Caixa do segundo botão (Cadastrar Novo Periodo) -->
+                <div class="glass-panel" style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                    <button class="btn btn-primary" onclick="openHomeNewPeriodoModal()" style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
+                        Cadastrar Novo Periodo
+                    </button>
                 </div>
-            </a>
-            {% endfor %}
-
-            <div class="add-turma-card" onclick="openCreateModal()">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                <span>Nova Turma</span>
             </div>
         </div>
+
+        <!-- Seção de Turmas (Engloba Busca, Botão e Grid) -->
+        <div id="turmas-section">
+            <div class="landing-title-section">
+                <h2>Suas Turmas</h2>
+                <p>Selecione uma turma para carregar horários, analisar a grade horária e gerar grupos de imersão de forma otimizada.</p>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 15px; flex-wrap: wrap;">
+                <div class="search-bar-container" style="max-width: 400px; width: 100%; position: relative;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none;">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="search-turma-input" class="form-input" placeholder="Buscar turma pelo nome..." oninput="filterTurmasGrid()" style="padding: 12px 16px 12px 42px; font-size: 0.9rem;">
+                </div>
+                <button class="btn btn-primary" onclick="openCreateModal()" style="border-radius: 8px; font-weight: 600; padding: 10px 20px;">
+                    + Nova turma
+                </button>
+            </div>
+
+            <div class="turmas-grid">
+                {% for t in turmas %}
+                <a href="{{ url_for('view_turma', turma_id=t.id) }}" class="glass-panel turma-card" data-turma-id="{{ t.id }}">
+                    <div class="turma-card-header">
+                        <h3>{{ t.nome }}</h3>
+                    </div>
+                    
+                    <button class="turma-edit-btn" onclick="openEditModal(event, {{ t.id }}, '{{ t.nome|escape }}')" title="Editar Nome da Turma">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+
+                    <button class="turma-delete-btn" onclick="confirmDelete(event, {{ t.id }}, '{{ t.nome }}')" title="Excluir Turma">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+
+                    <div class="turma-card-meta">
+                        {% if t.alunos_count > 0 %}
+                        <span class="meta-badge">{{ t.alunos_count }} Aluno(s)</span>
+                        {% else %}
+                        <span class="meta-badge empty">Sem alunos</span>
+                        {% endif %}
+
+                        {% if t.grupos_count > 0 %}
+                        <span class="meta-badge success">{{ t.grupos_count }} Grupo(s)</span>
+                        {% endif %}
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <footer style="margin-top: 60px; padding: 20px 0; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+            <p>&copy; 2026 AcademySync. Todos os direitos reservados.</p>
+        </footer>
     </main>
 
-    <!-- Modal para Criar Nova Turma -->
+    <!-- Modal para Criar Nova Turma (Modificado) -->
     <div class="modal-overlay" id="create-turma-modal">
-        <div class="glass-panel modal-card" style="padding: 24px;">
+        <div class="glass-panel modal-card" style="padding: 24px; position: relative;">
             <div class="modal-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="font-weight: 700;">Nova Turma</h3>
-                <button class="modal-close" onclick="closeCreateModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+                <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">Adicionar turma</h3>
+                <button class="modal-close" onclick="closeCreateModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
             </div>
+            
             <div class="modal-body">
-                <form action="{{ url_for('index') }}" method="POST">
+                <form action="{{ url_for('index') }}" method="POST" id="create-turma-form">
                     <input type="hidden" name="action" value="create_turma">
-                    <div class="form-group">
-                        <label for="turma_nome" class="form-label">Nome da Turma</label>
-                        <input type="text" id="turma_nome" name="turma_nome" class="form-input" placeholder="Ex: Turma Engenharia 2026-A" required autocomplete="off">
+                    <!-- Hidden field to send type (imersao or academy) based on checkbox state -->
+                    <input type="hidden" name="turma_tipo" id="turma_tipo" value="academy">
+                    
+                    <div style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 20px;">
+                        <!-- Nome da turma -->
+                        <div class="form-group" style="margin: 0;">
+                            <label for="turma_nome" class="form-label" style="font-size: 0.9rem; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Digitar Nome da Turma</label>
+                            <input type="text" id="turma_nome" name="turma_nome" class="form-input" placeholder="Ex: Turma Engenharia 2026-A" required autocomplete="off" style="width: 100%; box-sizing: border-box; padding: 12px 16px;">
+                        </div>
+                        
+                        <!-- Checkbox Customizada Em imersão -->
+                        <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;" onclick="toggleImersaoCheckbox()">
+                            <div id="imersao-checkbox" style="width: 20px; height: 20px; border: 2px solid var(--border-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; background: transparent; transition: all 0.2s;">
+                                <svg id="imersao-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display: none; color: #ffffff;">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </div>
+                            <span style="font-size: 0.95rem; font-weight: 500; color: var(--text-main);">Em imersão</span>
+                        </div>
+                        
+                        <!-- Botão Inserir PDFs -->
+                        <button type="button" class="btn btn-secondary" style="width: 100%; padding: 12px; font-weight: 600; font-size: 0.95rem; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-main); cursor: pointer;">
+                            Inserir Pdfs
+                        </button>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">Criar Turma</button>
+                    
+                    <button type="button" class="btn btn-primary" style="width: 100%; padding: 14px; font-weight: 700; font-size: 1rem; border-radius: 8px; cursor: pointer; margin-top: 10px;">
+                        Salvar
+                    </button>
                 </form>
             </div>
         </div>
@@ -355,6 +486,29 @@
         </div>
     </div>
 
+
+
+    <!-- Modal Cadastrar Novo Periodo (Home) -->
+    <div class="modal-overlay" id="home-new-periodo-modal">
+        <div class="glass-panel modal-card" style="padding: 24px; position: relative;">
+            <div class="modal-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">Cadastrar Novo Periodo</h3>
+                <button class="modal-close" onclick="closeHomeNewPeriodoModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 20px;">
+                <!-- Botão Inserir PDFs -->
+                <button class="btn btn-secondary" style="width: 100%; padding: 12px; font-weight: 600; font-size: 0.95rem; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-main); cursor: pointer;">
+                    Inserir PDFs
+                </button>
+            </div>
+            
+            <button class="btn btn-primary" style="width: 100%; padding: 14px; font-weight: 700; font-size: 1rem; border-radius: 8px; cursor: pointer; margin-top: 10px;">
+                Salvar
+            </button>
+        </div>
+    </div>
+
     <!-- Formulário Invisível para Deletar Turma -->
     <form id="delete-turma-form" action="{{ url_for('index') }}" method="POST" style="display: none;">
         <input type="hidden" name="action" value="delete_turma">
@@ -364,13 +518,132 @@
     <div class="toast-container" id="toast-messages-container"></div>
 
     <script>
+        // Lógica das Abas do Hub (Prototipação Frontend)
+        let activeLandingTab = localStorage.getItem('academysync_active_landing_tab') || 'home';
+
+        function filterTurmasGrid() {
+            const query = (document.getElementById('search-turma-input').value || '').toLowerCase().trim();
+            
+            document.querySelectorAll('.turma-card').forEach(card => {
+                const id = card.getAttribute('data-turma-id');
+                const tipo = localStorage.getItem('turma_tipo_' + id) || 'imersao';
+                const name = (card.querySelector('h3').textContent || '').toLowerCase();
+                
+                const matchesTab = tipo === activeLandingTab;
+                const matchesSearch = query === '' || name.includes(query);
+                
+                if (matchesTab && matchesSearch) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function switchLandingTab(tab) {
+            activeLandingTab = tab;
+            localStorage.setItem('academysync_active_landing_tab', tab);
+            
+            // Atualiza classe ativa dos botões do header
+            const btnHome = document.getElementById('tab-btn-home');
+            const btnImersao = document.getElementById('tab-btn-imersao');
+            const btnAcademy = document.getElementById('tab-btn-academy');
+            if (btnHome) btnHome.className = tab === 'home' ? 'header-tab-btn active' : 'header-tab-btn';
+            if (btnImersao) btnImersao.className = tab === 'imersao' ? 'header-tab-btn active' : 'header-tab-btn';
+            if (btnAcademy) btnAcademy.className = tab === 'academy' ? 'header-tab-btn active' : 'header-tab-btn';
+            
+            // Gerencia exibição das seções
+            const homeSection = document.getElementById('home-section');
+            const turmasSection = document.getElementById('turmas-section');
+            
+            if (tab === 'home') {
+                if (homeSection) homeSection.style.display = 'block';
+                if (turmasSection) turmasSection.style.display = 'none';
+            } else {
+                if (homeSection) homeSection.style.display = 'none';
+                if (turmasSection) turmasSection.style.display = 'block';
+                
+                // Atualiza o select do modal para já vir no tipo correto
+                const selectTipo = document.getElementById('turma_tipo');
+                if (selectTipo) selectTipo.value = tab;
+                
+                // Gerencia visibilidade de badges
+                document.querySelectorAll('.turma-card').forEach(card => {
+                    const id = card.getAttribute('data-turma-id');
+                    const tipo = localStorage.getItem('turma_tipo_' + id) || 'imersao';
+                    
+                    if (tipo === 'academy') {
+                        const badges = card.querySelectorAll('.meta-badge');
+                        badges.forEach(badge => {
+                            if (badge.textContent.includes('Grupo')) {
+                                badge.style.display = 'none';
+                            }
+                        });
+                    } else {
+                        const badges = card.querySelectorAll('.meta-badge');
+                        badges.forEach(badge => {
+                            badge.style.display = '';
+                        });
+                    }
+                });
+
+                // Aplica filtro geral de aba e busca
+                filterTurmasGrid();
+            }
+        }
+
+        // Modais do Hub / Home
+        function handleHomeAddTurmaClick() {
+            // 1. Redireciona para a aba de Turmas
+            switchLandingTab('imersao');
+            // 2. Abre o modal de criação de turmas
+            openCreateModal();
+        }
+
+        function openHomeNewPeriodoModal() {
+            document.getElementById('home-new-periodo-modal').classList.add('active');
+        }
+        function closeHomeNewPeriodoModal() {
+            document.getElementById('home-new-periodo-modal').classList.remove('active');
+        }
+
         // Lógica de Modais
+        let isImersaoChecked = false;
+        function toggleImersaoCheckbox(forcedValue) {
+            if (typeof forcedValue === 'boolean') {
+                isImersaoChecked = forcedValue;
+            } else {
+                isImersaoChecked = !isImersaoChecked;
+            }
+            
+            const checkbox = document.getElementById('imersao-checkbox');
+            const checkIcon = document.getElementById('imersao-check-icon');
+            const hiddenInput = document.getElementById('turma_tipo');
+            
+            if (checkbox && checkIcon && hiddenInput) {
+                if (isImersaoChecked) {
+                    checkbox.style.backgroundColor = 'var(--color-primary)';
+                    checkbox.style.borderColor = 'var(--color-primary)';
+                    checkIcon.style.display = 'block';
+                    hiddenInput.value = 'imersao';
+                } else {
+                    checkbox.style.backgroundColor = 'transparent';
+                    checkbox.style.borderColor = 'var(--border-color)';
+                    checkIcon.style.display = 'none';
+                    hiddenInput.value = 'academy';
+                }
+            }
+        }
+
         function openCreateModal() {
+            // Sempre inicializa o checkbox 'Em imersão' desmarcado por padrão
+            toggleImersaoCheckbox(false);
             document.getElementById('create-turma-modal').classList.add('active');
             document.getElementById('turma_nome').focus();
         }
         function closeCreateModal() {
             document.getElementById('create-turma-modal').classList.remove('active');
+            document.getElementById('turma_nome').value = '';
         }
 
         function openEditModal(event, id, nome) {
@@ -389,6 +662,8 @@
             event.preventDefault();
             event.stopPropagation();
             if (confirm(`Tem certeza de que deseja excluir a turma "${nome}"? Todos os PDFs e dados dos grupos serão excluídos permanentemente.`)) {
+                // Limpar dados locais do tipo
+                localStorage.removeItem('turma_tipo_' + id);
                 document.getElementById('delete-turma-id').value = id;
                 document.getElementById('delete-turma-form').submit();
             }
@@ -440,6 +715,43 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Registrar tipos das turmas e tratar nova turma criada
+            const cards = document.querySelectorAll('.turma-card');
+            const pendingTipo = localStorage.getItem('pending_turma_tipo');
+            
+            cards.forEach(card => {
+                const id = card.getAttribute('data-turma-id');
+                let tipo = localStorage.getItem('turma_tipo_' + id);
+                
+                if (!tipo) {
+                    if (pendingTipo) {
+                        tipo = pendingTipo;
+                        localStorage.setItem('turma_tipo_' + id, pendingTipo);
+                    } else {
+                        // Default para imersao para todas as turmas legadas/existentes
+                        tipo = 'imersao';
+                        localStorage.setItem('turma_tipo_' + id, 'imersao');
+                    }
+                }
+            });
+            
+            // Limpa o tipo pendente do localStorage
+            localStorage.removeItem('pending_turma_tipo');
+            
+            // Ativa o filtro e a exibição das turmas conforme a aba ativa
+            switchLandingTab(activeLandingTab);
+
+            // Intercepta submit para guardar o tipo da nova turma
+            const createForm = document.querySelector('#create-turma-modal form');
+            if (createForm) {
+                createForm.addEventListener('submit', () => {
+                    const selectTipo = document.getElementById('turma_tipo');
+                    if (selectTipo) {
+                        localStorage.setItem('pending_turma_tipo', selectTipo.value);
+                    }
+                });
+            }
+
             // Injetar mensagens do Flask
             {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
