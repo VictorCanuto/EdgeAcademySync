@@ -33,7 +33,7 @@ def _ajustar_header(df: pd.DataFrame) -> pd.DataFrame:
         df = df.drop(df.index[0]).reset_index(drop=True)
     return df
 
-def extrair_grade_de_df(df: pd.DataFrame, aluno: str) -> Optional[pd.DataFrame]:
+def extrair_grade_de_df(df: pd.DataFrame, aluno: str, matricula: Optional[str] = None) -> Optional[pd.DataFrame]:
     col_horario = None
     for c in df.columns:
         if any(PAT_HORARIO.match(str(x).strip()) for x in df[c].dropna().astype(str).head(10)):
@@ -56,7 +56,7 @@ def extrair_grade_de_df(df: pd.DataFrame, aluno: str) -> Optional[pd.DataFrame]:
             materia = str(linha[c]).strip()
             if not materia or materia.lower() in ["nan", "none", "---"] or any(bad in materia.lower() for bad in LIXO):
                 materia = "---"
-            resultados.append({"aluno": aluno, "dia": dia, "horario": horario, "materia": materia})
+            resultados.append({"aluno": aluno, "matricula": matricula, "dia": dia, "horario": horario, "materia": materia})
     return pd.DataFrame(resultados) if resultados else None
 
 def _processar_pdfs_fallback(pdf_paths: List[str]) -> Optional[pd.DataFrame]:
@@ -67,6 +67,20 @@ def _processar_pdfs_fallback(pdf_paths: List[str]) -> Optional[pd.DataFrame]:
     for caminho_pdf in pdf_paths:
         aluno = re.sub(r'\.pdf$', '', caminho_pdf.split(os.path.sep)[-1], flags=re.IGNORECASE)
         try:
+            # Extrair matrícula via pypdf (leve e rápido)
+            matricula_val = None
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(caminho_pdf)
+                text = ""
+                for page in reader.pages:
+                    text += page.extract_text() + "\n"
+                match_matricula = re.search(r"Matr[ií]cula:\s*(\d+)", text, re.IGNORECASE)
+                if match_matricula:
+                    matricula_val = match_matricula.group(1)
+            except Exception:
+                pass
+
             tabelas_brutas = tabula.read_pdf(caminho_pdf, pages="all", multiple_tables=True, lattice=True)
             if not tabelas_brutas: 
                 continue
@@ -81,7 +95,7 @@ def _processar_pdfs_fallback(pdf_paths: List[str]) -> Optional[pd.DataFrame]:
                 continue
             df_aluno_completo = pd.concat(tabelas_validas, ignore_index=True)
             
-            df_grade = extrair_grade_de_df(df_aluno_completo, aluno)
+            df_grade = extrair_grade_de_df(df_aluno_completo, aluno, matricula_val)
             if df_grade is not None and not df_grade.empty:
                 finais.append(df_grade)
         except Exception as e:
@@ -115,6 +129,10 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]) -> Optional[pd.DataFrame
                 
             aluno_key = os.path.splitext(os.path.basename(caminho_pdf))[0]
             
+            # Encontrar a matricula
+            match_matricula = re.search(r"Matr[ií]cula:\s*(\d+)", text, re.IGNORECASE)
+            matricula_val = match_matricula.group(1) if match_matricula else None
+
             # Encontrar o início da tabela (cabeçalho de dias)
             header_pattern = re.compile(r"dom\s+seg\s+ter\s+qua\s+qui\s+sex\s+sab", re.IGNORECASE)
             match_header = header_pattern.search(text)
@@ -167,6 +185,7 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]) -> Optional[pd.DataFrame
                                 materia = '---'
                             rows.append({
                                 "aluno": aluno_key,
+                                "matricula": matricula_val,
                                 "dia": dias_semana_map[dia_nome],
                                 "horario": horario_str,
                                 "materia": materia

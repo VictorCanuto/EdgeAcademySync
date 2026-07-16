@@ -108,11 +108,7 @@ class Turma(db.Model):
     em_imersao = db.Column(db.Boolean, default=False)
     user = db.relationship('User', backref=db.backref('turmas', lazy=True, cascade="all, delete-orphan"))
 
-<<<<<<< HEAD
 # Modelo de Grupo
-=======
-
->>>>>>> a9e44cd09e6580b659360c4480e018587c8c48d3
 class Grupo(db.Model):
     __tablename__ = 'grupos'
     id = db.Column(db.Integer, primary_key=True)
@@ -120,35 +116,21 @@ class Grupo(db.Model):
     nome = db.Column(db.String(120), nullable=False)
     dia = db.Column(db.String(120), nullable=False)
     horario = db.Column(db.String(120), nullable=False)
-<<<<<<< HEAD
     
     turma = db.relationship('Turma', backref=db.backref('grupos', lazy=True, cascade="all, delete-orphan"))
 
 # Modelo de Aluno
-=======
-
-    turma = db.relationship('Turma', backref=db.backref('grupos', lazy=True, cascade="all, delete-orphan"))
-
-
->>>>>>> a9e44cd09e6580b659360c4480e018587c8c48d3
 class Aluno(db.Model):
     __tablename__ = 'alunos'
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(120), nullable=False)
     nome_custom = db.Column(db.String(120), nullable=True)
+    matricula = db.Column(db.String(50), nullable=True)
     turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=True)
     grupo_id = db.Column(db.Integer, db.ForeignKey('grupos.id'), nullable=True)
-<<<<<<< HEAD
     
     turma = db.relationship('Turma', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
     grupo = db.relationship('Grupo', backref=db.backref('alunos', lazy=True))
-
-=======
-   
-    turma = db.relationship('Turma', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
-    grupo = db.relationship('Grupo', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
-    
->>>>>>> a9e44cd09e6580b659360c4480e018587c8c48d3
 # Inicializa as tabelas do banco de dados se não existirem
 with app.app_context():
     db.create_all()
@@ -167,6 +149,12 @@ with app.app_context():
 
     try:
         db.session.execute(db.text('ALTER TABLE turmas ADD COLUMN em_imersao BOOLEAN DEFAULT FALSE'))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    try:
+        db.session.execute(db.text('ALTER TABLE alunos ADD COLUMN matricula VARCHAR(50)'))
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -354,18 +342,53 @@ def sincronizar_tabelas_dos_alunos(turma_id, base_df):
         alunos_existentes = Aluno.query.filter_by(turma_id=turma_id).all()
         mapeamento_existentes = {a.nome: a for a in alunos_existentes}
         
-        # 1. Deletar alunos que não estão mais na base
+        # 1. Deletar alunos que não estão mais na base consolidada
         for nome_antigo, aluno_obj in list(mapeamento_existentes.items()):
             if nome_antigo not in alunos_novos_nomes:
                 db.session.delete(aluno_obj)
                 
-        # 2. Inserir ou atualizar alunos novos
+        # 2. Inserir ou atualizar alunos novos validando conflitos
         for nome_novo in alunos_novos_nomes:
-            if nome_novo not in mapeamento_existentes:
+            # Obter matrícula do DataFrame, se a coluna existir
+            matricula_val = None
+            if 'matricula' in base_df.columns:
+                aluno_rows = base_df[base_df['aluno'] == nome_novo]
+                if not aluno_rows.empty:
+                    val = str(aluno_rows.iloc[0]['matricula']).strip()
+                    if val != '' and val.lower() != 'nan' and val.lower() != 'none':
+                        matricula_val = val
+
+            # Busca por correspondência no banco de dados
+            match_nome = mapeamento_existentes.get(nome_novo)
+            match_matricula = next((a for a in alunos_existentes if a.matricula == matricula_val), None) if matricula_val else None
+
+            # REGRA 1: Mesmo Nome, Matrícula Diferente (Troca de matrícula)
+            if match_nome and match_nome.matricula != matricula_val:
+                flash(
+                    f"Aviso: O aluno '{nome_novo.replace('_', ' ')}' já está cadastrado, "
+                    f"mas a matrícula no PDF ({matricula_val}) diverge do banco ({match_nome.matricula}). "
+                    f"A matrícula foi atualizada.", "warning"
+                )
+                match_nome.matricula = matricula_val
+
+            # REGRA 2: Matrículas Iguais, Nomes Diferentes (Troca de nome)
+            elif match_matricula and match_matricula.nome.lower() != nome_novo.lower():
+                nome_antigo_limpo = match_matricula.nome.replace('_', ' ')
+                flash(
+                    f"Aviso: A matrícula {matricula_val} já pertence a '{nome_antigo_limpo}', "
+                    f"mas o PDF indicou o nome '{nome_novo.replace('_', ' ')}'. "
+                    f"O nome do aluno foi atualizado.", "warning"
+                )
+                match_matricula.nome = nome_novo
+                match_matricula.nome_custom = nome_novo.replace('_', ' ')
+
+            # REGRA 3: Nome e Matrícula Diferentes (Adiciona Novo Aluno)
+            elif not match_nome and not match_matricula:
                 novo_aluno = Aluno(
                     nome=nome_novo,
                     nome_custom=nome_novo.replace('_', ' '),
-                    turma_id=turma_id
+                    turma_id=turma_id,
+                    matricula=matricula_val
                 )
                 db.session.add(novo_aluno)
                 
@@ -895,15 +918,54 @@ def index():
         action = request.form.get('action')
         
         if action == 'create_turma':
+            print("FORM DATA RECEIVED:", request.form)
             nome = request.form.get('turma_nome', '').strip()
             if not nome:
                 flash('O nome da turma não pode ser vazio.', 'error')
                 return redirect(url_for('index'))
                 
-            new_turma = Turma(nome=nome, user_id=user.id)
+            em_imersao = (request.form.get('em_imersao') == 'true')
+            new_turma = Turma(nome=nome, user_id=user.id, em_imersao=em_imersao)
             db.session.add(new_turma)
-            db.session.commit()
-            flash(f'Turma "{nome}" criada com sucesso!', 'success')
+            db.session.commit() # Salva primeiro para gerar o ID
+            
+            # Processar PDFs se houver
+            files = request.files.getlist('pdf_files')
+            if files and files[0].filename != '':
+                filepaths = []
+                user_data_folder = get_user_data_folder()
+                upload_folder_user = os.path.join(user_data_folder, 'uploads') if user_data_folder else 'uploads'
+                os.makedirs(upload_folder_user, exist_ok=True)
+
+                for file in files:
+                    filename = secure_filename(file.filename)
+                    filepath = os.path.join(upload_folder_user, filename)
+                    file.save(filepath)
+                    filepaths.append(filepath)
+                
+                base_df = processar_pdfs_para_dataframe(filepaths)
+                
+                # Limpar PDFs temporários
+                try:
+                    for fpath in filepaths:
+                        if os.path.exists(fpath):
+                            os.remove(fpath)
+                except Exception as e:
+                    print(f"AVISO: Falha ao limpar PDFs temporários: {e}")
+                
+                if base_df is not None and not base_df.empty:
+                    csv_buffer = BytesIO()
+                    base_df.to_csv(csv_buffer, index=False, encoding='utf-8')
+                    new_turma.base_data = csv_buffer.getvalue()
+                    db.session.commit()
+                    
+                    sincronizar_tabelas_dos_alunos(new_turma.id, base_df)
+                    flash(f'Turma "{nome}" criada com {len(base_df["aluno"].unique())} alunos do(s) PDF(s) com sucesso!', 'success')
+                else:
+                    flash(f'Turma "{nome}" criada vazia. Não foi possível extrair dados dos PDFs.', 'warning')
+            else:
+                flash(f'Turma "{nome}" criada com sucesso!', 'success')
+                
             return redirect(url_for('index'))
             
         elif action == 'delete_turma':
@@ -962,7 +1024,8 @@ def index():
             "id": t.id,
             "nome": t.nome,
             "alunos_count": alunos_count,
-            "grupos_count": grupos_count
+            "grupos_count": grupos_count,
+            "em_imersao": t.em_imersao
         })
 
     has_security_question = bool(user.security_question and user.security_answer_hash)
@@ -1016,16 +1079,32 @@ def view_turma(turma_id):
                 print(f"AVISO: Falha ao limpar PDFs temporários: {e}")
     
             if base_df is not None and not base_df.empty:
-                # Salva o DataFrame no Banco de Dados em formato binário (CSV encoded bytes)
+                # 1. Carrega dados existentes da turma, se houver, e realiza o merge cumulativo
+                if turma.base_data:
+                    try:
+                        existing_df = pd.read_csv(BytesIO(turma.base_data))
+                        
+                        # Lista de alunos que estão sendo carregados nesta carga de PDFs
+                        novos_alunos = base_df['aluno'].unique()
+                        
+                        # Remove os dados antigos desses alunos específicos para evitar duplicados
+                        existing_df = existing_df[~existing_df['aluno'].isin(novos_alunos)]
+                        
+                        # Une os dados antigos preservados com os novos
+                        base_df = pd.concat([existing_df, base_df], ignore_index=True)
+                    except Exception as e:
+                        print(f"Aviso ao ler base_data anterior para merge: {e}")
+
+                # 2. Salva o DataFrame consolidado de volta no Banco de Dados
                 csv_buffer = BytesIO()
                 base_df.to_csv(csv_buffer, index=False, encoding='utf-8')
                 turma.base_data = csv_buffer.getvalue()
                 db.session.commit()
                 
-                # Sincroniza alunos na tabela Aluno
+                # 3. Sincroniza alunos na tabela Aluno
                 sincronizar_tabelas_dos_alunos(turma.id, base_df)
                 
-                flash(f'{len(base_df["aluno"].unique())} alunos processados com sucesso!', 'success')
+                flash(f'Dados processados com sucesso! Total na turma: {len(base_df["aluno"].unique())} aluno(s).', 'success')
             else:
                 flash('Não foi possível extrair dados válidos dos PDFs.', 'error')
             

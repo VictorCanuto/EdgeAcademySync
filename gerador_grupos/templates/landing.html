@@ -380,7 +380,7 @@
 
             <div class="turmas-grid">
                 {% for t in turmas %}
-                <a href="{{ url_for('view_turma', turma_id=t.id) }}" class="glass-panel turma-card" data-turma-id="{{ t.id }}">
+                <a href="{{ url_for('view_turma', turma_id=t.id) }}" class="glass-panel turma-card" data-turma-id="{{ t.id }}" data-em-imersao="{{ 'true' if t.em_imersao else 'false' }}">
                     <div class="turma-card-header">
                         <h3>{{ t.nome }}</h3>
                     </div>
@@ -415,6 +415,17 @@
             </div>
         </div>
         
+        <!-- Seção de Alunos (Futura implementação) -->
+        <div id="alunos-section" style="display: none; padding: 40px 0;">
+            <div class="glass-panel" style="max-width: 600px; margin: 40px auto; padding: 40px 24px; text-align: center; border-radius: 16px;">
+                <div style="font-size: 3rem; margin-bottom: 20px;">🎓</div>
+                <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Área de Gestão de Alunos</h3>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; max-width: 480px; margin: 0 auto;">
+                    Esta seção está reservada para futuras funcionalidades do AcademySync dedicadas à gestão individualizada de alunos.
+                </p>
+            </div>
+        </div>
+        
         <footer style="margin-top: 60px; padding: 20px 0; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted);">
             <p>&copy; 2026 AcademySync. Todos os direitos reservados.</p>
         </footer>
@@ -429,10 +440,8 @@
             </div>
             
             <div class="modal-body">
-                <form action="{{ url_for('index') }}" method="POST" id="create-turma-form">
+                <form action="{{ url_for('index') }}" method="POST" id="create-turma-form" enctype="multipart/form-data">
                     <input type="hidden" name="action" value="create_turma">
-                    <!-- Hidden field to send type (imersao or academy) based on checkbox state -->
-                    <input type="hidden" name="turma_tipo" id="turma_tipo" value="academy">
                     
                     <div style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 20px;">
                         <!-- Nome da turma -->
@@ -441,23 +450,22 @@
                             <input type="text" id="turma_nome" name="turma_nome" class="form-input" placeholder="Ex: Turma Engenharia 2026-A" required autocomplete="off" style="width: 100%; box-sizing: border-box; padding: 12px 16px;">
                         </div>
                         
-                        <!-- Checkbox Customizada Em imersão -->
-                        <div style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;" onclick="toggleImersaoCheckbox()">
-                            <div id="imersao-checkbox" style="width: 20px; height: 20px; border: 2px solid var(--border-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; background: transparent; transition: all 0.2s;">
-                                <svg id="imersao-check-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display: none; color: #ffffff;">
-                                    <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
-                            </div>
+                        <!-- Checkbox Real Em imersão -->
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" name="em_imersao" id="em_imersao" value="true" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-primary);">
                             <span style="font-size: 0.95rem; font-weight: 500; color: var(--text-main);">Em imersão</span>
-                        </div>
+                        </label>
+                        
+                        <!-- Input oculto para selecionar os PDFs -->
+                        <input type="file" id="home_pdf_files" name="pdf_files" multiple accept=".pdf" style="display: none;" onchange="handleHomePDFsSelect()">
                         
                         <!-- Botão Inserir PDFs -->
-                        <button type="button" class="btn btn-secondary" style="width: 100%; padding: 12px; font-weight: 600; font-size: 0.95rem; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-main); cursor: pointer;">
+                        <button type="button" id="home_pdf_btn" onclick="document.getElementById('home_pdf_files').click()" class="btn btn-secondary" style="width: 100%; padding: 12px; font-weight: 600; font-size: 0.95rem; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-main); cursor: pointer;">
                             Inserir Pdfs
                         </button>
                     </div>
                     
-                    <button type="button" class="btn btn-primary" style="width: 100%; padding: 14px; font-weight: 700; font-size: 1rem; border-radius: 8px; cursor: pointer; margin-top: 10px;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; font-weight: 700; font-size: 1rem; border-radius: 8px; cursor: pointer; margin-top: 10px;">
                         Salvar
                     </button>
                 </form>
@@ -525,11 +533,10 @@
             const query = (document.getElementById('search-turma-input').value || '').toLowerCase().trim();
             
             document.querySelectorAll('.turma-card').forEach(card => {
-                const id = card.getAttribute('data-turma-id');
-                const tipo = localStorage.getItem('turma_tipo_' + id) || 'imersao';
                 const name = (card.querySelector('h3').textContent || '').toLowerCase();
                 
-                const matchesTab = tipo === activeLandingTab;
+                // Mostrar todas as turmas na aba 'Turmas' (imersao) e nenhuma na aba 'Alunos' (academy)
+                const matchesTab = (activeLandingTab === 'imersao');
                 const matchesSearch = query === '' || name.includes(query);
                 
                 if (matchesTab && matchesSearch) {
@@ -555,40 +562,36 @@
             // Gerencia exibição das seções
             const homeSection = document.getElementById('home-section');
             const turmasSection = document.getElementById('turmas-section');
+            const alunosSection = document.getElementById('alunos-section');
             
             if (tab === 'home') {
                 if (homeSection) homeSection.style.display = 'block';
                 if (turmasSection) turmasSection.style.display = 'none';
-            } else {
+                if (alunosSection) alunosSection.style.display = 'none';
+            } else if (tab === 'imersao') {
                 if (homeSection) homeSection.style.display = 'none';
                 if (turmasSection) turmasSection.style.display = 'block';
+                if (alunosSection) alunosSection.style.display = 'none';
                 
-                // Atualiza o select do modal para já vir no tipo correto
-                const selectTipo = document.getElementById('turma_tipo');
-                if (selectTipo) selectTipo.value = tab;
+                // Força o checkbox "Em imersão" a iniciar marcado para a aba Turmas
+                const checkbox = document.getElementById('em_imersao');
+                if (checkbox) checkbox.checked = true;
                 
-                // Gerencia visibilidade de badges
+                // Sempre mostrar todos os badges quando estiver na aba de turmas
                 document.querySelectorAll('.turma-card').forEach(card => {
-                    const id = card.getAttribute('data-turma-id');
-                    const tipo = localStorage.getItem('turma_tipo_' + id) || 'imersao';
-                    
-                    if (tipo === 'academy') {
-                        const badges = card.querySelectorAll('.meta-badge');
-                        badges.forEach(badge => {
-                            if (badge.textContent.includes('Grupo')) {
-                                badge.style.display = 'none';
-                            }
-                        });
-                    } else {
-                        const badges = card.querySelectorAll('.meta-badge');
-                        badges.forEach(badge => {
-                            badge.style.display = '';
-                        });
-                    }
+                    const badges = card.querySelectorAll('.meta-badge');
+                    badges.forEach(badge => {
+                        badge.style.display = '';
+                    });
                 });
 
-                // Aplica filtro geral de aba e busca
                 filterTurmasGrid();
+            } else if (tab === 'academy') {
+                if (homeSection) homeSection.style.display = 'none';
+                if (turmasSection) turmasSection.style.display = 'none';
+                if (alunosSection) alunosSection.style.display = 'block';
+                
+                filterTurmasGrid(); // Garante a ocultação das turmas na aba Alunos
             }
         }
 
@@ -607,43 +610,36 @@
             document.getElementById('home-new-periodo-modal').classList.remove('active');
         }
 
-        // Lógica de Modais
-        let isImersaoChecked = false;
-        function toggleImersaoCheckbox(forcedValue) {
-            if (typeof forcedValue === 'boolean') {
-                isImersaoChecked = forcedValue;
-            } else {
-                isImersaoChecked = !isImersaoChecked;
-            }
-            
-            const checkbox = document.getElementById('imersao-checkbox');
-            const checkIcon = document.getElementById('imersao-check-icon');
-            const hiddenInput = document.getElementById('turma_tipo');
-            
-            if (checkbox && checkIcon && hiddenInput) {
-                if (isImersaoChecked) {
-                    checkbox.style.backgroundColor = 'var(--color-primary)';
-                    checkbox.style.borderColor = 'var(--color-primary)';
-                    checkIcon.style.display = 'block';
-                    hiddenInput.value = 'imersao';
-                } else {
-                    checkbox.style.backgroundColor = 'transparent';
-                    checkbox.style.borderColor = 'var(--border-color)';
-                    checkIcon.style.display = 'none';
-                    hiddenInput.value = 'academy';
-                }
-            }
-        }
-
         function openCreateModal() {
-            // Sempre inicializa o checkbox 'Em imersão' desmarcado por padrão
-            toggleImersaoCheckbox(false);
+            // Inicializa o checkbox 'Em imersão' baseado na aba ativa
+            const checkbox = document.getElementById('em_imersao');
+            if (checkbox) checkbox.checked = (activeLandingTab === 'imersao');
+            
             document.getElementById('create-turma-modal').classList.add('active');
             document.getElementById('turma_nome').focus();
         }
         function closeCreateModal() {
             document.getElementById('create-turma-modal').classList.remove('active');
             document.getElementById('turma_nome').value = '';
+            
+            // Limpar campo de arquivos
+            const fileInput = document.getElementById('home_pdf_files');
+            if (fileInput) fileInput.value = '';
+            handleHomePDFsSelect();
+        }
+
+        function handleHomePDFsSelect() {
+            const fileInput = document.getElementById('home_pdf_files');
+            const btn = document.getElementById('home_pdf_btn');
+            if (fileInput && fileInput.files.length > 0) {
+                btn.textContent = `Inserir Pdfs (${fileInput.files.length} arquivo(s) selecionado(s))`;
+                btn.style.borderColor = 'var(--color-success)';
+                btn.style.color = 'var(--color-success)';
+            } else {
+                btn.textContent = 'Inserir Pdfs';
+                btn.style.borderColor = 'var(--border-color)';
+                btn.style.color = 'var(--text-main)';
+            }
         }
 
         function openEditModal(event, id, nome) {
@@ -715,42 +711,18 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Registrar tipos das turmas e tratar nova turma criada
+            // Sincronizar tipos das turmas com os dados reais do Banco de Dados (source of truth)
             const cards = document.querySelectorAll('.turma-card');
-            const pendingTipo = localStorage.getItem('pending_turma_tipo');
             
             cards.forEach(card => {
                 const id = card.getAttribute('data-turma-id');
-                let tipo = localStorage.getItem('turma_tipo_' + id);
-                
-                if (!tipo) {
-                    if (pendingTipo) {
-                        tipo = pendingTipo;
-                        localStorage.setItem('turma_tipo_' + id, pendingTipo);
-                    } else {
-                        // Default para imersao para todas as turmas legadas/existentes
-                        tipo = 'imersao';
-                        localStorage.setItem('turma_tipo_' + id, 'imersao');
-                    }
-                }
+                const isImersaoDb = card.getAttribute('data-em-imersao') === 'true';
+                const tipo = isImersaoDb ? 'imersao' : 'academy';
+                localStorage.setItem('turma_tipo_' + id, tipo);
             });
             
-            // Limpa o tipo pendente do localStorage
-            localStorage.removeItem('pending_turma_tipo');
-            
-            // Ativa o filtro e a exibição das turmas conforme a aba ativa
-            switchLandingTab(activeLandingTab);
-
-            // Intercepta submit para guardar o tipo da nova turma
-            const createForm = document.querySelector('#create-turma-modal form');
-            if (createForm) {
-                createForm.addEventListener('submit', () => {
-                    const selectTipo = document.getElementById('turma_tipo');
-                    if (selectTipo) {
-                        localStorage.setItem('pending_turma_tipo', selectTipo.value);
-                    }
-                });
-            }
+             // Ativa o filtro e a exibição das turmas conforme a aba ativa
+             switchLandingTab(activeLandingTab);
 
             // Injetar mensagens do Flask
             {% with messages = get_flashed_messages(with_categories=true) %}
