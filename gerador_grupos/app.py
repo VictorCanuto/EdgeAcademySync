@@ -13,8 +13,13 @@ import shutil
 import smtplib
 from email.message import EmailMessage
 from dotenv import load_dotenv
-from flask_sqlalchemy import SQLAlchemy
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from extensions import db
+from models.user import User
+from models.turma import Turma
+from models.grupo import Grupo
+from models.aluno import Aluno
+from services.save_studant import save_studant
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -79,58 +84,8 @@ if database_url and database_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url or 'sqlite:///usuarios.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
-# Modelo de Usuário
-class User(db.Model):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    security_question = db.Column(db.String(256), nullable=True)
-    security_answer_hash = db.Column(db.String(256), nullable=True)
-    
-    # Armazenamento em banco de dados para evitar perda de dados por discos efêmeros
-    base_data = db.Column(db.LargeBinary, nullable=True)      # Conteúdo do CSV consolidado
-    groups_result = db.Column(db.LargeBinary, nullable=True)  # Dicionário do Pickle serializado
-
-# Modelo de Turma
-class Turma(db.Model):
-    __tablename__ = 'turmas'
-    id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(120), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    
-    base_data = db.Column(db.LargeBinary, nullable=True)      # Conteúdo do CSV consolidado
-    groups_result = db.Column(db.LargeBinary, nullable=True)  # Dicionário do Pickle serializado
-    
-    em_imersao = db.Column(db.Boolean, default=False)
-    user = db.relationship('User', backref=db.backref('turmas', lazy=True, cascade="all, delete-orphan"))
-
-# Modelo de Grupo
-class Grupo(db.Model):
-    __tablename__ = 'grupos'
-    id = db.Column(db.Integer, primary_key=True)
-    turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=False)
-    nome = db.Column(db.String(120), nullable=False)
-    dia = db.Column(db.String(120), nullable=False)
-    horario = db.Column(db.String(120), nullable=False)
-    
-    turma = db.relationship('Turma', backref=db.backref('grupos', lazy=True, cascade="all, delete-orphan"))
-
-# Modelo de Aluno
-class Aluno(db.Model):
-    __tablename__ = 'alunos'
-    id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(120), nullable=False)
-    nome_custom = db.Column(db.String(120), nullable=True)
-    matricula = db.Column(db.String(50), nullable=True)
-    turma_id = db.Column(db.Integer, db.ForeignKey('turmas.id'), nullable=True)
-    grupo_id = db.Column(db.Integer, db.ForeignKey('grupos.id'), nullable=True)
-    
-    turma = db.relationship('Turma', backref=db.backref('alunos', lazy=True, cascade="all, delete-orphan"))
-    grupo = db.relationship('Grupo', backref=db.backref('alunos', lazy=True))
 # Inicializa as tabelas do banco de dados se não existirem
 with app.app_context():
     db.create_all()
@@ -155,6 +110,13 @@ with app.app_context():
 
     try:
         db.session.execute(db.text('ALTER TABLE alunos ADD COLUMN matricula VARCHAR(50)'))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    # Alunos podem existir antes de serem alocados a um grupo
+    try:
+        db.session.execute(db.text('ALTER TABLE alunos ALTER COLUMN grupo_id DROP NOT NULL'))
         db.session.commit()
     except Exception:
         db.session.rollback()
@@ -918,7 +880,6 @@ def index():
         action = request.form.get('action')
         
         if action == 'create_turma':
-            print("FORM DATA RECEIVED:", request.form)
             nome = request.form.get('turma_nome', '').strip()
             if not nome:
                 flash('O nome da turma não pode ser vazio.', 'error')
@@ -959,7 +920,7 @@ def index():
                     new_turma.base_data = csv_buffer.getvalue()
                     db.session.commit()
                     
-                    sincronizar_tabelas_dos_alunos(new_turma.id, base_df)
+                    save_studant(base_df, new_turma.id)
                     flash(f'Turma "{nome}" criada com {len(base_df["aluno"].unique())} alunos do(s) PDF(s) com sucesso!', 'success')
                 else:
                     flash(f'Turma "{nome}" criada vazia. Não foi possível extrair dados dos PDFs.', 'warning')
