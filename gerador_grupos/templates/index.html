@@ -141,7 +141,7 @@
     <!-- ==========================================================================
        ESTADO B: PDFS PROCESSADOS MAS SEM GRUPOS GERADOS (CONFIGURAÇÃO)
        ========================================================================== -->
-    {% if base_data_info and not groups_result %}
+    {% if base_data_info and not groups_result and turma.em_imersao %}
     <main class="wizard-wrapper" id="config-groups-panel">
         <div class="glass-panel wizard-card">
             <div class="wizard-steps-indicator">
@@ -215,7 +215,7 @@
     <!-- ==========================================================================
        ESTADO C: GRUPOS FORMADOS (WORKSPACE DASHBOARD COMPLETO)
        ========================================================================== -->
-    {% if base_data_info and groups_result %}
+    {% if base_data_info and (groups_result or not turma.em_imersao) %}
     <div id="view-workspace" style="display: flex; flex-direction: column; flex: 1;">
         <!-- Workspace Header -->
         <div class="workspace-header">
@@ -226,6 +226,7 @@
             </div>
 
             <div style="display: flex; gap: 12px;">
+                {% if turma.em_imersao %}
                 <!-- Reconfigurar grupos de forma dinâmica -->
                 <button class="btn btn-secondary" onclick="showConfigPanelFromWorkspace()">
                     ⚙️ Reconfigurar Grupos
@@ -241,13 +242,20 @@
                         <a href="{{ url_for('download_pdf', turma_id=turma.id) }}" class="export-item" style="text-decoration:none;">Calendário de Grupos (PDF)</a>
                     </div>
                 </div>
+                {% else %}
+                <a href="{{ url_for('download_csv', turma_id=turma.id) }}" class="btn btn-primary" style="text-decoration:none;">
+                    ⬇️ Exportar Planilha (CSV)
+                </a>
+                {% endif %}
             </div>
         </div>
 
         <!-- Abas -->
         <nav class="tab-nav-bar">
             <button class="tab-btn active" id="tab-btn-spreadsheet" onclick="switchTab('spreadsheet')">📅 Planilha Geral de Horários</button>
+            {% if turma.em_imersao %}
             <button class="tab-btn" id="tab-btn-groups" onclick="switchTab('groups')">👥 Gerenciador de Grupos</button>
+            {% endif %}
         </nav>
 
         <!-- Conteúdo do Workspace -->
@@ -541,6 +549,7 @@
         window.flaskData = {
             hasBaseData: {{ 'true' if base_data_info else 'false' }},
             hasGroups: {{ 'true' if groups_result else 'false' }},
+            emImersao: {{ 'true' if turma.em_imersao else 'false' }},
             username: "{{ session.username }}",
             turmaId: {{ turma.id }},
             turmaNome: "{{ turma.nome }}",

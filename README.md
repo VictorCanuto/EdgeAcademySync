@@ -92,10 +92,22 @@ pip install -r gerador_grupos/requirements.txt
 ```
 
 ### Passo 5: Iniciar o Servidor Local
-Execute o script principal do Flask para rodar a aplicação:
-```bash
-python gerador_grupos/app.py
-```
+
+Tornamos a inicialização muito mais simples e rápida! Use os atalhos criados na raiz da pasta `edgesync`:
+
+- **No Windows (PowerShell):**
+  ```powershell
+  .\run
+  ```
+- **No Windows (CMD):**
+  ```cmd
+  run
+  ```
+- **Outros sistemas / Execução direta com o Python:**
+  ```bash
+  python gerador_grupos/app.py
+  ```
+
 O servidor local iniciará na porta `5000`. Acesse:
 👉 **[http://localhost:5000](http://localhost:5000)**
 

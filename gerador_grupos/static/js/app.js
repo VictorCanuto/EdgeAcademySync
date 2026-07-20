@@ -71,12 +71,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.flaskData.hasBaseData) {
         // Carregar horários via Fetch API
         loadSchedulesFromServer().then(() => {
-            if (window.flaskData.hasGroups) {
-                // Recuperar última aba ativa ou padrão
+            if (!window.flaskData.emImersao) {
+                // Se a turma não for de imersão, abre diretamente a planilha geral
+                switchTab('spreadsheet');
+            } else if (window.flaskData.hasGroups) {
+                // Recuperar última aba ativa ou padrão (apenas para turmas de imersão)
                 const lastTab = localStorage.getItem('academysync_active_tab') || 'spreadsheet';
-                switchTab(lastTab);
+                switchTab(lastTab === 'groups' ? 'groups' : 'spreadsheet');
             } else {
-                // Se só tem base_data e sem grupos, renderiza o painel de configurações
+                // Se é imersão, tem base_data mas sem grupos, renderiza o painel de configurações (Passo 2)
                 initBlocksListInWizard();
             }
         });

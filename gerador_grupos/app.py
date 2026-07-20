@@ -1274,7 +1274,15 @@ def clear_session(turma_id):
 def download_csv(turma_id):
     user = User.query.filter_by(username=session['username']).first()
     turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
-    if not turma or not turma.groups_result:
+    if not turma:
+        return "Turma não encontrada.", 404
+        
+    if not turma.em_imersao and turma.base_data:
+        # Se a turma não for de imersão e tiver PDFs processados, envia os dados brutos de alunos (base_data)
+        buffer = BytesIO(turma.base_data)
+        return send_file(buffer, mimetype='text/csv', as_attachment=True, download_name=f'dados_turma_{turma_id}.csv')
+        
+    if not turma.groups_result:
         return "Nenhum grupo gerado.", 404
         
     try:
