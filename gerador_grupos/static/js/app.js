@@ -2,26 +2,33 @@
 // CONFIGURAÇÕES GLOBAIS DA AGENDA
 // ==========================================================================
 const DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-const HORARIOS = Array.from({length: 16}, (_, i) => i + 7); // De 07h até 22h
+// Grade fixa
+const HORARIOS = [
+    '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+    '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+    '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+    '16:00', '16:30', '17:00', '17:30', '18:00'
+];
 
-// Função auxiliar para converter o texto do horário (ex: "Manhã (09h-11h)" ou "09:00 - 11:00") em início/fim inteiros
-function parseHorarioHours(horarioStr) {
-    if (!horarioStr) return { inicio: 9, fim: 11 };
-    
-    // Tenta formato compactado ex: "Manhã (09h-11h)" ou "Extra (14h-17h)"
+function slotToMinutes(slot) {
+    const [hh, mm] = slot.split(':').map(Number);
+    return hh * 60 + mm;
+}
+
+// Converte texto de bloco ("Manhã (09h-11h)" / "09:00 - 11:00") em início/fim (minutos)
+function parseHorarioMinutes(horarioStr) {
+    if (!horarioStr) return { inicio: 9 * 60, fim: 11 * 60 };
+
     const match = horarioStr.match(/(\d+)h-(\d+)h/);
     if (match) {
-        return { inicio: parseInt(match[1]), fim: parseInt(match[2]) };
+        return { inicio: parseInt(match[1], 10) * 60, fim: parseInt(match[2], 10) * 60 };
     }
-    
-    // Fallback para o formato "09:00 - 11:00"
+
     try {
         const parts = horarioStr.split(' - ');
-        const inicio = parseInt(parts[0].split(':')[0]);
-        const fim = parseInt(parts[1].split(':')[0]);
-        return { inicio, fim };
+        return { inicio: slotToMinutes(parts[0].trim()), fim: slotToMinutes(parts[1].trim()) };
     } catch (e) {
-        return { inicio: 9, fim: 11 };
+        return { inicio: 9 * 60, fim: 11 * 60 };
     }
 }
 
@@ -255,7 +262,7 @@ function renderSpreadsheet() {
             HORARIOS.forEach(hora => {
                 const th = document.createElement('th');
                 th.className = 'sticky-header hour-header';
-                th.innerText = `${String(hora).padStart(2, '0')}h`;
+                th.innerText = hora;
                 trHours.appendChild(th);
             });
         }
@@ -352,7 +359,7 @@ function openPopover(event, alunoNome, dia, hora) {
 
     const popover = document.getElementById('popover-schedule-menu');
     document.getElementById('popover-student-name').innerText = alunoNome;
-    document.getElementById('popover-time-info').innerText = `${dia}-feira às ${String(hora).padStart(2,'0')}:00`;
+    document.getElementById('popover-time-info').innerText = `${dia}-feira às ${hora}`;
     
     document.getElementById('custom-label').value = '';
     document.getElementById('custom-sigla').value = '';
@@ -448,7 +455,7 @@ function renderKanban() {
 
     grupos.forEach(g => {
         // Encontrar bloco correspondente
-        const hours = parseHorarioHours(g.Horário);
+        const hours = parseHorarioMinutes(g.Horário);
         const bloco = blocos.find(b => b.id === `b${g.Grupo}`) || { dia: g.Dia, inicio: hours.inicio, fim: hours.fim };
         const hasConflict = activeConflicts.some(c => c.alunoGrupo === g.Grupo);
         
@@ -639,14 +646,17 @@ function isStudentCompatibleWithGroup(alunoNome, grupoNum) {
     const diaAbrevMap = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'};
     const diaCompleto = diaAbrevMap[g.Dia] || g.Dia;
     
-    const hours = parseHorarioHours(g.Horário);
-    let hInicio = hours.inicio, hFim = hours.fim;
+    const hours = parseHorarioMinutes(g.Horário);
+    const hInicio = hours.inicio, hFim = hours.fim;
 
     const agenda = studentSchedules[alunoNome] || {};
-    
-    for (let h = hInicio; h < hFim; h++) {
-        if (agenda[`${diaCompleto}_${h}`] !== 'free') {
-            return false; // Conflito detectado
+
+    for (const slot of HORARIOS) {
+        const m = slotToMinutes(slot);
+        if (m < hInicio || m >= hFim) continue;
+        const state = agenda[`${diaCompleto}_${slot}`] || 'free';
+        if (state !== 'free') {
+            return false;
         }
     }
     return true;
@@ -858,7 +868,7 @@ function openGroupMatrix(grupoNum) {
     const trHeader = document.createElement('tr');
     trHeader.innerHTML = `<th>Dia</th>`;
     HORARIOS.forEach(h => {
-        trHeader.innerHTML += `<th>${String(h).padStart(2,'0')}h</th>`;
+        trHeader.innerHTML += `<th>${h}</th>`;
     });
     table.appendChild(trHeader);
 
@@ -873,7 +883,8 @@ function openGroupMatrix(grupoNum) {
 
             g.Membros.forEach(m => {
                 const agenda = studentSchedules[m.nome] || {};
-                if (agenda[`${dia}_${h}`] === 'free') {
+                const state = agenda[`${dia}_${h}`] || 'free';
+                if (state === 'free') {
                     livresCount++;
                 } else {
                     todosLivres = false;
