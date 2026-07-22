@@ -733,6 +733,67 @@ def get_schedules_json(turma_id):
         return json.dumps({"error": str(e)}), 500
 
 
+@app.route('/aluno/all_schedules_json')
+@login_required
+def get_all_schedules_json():
+    user = User.query.filter_by(username=session['username']).first()
+    if not user:
+        return json.dumps({}), 200
+        
+    turmas = Turma.query.filter_by(user_id=user.id).all()
+    schedules = {}
+    student_turma_map = {}
+    
+    dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
+    
+    for t in turmas:
+        if not t.base_data:
+            continue
+        try:
+            df = pd.read_csv(BytesIO(t.base_data))
+            
+            # Inicializar alunos desta turma
+            alunos_unicos = sorted(df['aluno'].unique())
+            for aluno in alunos_unicos:
+                nome_limpo = aluno.replace('_', ' ')
+                schedules[nome_limpo] = {}
+                student_turma_map[nome_limpo] = t.nome
+                # Inicializar com free
+                for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']:
+                    for h in range(7, 23):
+                        schedules[nome_limpo][f"{dia}_{h}"] = 'free'
+                        
+            # Preencher do DataFrame
+            for _, row in df.iterrows():
+                nome_limpo = str(row['aluno']).replace('_', ' ')
+                dia_completo = dias_completos.get(row['dia'], row['dia'])
+                
+                horario_int = obter_hora_inicio(row['horario'])
+                if horario_int is None:
+                    continue
+                    
+                materia = str(row['materia'])
+                key = f"{dia_completo}_{horario_int}"
+                
+                if nome_limpo in schedules:
+                    if pd.isna(row['materia']) or materia == '---' or materia.strip() == '':
+                        schedules[nome_limpo][key] = 'free'
+                    elif 'Acompanhamento' in materia or materia == 'P':
+                        schedules[nome_limpo][key] = 'follow'
+                    else:
+                        schedules[nome_limpo][key] = 'class'
+        except Exception as e:
+            print(f"Erro ao processar turma {t.id} na rota consolidada: {e}")
+            
+    lista_alunos = sorted(list(schedules.keys()))
+    payload = {
+        "schedules": schedules,
+        "student_turma_map": student_turma_map,
+        "lista_alunos": lista_alunos
+    }
+    return json.dumps(payload), 200
+
+
 @app.route('/aluno/update_schedule/<int:turma_id>', methods=['POST'])
 @login_required
 def update_student_schedule(turma_id):

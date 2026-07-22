@@ -516,18 +516,82 @@
             </div>
         </div>
 
-        <!-- Seção de Alunos (Futura implementação) -->
-        <div id="alunos-section" style="display: none; padding: 40px 0;">
-            <div class="glass-panel"
-                style="max-width: 600px; margin: 40px auto; padding: 40px 24px; text-align: center; border-radius: 16px;">
-                <div style="font-size: 3rem; margin-bottom: 20px;">🎓</div>
-                <h3 style="font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px;">Área de
-                    Gestão de Alunos</h3>
-                <p
-                    style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; max-width: 480px; margin: 0 auto;">
-                    Esta seção está reservada para futuras funcionalidades do AcademySync dedicadas à gestão
-                    individualizada de alunos.
-                </p>
+        <!-- Seção de Alunos (Matriz de Horários Geral com Filtros) -->
+        <div id="alunos-section" style="display: none; padding: 20px 0;">
+            <div class="landing-title-section">
+                <h2>Grade Geral de Alunos</h2>
+                <p>Veja e compare a disponibilidade de todos os estudantes de todas as turmas cadastradas.</p>
+            </div>
+
+            <!-- Tabela Geral de Disponibilidade -->
+            <div class="glass-panel spreadsheet-card" style="padding: 24px; border-radius: 16px; margin-top: 20px;">
+                <!-- Barra de Legenda -->
+                <div class="legend-bar" style="margin-bottom: 20px;">
+                    <div class="legend-item">
+                        <span class="legend-color free"></span>
+                        <span>Livre (L)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color class"></span>
+                        <span>Aulas de Graduação (X)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color follow"></span>
+                        <span>Acompanhamento (P)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color custom-comp"></span>
+                        <span>Compromisso Customizado (Sigla)</span>
+                    </div>
+                </div>
+
+                <!-- Barra de Filtros Geral -->
+                <div class="spreadsheet-filters-bar" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex: 1; max-width: 800px;">
+                        <!-- Busca por Aluno -->
+                        <div class="search-bar-container" style="max-width: 280px; width: 100%; position: relative; margin: 0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="filter-all-student-search" class="form-input"
+                                placeholder="Buscar aluno pelo nome..." oninput="handleAllFiltersChange()"
+                                style="padding: 8px 12px 8px 36px; font-size: 0.85rem; height: 38px; box-sizing: border-box;">
+                        </div>
+
+                        <!-- Filtro de Turma -->
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label class="form-label" style="margin-bottom: 0; font-size: 0.85rem; white-space: nowrap; font-weight: 500;">📂 Filtrar por Turma:</label>
+                            <select id="filter-all-turma-select" class="form-input" style="padding: 8px 12px; font-size: 0.85rem; width: 180px; min-width: 150px; background: rgba(255, 255, 255, 0.05); height: 38px; box-sizing: border-box;" onchange="handleAllFiltersChange()">
+                                <option value="all">Todas as Turmas</option>
+                                {% for t in turmas %}
+                                <option value="{{ t.nome }}">{{ t.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Botão Comparar Alunos -->
+                        <div>
+                            <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;" onclick="openAllCompareModal()">
+                                🔍 Comparar Alunos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Status do Filtro -->
+                    <div id="filter-all-active-status" style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-left: auto;">
+                        <!-- Injetado via JS -->
+                    </div>
+                </div>
+
+                <!-- Tabela Grid -->
+                <div class="table-wrapper" style="overflow-x: auto;">
+                    <table class="styled-table" id="all-students-spreadsheet-table">
+                        <!-- Injetado via JS dinamicamente -->
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -645,6 +709,38 @@
         </div>
     </div>
 
+    <!-- Modal de Comparação Geral de Alunos (Múltiplos) -->
+    <div class="modal-overlay" id="all-compare-students-modal-overlay">
+        <div class="glass-panel modal-card" style="padding: 24px; position: relative; max-width: 500px; width: 100%;">
+            <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">🔍 Comparar Alunos</h3>
+                <button class="modal-close" onclick="closeAllCompareModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
+            </div>
+
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">
+                Selecione os estudantes que deseja exibir na planilha geral para comparar suas disponibilidades.
+            </p>
+
+            <div class="compare-search-wrapper" style="position: relative; margin-bottom: 16px;">
+                <input type="text" id="all-compare-search-input" class="form-input" placeholder="Buscar aluno..." oninput="filterAllCompareList()" style="width:100%; box-sizing:border-box; padding: 10px 12px; font-size:0.85rem;">
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;" onclick="selectAllAllCompare(true)">Selecionar Todos</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;" onclick="selectAllAllCompare(false)">Limpar Seleção</button>
+            </div>
+
+            <div class="compare-students-list-wrapper" id="all-compare-students-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.1);">
+                <!-- Injetado via JS -->
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button class="btn btn-secondary" onclick="closeAllCompareModal()" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:600;">Cancelar</button>
+                <button class="btn btn-primary" onclick="applyAllCompareFilter()" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:700;">Aplicar Comparação</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Formulário Invisível para Deletar Turma -->
     <form id="delete-turma-form" action="{{ url_for('index') }}" method="POST" style="display: none;">
         <input type="hidden" name="action" value="delete_turma">
@@ -720,7 +816,332 @@
                 if (alunosSection) alunosSection.style.display = 'block';
 
                 filterTurmasGrid(); // Garante a ocultação das turmas na aba Alunos
+                loadAllStudentsSchedules(); // Carrega os alunos consolidados de todas as turmas
             }
+        }
+
+        // ==========================================================================
+        // GESTÃO GERAL DE ALUNOS (ABA "ALUNOS" / "ACADEMY")
+        // ==========================================================================
+        let allStudentsData = {
+            schedules: {},
+            studentTurmaMap: {},
+            listaAlunos: []
+        };
+        let collapsedAllDays = [];
+        let selectedAllCompareStudents = new Set();
+        
+        const DIAS_SEMANA_ALL = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const DIAS_CURTOS_ALL = {
+            'Segunda': 'Seg', 'Terça': 'Ter', 'Quarta': 'Qua', 'Quinta': 'Qui', 'Sexta': 'Sex', 'Sábado': 'Sab'
+        };
+        const HORARIOS_ALL = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+
+        async function loadAllStudentsSchedules() {
+            const table = document.getElementById('all-students-spreadsheet-table');
+            if (table) {
+                table.innerHTML = '<tr><td style="text-align: center; padding: 20px; color: var(--text-muted);">Carregando alunos e horários...</td></tr>';
+            }
+            try {
+                const response = await fetch('/aluno/all_schedules_json');
+                if (response.ok) {
+                    const payload = await response.json();
+                    allStudentsData.schedules = payload.schedules || {};
+                    allStudentsData.studentTurmaMap = payload.student_turma_map || {};
+                    allStudentsData.listaAlunos = payload.lista_alunos || [];
+                    renderAllStudentsSpreadsheet();
+                }
+            } catch (error) {
+                console.error('Erro ao buscar dados consolidados:', error);
+                if (table) {
+                    table.innerHTML = '<tr><td style="text-align: center; padding: 20px; color: var(--color-danger);">Erro ao carregar dados do servidor.</td></tr>';
+                }
+            }
+        }
+
+        function renderAllStudentsSpreadsheet() {
+            const table = document.getElementById('all-students-spreadsheet-table');
+            if (!table) return;
+
+            const searchQuery = (document.getElementById('filter-all-student-search').value || '').toLowerCase().trim();
+            const turmaQuery = document.getElementById('filter-all-turma-select').value;
+
+            // Filtros de Aluno
+            const filteredAlunos = allStudentsData.listaAlunos.filter(alunoNome => {
+                // 1. Busca por nome
+                if (searchQuery !== '' && !alunoNome.toLowerCase().includes(searchQuery)) {
+                    return false;
+                }
+                // 2. Filtro de turma
+                if (turmaQuery !== 'all') {
+                    const turmaNome = allStudentsData.studentTurmaMap[alunoNome];
+                    if (turmaNome !== turmaQuery) return false;
+                }
+                // 3. Comparação de Alunos
+                if (selectedAllCompareStudents.size > 0) {
+                    if (!selectedAllCompareStudents.has(alunoNome)) return false;
+                }
+                return true;
+            });
+
+            // Atualiza status informativo dos filtros
+            const statusText = document.getElementById('filter-all-active-status');
+            if (statusText) {
+                let text = `Mostrando ${filteredAlunos.length} de ${allStudentsData.listaAlunos.length} alunos`;
+                if (selectedAllCompareStudents.size > 0 || searchQuery !== '' || turmaQuery !== 'all') {
+                    text += ` (Filtro Ativo - <a href="#" onclick="clearAllAllFilters(event)" style="color: var(--color-primary); text-decoration: none; font-weight: 600;">Limpar</a>)`;
+                }
+                statusText.innerHTML = text;
+            }
+
+            table.innerHTML = '';
+
+            if (filteredAlunos.length === 0) {
+                table.innerHTML = '<tr><td style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 0.9rem;">Nenhum estudante atende aos filtros atuais.</td></tr>';
+                return;
+            }
+
+            // thead
+            const thead = document.createElement('thead');
+            table.appendChild(thead);
+
+            // Header 1: Dias
+            const trDays = document.createElement('tr');
+            const thEstudantes = document.createElement('th');
+            thEstudantes.rowSpan = 2;
+            thEstudantes.className = 'sticky-header estudantes-header';
+            thEstudantes.innerText = 'Estudantes';
+            trDays.appendChild(thEstudantes);
+
+            DIAS_SEMANA_ALL.forEach(dia => {
+                const th = document.createElement('th');
+                th.className = 'sticky-header day-header';
+                const isCollapsed = collapsedAllDays.includes(dia);
+                if (isCollapsed) {
+                    th.colSpan = 1;
+                    th.rowSpan = 2;
+                    th.innerHTML = `${DIAS_CURTOS_ALL[dia]} <span style="font-size: 0.65rem; opacity: 0.7;">▸</span>`;
+                    th.title = `Clique para expandir ${dia}-feira`;
+                } else {
+                    th.colSpan = HORARIOS_ALL.length;
+                    th.rowSpan = 1;
+                    th.innerHTML = `${dia} <span style="font-size: 0.65rem; opacity: 0.7;">▾</span>`;
+                    th.title = `Clique para minimizar ${dia}-feira`;
+                }
+                th.addEventListener('click', () => toggleAllDayCollapse(dia));
+                trDays.appendChild(th);
+            });
+            thead.appendChild(trDays);
+
+            // Header 2: Horas
+            const trHours = document.createElement('tr');
+            DIAS_SEMANA_ALL.forEach(dia => {
+                const isCollapsed = collapsedAllDays.includes(dia);
+                if (!isCollapsed) {
+                    HORARIOS_ALL.forEach(hora => {
+                        const th = document.createElement('th');
+                        th.className = 'sticky-header hour-header';
+                        th.innerText = `${String(hora).padStart(2, '0')}h`;
+                        trHours.appendChild(th);
+                    });
+                }
+            });
+            thead.appendChild(trHours);
+
+            // tbody
+            const tbody = document.createElement('tbody');
+            table.appendChild(tbody);
+
+            filteredAlunos.forEach(alunoNome => {
+                const tr = document.createElement('tr');
+
+                // Célula Estudante
+                const tdName = document.createElement('td');
+                tdName.className = 'aluno-name-cell';
+                const turmaNome = allStudentsData.studentTurmaMap[alunoNome] || 'Sem Turma';
+
+                tdName.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div class="user-avatar" style="width:24px; height:24px; font-size:0.75rem; background: var(--color-primary); color:white; flex-shrink: 0;">
+                            ${alunoNome[0].toUpperCase()}
+                        </div>
+                        <div>
+                            <div style="font-weight: 600; line-height: 1.2;">${alunoNome}</div>
+                            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight:500;">
+                                📂 ${turmaNome}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                tr.appendChild(tdName);
+
+                // Células de Horários
+                const agendaAluno = allStudentsData.schedules[alunoNome] || {};
+
+                DIAS_SEMANA_ALL.forEach(dia => {
+                    const isCollapsed = collapsedAllDays.includes(dia);
+                    if (isCollapsed) {
+                        const td = document.createElement('td');
+                        td.className = 'sched-cell collapsed-day-placeholder';
+                        td.title = `${alunoNome} - Clique para expandir ${dia}-feira`;
+                        td.addEventListener('click', () => toggleAllDayCollapse(dia));
+                        tr.appendChild(td);
+                    } else {
+                        HORARIOS_ALL.forEach(hora => {
+                            const td = document.createElement('td');
+                            td.className = 'sched-cell';
+                            const key = `${dia}_${hora}`;
+                            const state = agendaAluno[key] || 'free';
+
+                            if (state === 'free') {
+                                td.classList.add('free');
+                                td.innerText = 'L';
+                            } else if (state === 'class') {
+                                td.classList.add('class');
+                                td.innerText = 'X';
+                            } else if (state === 'follow') {
+                                td.classList.add('follow');
+                                td.innerText = 'P';
+                            } else {
+                                td.classList.add('custom-comp');
+                                td.innerText = String(state).charAt(0).toUpperCase();
+                                td.title = state;
+                            }
+                            tr.appendChild(td);
+                        });
+                    }
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        function handleAllFiltersChange() {
+            renderAllStudentsSpreadsheet();
+        }
+
+        function toggleAllDayCollapse(dia) {
+            const idx = collapsedAllDays.indexOf(dia);
+            if (idx > -1) {
+                collapsedAllDays.splice(idx, 1);
+            } else {
+                collapsedAllDays.push(dia);
+            }
+            renderAllStudentsSpreadsheet();
+        }
+
+        function clearAllAllFilters(e) {
+            if (e) e.preventDefault();
+            document.getElementById('filter-all-student-search').value = '';
+            document.getElementById('filter-all-turma-select').value = 'all';
+            selectedAllCompareStudents.clear();
+            renderAllStudentsSpreadsheet();
+        }
+
+        // Modal de Comparação Geral
+        function openAllCompareModal() {
+            const modal = document.getElementById('all-compare-students-modal-overlay');
+            if (modal) {
+                modal.classList.add('active');
+                document.getElementById('all-compare-search-input').value = '';
+                populateAllCompareModalList();
+            }
+        }
+
+        function closeAllCompareModal() {
+            const modal = document.getElementById('all-compare-students-modal-overlay');
+            if (modal) {
+                modal.classList.remove('active');
+            }
+        }
+
+        function populateAllCompareModalList() {
+            const container = document.getElementById('all-compare-students-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const listAlunos = allStudentsData.listaAlunos;
+            if (listAlunos.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">Nenhum aluno cadastrado.</p>';
+                return;
+            }
+
+            const grid = document.createElement('div');
+            grid.className = 'compare-students-grid';
+
+            listAlunos.forEach(alunoNome => {
+                const item = document.createElement('div');
+                item.className = 'compare-student-item';
+                const isChecked = selectedAllCompareStudents.has(alunoNome) ? 'checked' : '';
+                if (selectedAllCompareStudents.has(alunoNome)) {
+                    item.classList.add('selected');
+                }
+
+                item.innerHTML = `
+                    <input type="checkbox" id="all-chk-comp-${alunoNome}" value="${alunoNome}" ${isChecked} onchange="handleAllCompareCheckboxChange(this)">
+                    <label for="all-chk-comp-${alunoNome}">${alunoNome} <span style="font-size:0.7rem; color:var(--text-muted);">(${allStudentsData.studentTurmaMap[alunoNome] || ''})</span></label>
+                `;
+
+                item.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
+                        const chk = item.querySelector('input[type="checkbox"]');
+                        chk.checked = !chk.checked;
+                        handleAllCompareCheckboxChange(chk);
+                    }
+                });
+
+                grid.appendChild(item);
+            });
+
+            container.appendChild(grid);
+        }
+
+        function handleAllCompareCheckboxChange(checkbox) {
+            const card = checkbox.closest('.compare-student-item');
+            if (!card) return;
+            if (checkbox.checked) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        }
+
+        function filterAllCompareList() {
+            const query = document.getElementById('all-compare-search-input').value.toLowerCase();
+            const items = document.querySelectorAll('#all-compare-students-list .compare-student-item');
+
+            items.forEach(item => {
+                const labelText = item.querySelector('label').innerText.toLowerCase();
+                if (labelText.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function selectAllAllCompare(select) {
+            const checkboxes = document.querySelectorAll('#all-compare-students-list input[type="checkbox"]');
+            checkboxes.forEach(chk => {
+                const item = chk.closest('.compare-student-item');
+                if (item && item.style.display !== 'none') {
+                    chk.checked = select;
+                    handleAllCompareCheckboxChange(chk);
+                }
+            });
+        }
+
+        function applyAllCompareFilter() {
+            const checkboxes = document.querySelectorAll('#all-compare-students-list input[type="checkbox"]');
+            selectedAllCompareStudents.clear();
+
+            checkboxes.forEach(chk => {
+                if (chk.checked) {
+                    selectedAllCompareStudents.add(chk.value);
+                }
+            });
+
+            closeAllCompareModal();
+            renderAllStudentsSpreadsheet();
         }
 
         // Modais do Hub / Home
