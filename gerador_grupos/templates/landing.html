@@ -1059,9 +1059,17 @@
             if (!container) return;
             container.innerHTML = '';
 
-            const listAlunos = allStudentsData.listaAlunos;
+            const turmaQuery = document.getElementById('filter-all-turma-select').value;
+            const listAlunos = allStudentsData.listaAlunos.filter(alunoNome => {
+                if (turmaQuery !== 'all') {
+                    const turmaNome = allStudentsData.studentTurmaMap[alunoNome];
+                    if (turmaNome !== turmaQuery) return false;
+                }
+                return true;
+            });
+
             if (listAlunos.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">Nenhum aluno cadastrado.</p>';
+                container.innerHTML = '<p style="color: var(--text-muted); font-size: 0.85rem; text-align: center;">Nenhum aluno cadastrado nesta turma.</p>';
                 return;
             }
 
