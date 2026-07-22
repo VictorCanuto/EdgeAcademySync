@@ -31,32 +31,54 @@ from services.group_generator import formar_grupos, horarios_conflitam
 from services.group_manager import sugerir_trocas, executar_troca
 from services.analytics_manager import calcular_ranking_disponibilidade
 
-HORARIOS_PADRAO = {
-    7: "07:30 - 08:20",
-    8: "08:20 - 09:10",
-    9: "09:20 - 10:10",
-    10: "10:10 - 11:00",
-    11: "11:10 - 12:00",
-    12: "12:00 - 12:50",
-    13: "13:30 - 14:20",
-    14: "14:20 - 15:10",
-    15: "15:20 - 16:10",
-    16: "16:10 - 17:00",
-    17: "17:10 - 18:00",
-    18: "18:00 - 18:50"
-}
+# Grade fixa da planilha: 07:00 → 18:00, de 30 em 30 min (igual ao frontend)
+HORARIOS_GRADE = [
+    "07:00", "07:30", "08:00", "08:30", "09:00", "09:30",
+    "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+    "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+    "16:00", "16:30", "17:00", "17:30", "18:00",
+]
 
-def obter_hora_inicio(horario_val):
+def _hhmm_to_minutes(s: str) -> int:
+    hh, mm = s.strip().split(":", 1)
+    return int(hh) * 60 + int(mm)
+
+def _minutes_to_hhmm(total: int) -> str:
+    hh, mm = divmod(total, 60)
+    return f"{hh:02d}:{mm:02d}"
+
+def obter_intervalo_minutos(horario_val):
     if pd.isna(horario_val):
         return None
     try:
-        val_str = str(horario_val).strip()
-        if ':' in val_str:
-            return int(val_str.split(':')[0])
+        val = str(horario_val).strip()
+        if " - " in val:
+            a, b = val.split(" - ", 1)
+        elif "-" in val:
+            a, b = val.split("-", 1)
         else:
-            return int(float(val_str))
+            ini = _hhmm_to_minutes(val) if ":" in val else int(float(val) * 60)
+            return (ini, ini + 30)
+        return (_hhmm_to_minutes(a), _hhmm_to_minutes(b))
     except (ValueError, TypeError, IndexError):
         return None
+
+def obter_hora_inicio(horario_val):
+    intervalo = obter_intervalo_minutos(horario_val)
+    if intervalo is None:
+        return None
+    return _minutes_to_hhmm(intervalo[0])
+
+def format_horario_slot(slot: str) -> str:
+    ini = _hhmm_to_minutes(slot)
+    return f"{slot} - {_minutes_to_hhmm(ini + 30)}"
+
+def slots_ocupados_no_intervalo(ini_min: int, fim_min: int):
+    for slot in HORARIOS_GRADE:
+        slot_min = _hhmm_to_minutes(slot)
+        if ini_min < slot_min + 30 and fim_min > slot_min:
+            yield slot
+
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -694,40 +716,33 @@ def get_schedules_json(turma_id):
         # Mapear dias da semana
         dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
         
-        # Estruturar dados por aluno
+        # Celulas ocupadas por aluno
         schedules = {}
-        
-        # Inicializar todos os alunos
-        alunos_unicos = sorted(df['aluno'].unique())
-        for aluno in alunos_unicos:
-            nome_limpo = aluno.replace('_', ' ')
-            schedules[nome_limpo] = {}
-            # Inicializar com free
-            for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']:
-                for h in range(7, 23):
-                    schedules[nome_limpo][f"{dia}_{h}"] = 'free'
-                    
-        # Preencher do DataFrame
+        for aluno in df['aluno'].unique():
+            schedules[str(aluno).replace('_', ' ')] = {}
+
         for _, row in df.iterrows():
+            materia = row['materia']
+            if pd.isna(materia) or str(materia).strip() in ('', '---'):
+                continue
+
+            intervalo = obter_intervalo_minutos(row['horario'])
+            if intervalo is None:
+                continue
+
             nome_limpo = str(row['aluno']).replace('_', ' ')
             dia_completo = dias_completos.get(row['dia'], row['dia'])
-            
-            horario_int = obter_hora_inicio(row['horario'])
-            if horario_int is None:
+            materia_str = str(materia)
+            status = 'follow' if ('Acompanhamento' in materia_str or materia_str == 'P') else 'class'
+            ini, fim = intervalo
+
+            aluno_sched = schedules.get(nome_limpo)
+            if aluno_sched is None:
                 continue
-                
-            materia = str(row['materia'])
-            
-            key = f"{dia_completo}_{horario_int}"
-            if nome_limpo in schedules:
-                if pd.isna(row['materia']) or materia == '---' or materia.strip() == '':
-                    schedules[nome_limpo][key] = 'free'
-                elif 'Acompanhamento' in materia or materia == 'P':
-                    schedules[nome_limpo][key] = 'follow'
-                else:
-                    # Qualquer outro texto de matéria indica aula ocupada (X)
-                    schedules[nome_limpo][key] = 'class'
-                    
+
+            for slot in slots_ocupados_no_intervalo(ini, fim):
+                aluno_sched[f"{dia_completo}_{slot}"] = status
+
         return json.dumps(schedules), 200
     except Exception as e:
         return json.dumps({"error": str(e)}), 500
@@ -805,8 +820,11 @@ def update_student_schedule(turma_id):
     data = request.json
     aluno_nome = data.get('aluno')
     dia = data.get('dia')
-    horario = int(data.get('horario'))
+    horario = str(data.get('horario', '')).strip()  # ex.: "07:30"
     novo_status = data.get('status')
+
+    if horario not in HORARIOS_GRADE:
+        return json.dumps({"error": "Horário inválido"}), 400
     
     try:
         df = pd.read_csv(BytesIO(turma.base_data))
@@ -814,9 +832,15 @@ def update_student_schedule(turma_id):
         dia_abrev_map = {'Segunda': 'Seg', 'Terça': 'Ter', 'Quarta': 'Qua', 'Quinta': 'Qui', 'Sexta': 'Sex', 'Sábado': 'Sab'}
         dia_abrev = dia_abrev_map.get(dia, dia)
         
-        # Filtrar o aluno com tratamento de underline e comparação flexível de horário
         aluno_key = aluno_nome.replace(' ', '_')
-        cond_horario = df['horario'].apply(lambda h: obter_hora_inicio(h) == horario)
+        horario_salvar = format_horario_slot(horario)
+
+        def _match_horario(h):
+            if str(h).strip() == horario_salvar:
+                return True
+            return obter_hora_inicio(h) == horario
+
+        cond_horario = df['horario'].apply(_match_horario)
         condicao = (df['aluno'].str.lower() == aluno_key.lower()) & (df['dia'] == dia_abrev) & cond_horario
         
         materia_val = '---'
@@ -825,14 +849,17 @@ def update_student_schedule(turma_id):
         elif novo_status == 'follow':
             materia_val = 'Acompanhamento Individual'
         elif novo_status != 'free':
-            materia_val = novo_status # Rótulo customizado
+            materia_val = novo_status
             
         if not df[condicao].empty:
             df.loc[condicao, 'materia'] = materia_val
         else:
-            # Caso a célula não exista na base, criar uma nova linha formatada
-            horario_salvar = HORARIOS_PADRAO.get(horario, f"{horario:02d}:00 - {horario:02d}:50")
-            new_row = pd.DataFrame([{'aluno': aluno_key, 'dia': dia_abrev, 'horario': horario_salvar, 'materia': materia_val}])
+            new_row = pd.DataFrame([{
+                'aluno': aluno_key,
+                'dia': dia_abrev,
+                'horario': horario_salvar,
+                'materia': materia_val
+            }])
             df = pd.concat([df, new_row], ignore_index=True)
             
         # Salvar CSV atualizado
@@ -1234,7 +1261,8 @@ def view_turma(turma_id):
         except Exception as e:
             print(f"Erro ao carregar groups_result do banco: {e}")
 
-    horarios_disponiveis = list(range(7, 23))
+    # Selects dos blocos de imersão (janelas em hora cheia); a planilha usa HORARIOS_GRADE
+    horarios_disponiveis = list(range(7, 19))
     nomes_blocos_opcoes = ["Manhã", "Tarde", "Noite", "Extra"]
     dias_semana_opcoes = [
         {"valor": "Seg", "texto": "Segunda-feira"},
@@ -1415,4 +1443,4 @@ def get_aluno_schedule(nome_aluno, turma_id):
     return render_template("_aluno_schedule.html", aluno=nome_aluno, schedule=schedule_pivot)
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
