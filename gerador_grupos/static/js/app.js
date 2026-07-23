@@ -346,9 +346,14 @@ function renderSpreadsheet() {
                     }
 
                     // Evento clique do popover
-                    td.addEventListener('click', (e) => {
-                        openPopover(e, alunoNome, dia, hora);
-                    });
+                    if (state !== 'class') {
+                        td.addEventListener('click', (e) => {
+                            openPopover(e, alunoNome, dia, hora);
+                        });
+                    } else {
+                        td.style.cursor = 'not-allowed';
+                        td.title = 'Aulas de Graduação não podem ser alteradas';
+                    }
 
                     tr.appendChild(td);
                 });

@@ -785,6 +785,49 @@
         </div>
     </div>
 
+    <!-- Popover Planilha Geral de Alunos -->
+    <div class="popover-menu" id="all-popover-schedule-menu">
+        <div class="popover-header">
+            <span>Alterar Compromisso:</span>
+            <span id="all-popover-student-name" style="font-weight: bold; display: block; margin-top: 2px;">Aluno</span>
+            <span id="all-popover-time-info" style="font-size: 0.75rem; color: var(--text-muted);">Segunda-feira - 08:00</span>
+        </div>
+        <div class="popover-actions">
+            <button class="popover-btn btn-opt-free" onclick="updateAllCellStatus('free')">
+                <span>🟢</span> Marcar como Livre (L)
+            </button>
+            <button class="popover-btn btn-opt-ac" onclick="updateAllCellStatus('ac')">
+                <span>🟠</span> Acompanhamento Comportamental (AC)
+            </button>
+            <button class="popover-btn btn-opt-psi" onclick="updateAllCellStatus('psi')">
+                <span>🟣</span> Psicoterapia (PSI)
+            </button>
+            <button class="popover-btn btn-opt-class" onclick="updateAllCellStatus('class')">
+                <span>🔴</span> Aula de Graduação (X)
+            </button>
+            <button class="popover-btn btn-opt-im" onclick="updateAllCellStatus('im')">
+                <span>🔵</span> Imersão (IM)
+            </button>
+            <button class="popover-btn btn-opt-ap" onclick="updateAllCellStatus('ap')">
+                <span>🟢</span> Acompanhamento Pedagógico (AP)
+            </button>
+            <button class="popover-btn btn-opt-r" onclick="updateAllCellStatus('r')">
+                <span>⚪</span> Realocado (R)
+            </button>
+        </div>
+
+        <div class="popover-custom-area">
+            <div class="popover-custom-title">Compromisso Customizado</div>
+            <div class="popover-custom-fields">
+                <input type="text" id="all-custom-label" class="form-input" placeholder="Ex: Psicóloga" style="padding: 6px 10px; font-size: 0.8rem;">
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="all-custom-sigla" class="form-input" placeholder="Sigla (1 letra)" maxlength="1" style="padding: 6px 10px; font-size: 0.8rem; width: 60px; text-transform: uppercase; text-align: center;">
+                    <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; flex: 1;" onclick="updateAllCellStatus('custom')">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Formulário Invisível para Deletar Turma -->
     <form id="delete-turma-form" action="{{ url_for('index') }}" method="POST" style="display: none;">
         <input type="hidden" name="action" value="delete_turma">
@@ -870,6 +913,7 @@
         let allStudentsData = {
             schedules: {},
             studentTurmaMap: {},
+            studentTurmaIdMap: {},
             listaAlunos: []
         };
         let collapsedAllDays = [];
@@ -898,6 +942,7 @@
                     const payload = await response.json();
                     allStudentsData.schedules = payload.schedules || {};
                     allStudentsData.studentTurmaMap = payload.student_turma_map || {};
+                    allStudentsData.studentTurmaIdMap = payload.student_turma_id_map || {};
                     allStudentsData.listaAlunos = payload.lista_alunos || [];
                     renderAllStudentsSpreadsheet();
                 }
@@ -1080,6 +1125,16 @@
                                 td.innerText = String(state).charAt(0).toUpperCase();
                                 td.title = state;
                             }
+
+                            if (state !== 'class') {
+                                td.addEventListener('click', (e) => {
+                                    openAllPopover(e, alunoNome, dia, hora);
+                                });
+                            } else {
+                                td.style.cursor = 'not-allowed';
+                                td.title = 'Aulas de Graduação não podem ser alteradas';
+                            }
+
                             tr.appendChild(td);
                         });
                     }
@@ -1339,6 +1394,118 @@
 
             closeFilterTurmasModal();
             renderAllStudentsSpreadsheet();
+        }
+
+        // Popover de Edição Geral
+        let activeAllPopover = {
+            alunoNome: null,
+            dia: null,
+            horario: null,
+            targetCell: null
+        };
+
+        function openAllPopover(event, alunoNome, dia, hora) {
+            event.stopPropagation();
+
+            activeAllPopover = {
+                alunoNome: alunoNome,
+                dia: dia,
+                horario: hora,
+                targetCell: event.currentTarget
+            };
+
+            const popover = document.getElementById('all-popover-schedule-menu');
+            document.getElementById('all-popover-student-name').innerText = alunoNome;
+            document.getElementById('all-popover-time-info').innerText = `${dia}-feira às ${hora}`;
+
+            document.getElementById('all-custom-label').value = '';
+            document.getElementById('all-custom-sigla').value = '';
+
+            // Posicionar Popover
+            const rect = event.currentTarget.getBoundingClientRect();
+            const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            popover.style.display = 'block';
+
+            let leftPos = rect.left + scrollLeft - (popover.offsetWidth / 2) + (rect.width / 2);
+            let topPos = rect.top + scrollTop - popover.offsetHeight - 8;
+
+            if (leftPos < 10) leftPos = 10;
+            if (topPos < 10) topPos = rect.bottom + scrollTop + 8;
+
+            popover.style.left = `${leftPos}px`;
+            popover.style.top = `${topPos}px`;
+        }
+
+        function closeAllPopover() {
+            const popover = document.getElementById('all-popover-schedule-menu');
+            if (popover) popover.style.display = 'none';
+            activeAllPopover = { alunoNome: null, dia: null, horario: null, targetCell: null };
+        }
+
+        // Fechar popover ao clicar fora
+        document.addEventListener('click', (e) => {
+            const popover = document.getElementById('all-popover-schedule-menu');
+            if (popover && popover.style.display === 'block') {
+                if (!popover.contains(e.target)) {
+                    closeAllPopover();
+                }
+            }
+        });
+
+        async function updateAllCellStatus(newStatus) {
+            const { alunoNome, dia, horario } = activeAllPopover;
+            if (!alunoNome) return;
+
+            let statusValue = newStatus;
+            if (newStatus === 'custom') {
+                const label = document.getElementById('all-custom-label').value.trim();
+                const sigla = document.getElementById('all-custom-sigla').value.trim().toUpperCase();
+
+                if (!label || !sigla) {
+                    alert('Preencha a descrição e a sigla do compromisso customizado.');
+                    return;
+                }
+                statusValue = label;
+            }
+
+            closeAllPopover();
+
+            // Obter turmaId
+            const turmaId = allStudentsData.studentTurmaIdMap[alunoNome];
+            if (!turmaId) {
+                showToast('Erro ao Salvar', 'Não foi possível identificar a turma do aluno.', 'danger');
+                return;
+            }
+
+            // Enviar alteração via POST para o Flask
+            try {
+                const response = await fetch('/aluno/update_schedule/' + turmaId, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        aluno: alunoNome,
+                        dia: dia,
+                        horario: horario,
+                        status: statusValue
+                    })
+                });
+
+                if (response.ok) {
+                    // Atualizar cache local
+                    if (!allStudentsData.schedules[alunoNome]) allStudentsData.schedules[alunoNome] = {};
+                    allStudentsData.schedules[alunoNome][`${dia}_${horario}`] = statusValue;
+
+                    renderAllStudentsSpreadsheet();
+                    showToast('Horário Atualizado', 'Alteração salva no banco de dados com sucesso.', 'success');
+                } else {
+                    showToast('Erro ao Salvar', 'Não foi possível atualizar o horário no servidor.', 'danger');
+                }
+            } catch (error) {
+                console.error('Erro de rede ao salvar horário:', error);
+                showToast('Erro de Conexão', 'Verifique a conexão de rede.', 'danger');
+            }
         }
 
         // Modais do Hub / Home

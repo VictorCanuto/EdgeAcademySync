@@ -775,6 +775,7 @@ def get_all_schedules_json():
     turmas = Turma.query.filter_by(user_id=user.id).all()
     schedules = {}
     student_turma_map = {}
+    student_turma_id_map = {}
     
     dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
     
@@ -790,6 +791,7 @@ def get_all_schedules_json():
                 nome_limpo = aluno.replace('_', ' ')
                 schedules[nome_limpo] = {}
                 student_turma_map[nome_limpo] = t.nome
+                student_turma_id_map[nome_limpo] = t.id
                 # Inicializar com free para todos os slots de 30 minutos
                 for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']:
                     for slot in HORARIOS_GRADE:
@@ -840,6 +842,7 @@ def get_all_schedules_json():
     payload = {
         "schedules": schedules,
         "student_turma_map": student_turma_map,
+        "student_turma_id_map": student_turma_id_map,
         "lista_alunos": lista_alunos
     }
     return json.dumps(payload), 200
