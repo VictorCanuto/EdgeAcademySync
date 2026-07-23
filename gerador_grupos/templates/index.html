@@ -263,23 +263,39 @@
             <!-- ABA 1: PLANILHA GERAL -->
             <section class="tab-view active" id="tab-view-spreadsheet">
                 <div class="glass-panel spreadsheet-card">
-                    <!-- Barra de Legenda -->
-                    <div class="legend-bar">
+                    <!-- Barra de Legenda (Apêndice) -->
+                    <div class="legend-bar" style="flex-wrap: wrap; gap: 12px 16px;">
                         <div class="legend-item">
                             <div class="legend-color" style="background: var(--cell-free-bg); border: 1px solid var(--border-color);"></div>
                             <span>Livre (L)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--cell-ac-bg); border: 1px solid var(--border-color);"></div>
+                            <span>Acompanhamento Comportamental (AC)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--cell-psi-bg); border: 1px solid var(--border-color);"></div>
+                            <span>Psicoterapia (PSI)</span>
                         </div>
                         <div class="legend-item">
                             <div class="legend-color" style="background: var(--cell-class-bg); border: 1px solid var(--border-color);"></div>
                             <span>Aulas de Graduação (X)</span>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color" style="background: var(--cell-follow-bg); border: 1px solid var(--border-color);"></div>
-                            <span>Acompanhamento (P)</span>
+                            <div class="legend-color" style="background: var(--cell-im-bg); border: 1px solid var(--border-color);"></div>
+                            <span>Imersão (IM)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--cell-ap-bg); border: 1px solid var(--border-color);"></div>
+                            <span>Acompanhamento Pedagógico (AP)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: var(--cell-r-bg); border: 1px solid var(--border-color);"></div>
+                            <span>Realocado (R)</span>
                         </div>
                         <div class="legend-item">
                             <div class="legend-color" style="background: rgba(139, 92, 246, 0.2); border: 1px dashed #8b5cf6;"></div>
-                            <span>Compromisso Customizado (Sigla)</span>
+                            <span>Outros (Sigla)</span>
                         </div>
                         <div class="legend-item" style="margin-left: auto; color: var(--text-muted);">
                             <span>* Clique em qualquer célula para alterar o compromisso do aluno.</span>
@@ -411,11 +427,23 @@
             <button class="popover-btn btn-opt-free" onclick="updateCellStatus('free')">
                 <span>🟢</span> Marcar como Livre (L)
             </button>
+            <button class="popover-btn btn-opt-ac" onclick="updateCellStatus('ac')">
+                <span>🟠</span> Acompanhamento Comportamental (AC)
+            </button>
+            <button class="popover-btn btn-opt-psi" onclick="updateCellStatus('psi')">
+                <span>🟣</span> Psicoterapia (PSI)
+            </button>
             <button class="popover-btn btn-opt-class" onclick="updateCellStatus('class')">
                 <span>🔴</span> Aula de Graduação (X)
             </button>
-            <button class="popover-btn btn-opt-follow" onclick="updateCellStatus('follow')">
-                <span>🟡</span> Acompanhamento (P)
+            <button class="popover-btn btn-opt-im" onclick="updateCellStatus('im')">
+                <span>🔵</span> Imersão (IM)
+            </button>
+            <button class="popover-btn btn-opt-ap" onclick="updateCellStatus('ap')">
+                <span>🟢</span> Acompanhamento Pedagógico (AP)
+            </button>
+            <button class="popover-btn btn-opt-r" onclick="updateCellStatus('r')">
+                <span>⚪</span> Realocado (R)
             </button>
         </div>
         

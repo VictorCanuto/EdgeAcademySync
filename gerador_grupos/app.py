@@ -732,8 +732,25 @@ def get_schedules_json(turma_id):
 
             nome_limpo = str(row['aluno']).replace('_', ' ')
             dia_completo = dias_completos.get(row['dia'], row['dia'])
-            materia_str = str(materia)
-            status = 'follow' if ('Acompanhamento' in materia_str or materia_str == 'P') else 'class'
+            materia_str = str(materia).strip()
+            
+            # Mapear status das siglas/descrições
+            if materia_str in ('Acompanhamento Comportamental', 'AC') or 'Acompanhamento Comportamental' in materia_str:
+                status = 'ac'
+            elif materia_str in ('Psicoterapia', 'PSI') or 'Psicoterapia' in materia_str:
+                status = 'psi'
+            elif materia_str in ('Imersão', 'IM') or 'Imersão' in materia_str:
+                status = 'im'
+            elif materia_str in ('Acompanhamento Pedagógico', 'AP') or 'Acompanhamento Pedagógico' in materia_str:
+                status = 'ap'
+            elif materia_str in ('Realocado', 'R') or 'Realocado' in materia_str:
+                status = 'r'
+            elif materia_str.startswith('Custom:'):
+                status = materia_str[7:].strip()
+            else:
+                # Qualquer matéria trazida de PDF (Cálculo, Estatística, Aula de Graduação, X, etc.) é Aula de Graduação
+                status = 'class'
+
             ini, fim = intervalo
 
             aluno_sched = schedules.get(nome_limpo)
@@ -746,6 +763,87 @@ def get_schedules_json(turma_id):
         return json.dumps(schedules), 200
     except Exception as e:
         return json.dumps({"error": str(e)}), 500
+
+
+@app.route('/aluno/all_schedules_json')
+@login_required
+def get_all_schedules_json():
+    user = User.query.filter_by(username=session['username']).first()
+    if not user:
+        return json.dumps({}), 200
+        
+    turmas = Turma.query.filter_by(user_id=user.id).all()
+    schedules = {}
+    student_turma_map = {}
+    
+    dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
+    
+    for t in turmas:
+        if not t.base_data:
+            continue
+        try:
+            df = pd.read_csv(BytesIO(t.base_data))
+            
+            # Inicializar alunos desta turma
+            alunos_unicos = sorted(df['aluno'].unique())
+            for aluno in alunos_unicos:
+                nome_limpo = aluno.replace('_', ' ')
+                schedules[nome_limpo] = {}
+                student_turma_map[nome_limpo] = t.nome
+                # Inicializar com free para todos os slots de 30 minutos
+                for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']:
+                    for slot in HORARIOS_GRADE:
+                        schedules[nome_limpo][f"{dia}_{slot}"] = 'free'
+                        
+            # Preencher do DataFrame
+            for _, row in df.iterrows():
+                materia = row['materia']
+                if pd.isna(materia) or str(materia).strip() in ('', '---'):
+                    continue
+
+                intervalo = obter_intervalo_minutos(row['horario'])
+                if intervalo is None:
+                    continue
+
+                nome_limpo = str(row['aluno']).replace('_', ' ')
+                dia_completo = dias_completos.get(row['dia'], row['dia'])
+                materia_str = str(materia).strip()
+                
+                # Mapear status das siglas/descrições
+                if materia_str in ('Acompanhamento Comportamental', 'AC') or 'Acompanhamento Comportamental' in materia_str:
+                    status = 'ac'
+                elif materia_str in ('Psicoterapia', 'PSI') or 'Psicoterapia' in materia_str:
+                    status = 'psi'
+                elif materia_str in ('Imersão', 'IM') or 'Imersão' in materia_str:
+                    status = 'im'
+                elif materia_str in ('Acompanhamento Pedagógico', 'AP') or 'Acompanhamento Pedagógico' in materia_str:
+                    status = 'ap'
+                elif materia_str in ('Realocado', 'R') or 'Realocado' in materia_str:
+                    status = 'r'
+                elif materia_str.startswith('Custom:'):
+                    status = materia_str[7:].strip()
+                else:
+                    # Qualquer matéria trazida de PDF (Cálculo, Estatística, Aula de Graduação, X, etc.) é Aula de Graduação
+                    status = 'class'
+                
+                ini, fim = intervalo
+
+                aluno_sched = schedules.get(nome_limpo)
+                if aluno_sched is None:
+                    continue
+
+                for slot in slots_ocupados_no_intervalo(ini, fim):
+                    aluno_sched[f"{dia_completo}_{slot}"] = status
+        except Exception as e:
+            print(f"Erro ao processar turma {t.id} na rota consolidada: {e}")
+            
+    lista_alunos = sorted(list(schedules.keys()))
+    payload = {
+        "schedules": schedules,
+        "student_turma_map": student_turma_map,
+        "lista_alunos": lista_alunos
+    }
+    return json.dumps(payload), 200
 
 
 @app.route('/aluno/update_schedule/<int:turma_id>', methods=['POST'])
@@ -785,10 +883,18 @@ def update_student_schedule(turma_id):
         materia_val = '---'
         if novo_status == 'class':
             materia_val = 'Aula de Graduação'
-        elif novo_status == 'follow':
-            materia_val = 'Acompanhamento Individual'
+        elif novo_status == 'ac':
+            materia_val = 'Acompanhamento Comportamental'
+        elif novo_status == 'psi':
+            materia_val = 'Psicoterapia'
+        elif novo_status == 'im':
+            materia_val = 'Imersão'
+        elif novo_status == 'ap':
+            materia_val = 'Acompanhamento Pedagógico'
+        elif novo_status == 'r':
+            materia_val = 'Realocado'
         elif novo_status != 'free':
-            materia_val = novo_status
+            materia_val = f"Custom: {novo_status}" if not novo_status.startswith('Custom:') else novo_status
             
         if not df[condicao].empty:
             df.loc[condicao, 'materia'] = materia_val

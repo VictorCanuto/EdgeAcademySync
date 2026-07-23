@@ -324,9 +324,21 @@ function renderSpreadsheet() {
                     } else if (state === 'class') {
                         td.classList.add('class');
                         td.innerText = 'X';
-                    } else if (state === 'follow') {
-                        td.classList.add('follow');
-                        td.innerText = 'P';
+                    } else if (state === 'ac') {
+                        td.classList.add('ac');
+                        td.innerText = 'AC';
+                    } else if (state === 'psi') {
+                        td.classList.add('psi');
+                        td.innerText = 'PSI';
+                    } else if (state === 'im') {
+                        td.classList.add('im');
+                        td.innerText = 'IM';
+                    } else if (state === 'ap') {
+                        td.classList.add('ap');
+                        td.innerText = 'AP';
+                    } else if (state === 'r') {
+                        td.classList.add('r');
+                        td.innerText = 'R';
                     } else {
                         td.classList.add('custom-comp');
                         td.innerText = String(state).charAt(0).toUpperCase();
