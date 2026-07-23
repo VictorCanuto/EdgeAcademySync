@@ -526,22 +526,38 @@
             <!-- Tabela Geral de Disponibilidade -->
             <div class="glass-panel spreadsheet-card" style="padding: 24px; border-radius: 16px; margin-top: 20px;">
                 <!-- Barra de Legenda -->
-                <div class="legend-bar" style="margin-bottom: 20px;">
+                <div class="legend-bar" style="margin-bottom: 20px; flex-wrap: wrap; gap: 12px 16px;">
                     <div class="legend-item">
-                        <span class="legend-color free"></span>
+                        <div class="legend-color" style="background: var(--cell-free-bg); border: 1px solid var(--border-color);"></div>
                         <span>Livre (L)</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-color class"></span>
+                        <div class="legend-color" style="background: var(--cell-ac-bg); border: 1px solid var(--border-color);"></div>
+                        <span>Acompanhamento Comportamental (AC)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--cell-psi-bg); border: 1px solid var(--border-color);"></div>
+                        <span>Psicoterapia (PSI)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--cell-class-bg); border: 1px solid var(--border-color);"></div>
                         <span>Aulas de Graduação (X)</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-color follow"></span>
-                        <span>Acompanhamento (P)</span>
+                        <div class="legend-color" style="background: var(--cell-im-bg); border: 1px solid var(--border-color);"></div>
+                        <span>Imersão (IM)</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-color custom-comp"></span>
-                        <span>Compromisso Customizado (Sigla)</span>
+                        <div class="legend-color" style="background: var(--cell-ap-bg); border: 1px solid var(--border-color);"></div>
+                        <span>Acompanhamento Pedagógico (AP)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--cell-r-bg); border: 1px solid var(--border-color);"></div>
+                        <span>Realocado (R)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: rgba(139, 92, 246, 0.2); border: 1px dashed #8b5cf6;"></div>
+                        <span>Outros (Sigla)</span>
                     </div>
                 </div>
 
@@ -1044,9 +1060,21 @@
                             } else if (state === 'class') {
                                 td.classList.add('class');
                                 td.innerText = 'X';
-                            } else if (state === 'follow') {
-                                td.classList.add('follow');
-                                td.innerText = 'P';
+                            } else if (state === 'ac') {
+                                td.classList.add('ac');
+                                td.innerText = 'AC';
+                            } else if (state === 'psi') {
+                                td.classList.add('psi');
+                                td.innerText = 'PSI';
+                            } else if (state === 'im') {
+                                td.classList.add('im');
+                                td.innerText = 'IM';
+                            } else if (state === 'ap') {
+                                td.classList.add('ap');
+                                td.innerText = 'AP';
+                            } else if (state === 'r') {
+                                td.classList.add('r');
+                                td.innerText = 'R';
                             } else {
                                 td.classList.add('custom-comp');
                                 td.innerText = String(state).charAt(0).toUpperCase();
