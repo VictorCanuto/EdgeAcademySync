@@ -773,30 +773,34 @@ def get_all_schedules_json():
                 nome_limpo = aluno.replace('_', ' ')
                 schedules[nome_limpo] = {}
                 student_turma_map[nome_limpo] = t.nome
-                # Inicializar com free
+                # Inicializar com free para todos os slots de 30 minutos
                 for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']:
-                    for h in range(7, 23):
-                        schedules[nome_limpo][f"{dia}_{h}"] = 'free'
+                    for slot in HORARIOS_GRADE:
+                        schedules[nome_limpo][f"{dia}_{slot}"] = 'free'
                         
             # Preencher do DataFrame
             for _, row in df.iterrows():
+                materia = row['materia']
+                if pd.isna(materia) or str(materia).strip() in ('', '---'):
+                    continue
+
+                intervalo = obter_intervalo_minutos(row['horario'])
+                if intervalo is None:
+                    continue
+
                 nome_limpo = str(row['aluno']).replace('_', ' ')
                 dia_completo = dias_completos.get(row['dia'], row['dia'])
+                materia_str = str(materia)
                 
-                horario_int = obter_hora_inicio(row['horario'])
-                if horario_int is None:
+                status = 'follow' if ('Acompanhamento' in materia_str or materia_str == 'P') else 'class'
+                ini, fim = intervalo
+
+                aluno_sched = schedules.get(nome_limpo)
+                if aluno_sched is None:
                     continue
-                    
-                materia = str(row['materia'])
-                key = f"{dia_completo}_{horario_int}"
-                
-                if nome_limpo in schedules:
-                    if pd.isna(row['materia']) or materia == '---' or materia.strip() == '':
-                        schedules[nome_limpo][key] = 'free'
-                    elif 'Acompanhamento' in materia or materia == 'P':
-                        schedules[nome_limpo][key] = 'follow'
-                    else:
-                        schedules[nome_limpo][key] = 'class'
+
+                for slot in slots_ocupados_no_intervalo(ini, fim):
+                    aluno_sched[f"{dia_completo}_{slot}"] = status
         except Exception as e:
             print(f"Erro ao processar turma {t.id} na rota consolidada: {e}")
             
