@@ -732,8 +732,25 @@ def get_schedules_json(turma_id):
 
             nome_limpo = str(row['aluno']).replace('_', ' ')
             dia_completo = dias_completos.get(row['dia'], row['dia'])
-            materia_str = str(materia)
-            status = 'follow' if ('Acompanhamento' in materia_str or materia_str == 'P') else 'class'
+            materia_str = str(materia).strip()
+            
+            # Mapear status das siglas/descrições
+            if materia_str in ('Acompanhamento Comportamental', 'AC') or 'Acompanhamento Comportamental' in materia_str:
+                status = 'ac'
+            elif materia_str in ('Psicoterapia', 'PSI') or 'Psicoterapia' in materia_str:
+                status = 'psi'
+            elif materia_str in ('Imersão', 'IM') or 'Imersão' in materia_str:
+                status = 'im'
+            elif materia_str in ('Acompanhamento Pedagógico', 'AP') or 'Acompanhamento Pedagógico' in materia_str:
+                status = 'ap'
+            elif materia_str in ('Realocado', 'R') or 'Realocado' in materia_str:
+                status = 'r'
+            elif materia_str.startswith('Custom:'):
+                status = materia_str[7:].strip()
+            else:
+                # Qualquer matéria trazida de PDF (Cálculo, Estatística, Aula de Graduação, X, etc.) é Aula de Graduação
+                status = 'class'
+
             ini, fim = intervalo
 
             aluno_sched = schedules.get(nome_limpo)
@@ -790,9 +807,24 @@ def get_all_schedules_json():
 
                 nome_limpo = str(row['aluno']).replace('_', ' ')
                 dia_completo = dias_completos.get(row['dia'], row['dia'])
-                materia_str = str(materia)
+                materia_str = str(materia).strip()
                 
-                status = 'follow' if ('Acompanhamento' in materia_str or materia_str == 'P') else 'class'
+                # Mapear status das siglas/descrições
+                if materia_str in ('Acompanhamento Comportamental', 'AC') or 'Acompanhamento Comportamental' in materia_str:
+                    status = 'ac'
+                elif materia_str in ('Psicoterapia', 'PSI') or 'Psicoterapia' in materia_str:
+                    status = 'psi'
+                elif materia_str in ('Imersão', 'IM') or 'Imersão' in materia_str:
+                    status = 'im'
+                elif materia_str in ('Acompanhamento Pedagógico', 'AP') or 'Acompanhamento Pedagógico' in materia_str:
+                    status = 'ap'
+                elif materia_str in ('Realocado', 'R') or 'Realocado' in materia_str:
+                    status = 'r'
+                elif materia_str.startswith('Custom:'):
+                    status = materia_str[7:].strip()
+                else:
+                    # Qualquer matéria trazida de PDF (Cálculo, Estatística, Aula de Graduação, X, etc.) é Aula de Graduação
+                    status = 'class'
                 ini, fim = intervalo
 
                 aluno_sched = schedules.get(nome_limpo)
@@ -850,10 +882,18 @@ def update_student_schedule(turma_id):
         materia_val = '---'
         if novo_status == 'class':
             materia_val = 'Aula de Graduação'
-        elif novo_status == 'follow':
-            materia_val = 'Acompanhamento Individual'
+        elif novo_status == 'ac':
+            materia_val = 'Acompanhamento Comportamental'
+        elif novo_status == 'psi':
+            materia_val = 'Psicoterapia'
+        elif novo_status == 'im':
+            materia_val = 'Imersão'
+        elif novo_status == 'ap':
+            materia_val = 'Acompanhamento Pedagógico'
+        elif novo_status == 'r':
+            materia_val = 'Realocado'
         elif novo_status != 'free':
-            materia_val = novo_status
+            materia_val = f"Custom: {novo_status}" if not novo_status.startswith('Custom:') else novo_status
             
         if not df[condicao].empty:
             df.loc[condicao, 'materia'] = materia_val

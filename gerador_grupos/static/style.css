@@ -41,8 +41,16 @@
     --cell-free-text: #065f46;
     --cell-class-bg: #fee2e2;
     --cell-class-text: #991b1b;
-    --cell-follow-bg: #fef3c7;
-    --cell-follow-text: #92400e;
+    --cell-ac-bg: #ffedd5;
+    --cell-ac-text: #9a3412;
+    --cell-psi-bg: #fae8ff;
+    --cell-psi-text: #86198f;
+    --cell-im-bg: #dbeafe;
+    --cell-im-text: #1e40af;
+    --cell-ap-bg: #ccfbf1;
+    --cell-ap-text: #115e59;
+    --cell-r-bg: #f1f5f9;
+    --cell-r-text: #475569;
     --cell-empty-bg: #f3f4f6;
     --cell-empty-text: #9ca3af;
 }
@@ -75,8 +83,16 @@ body.dark-mode {
     --cell-free-text: #34d399;
     --cell-class-bg: rgba(239, 68, 68, 0.25);
     --cell-class-text: #f87171;
-    --cell-follow-bg: rgba(245, 158, 11, 0.25);
-    --cell-follow-text: #fbbf24;
+    --cell-ac-bg: rgba(249, 115, 22, 0.25);
+    --cell-ac-text: #fdba74;
+    --cell-psi-bg: rgba(217, 70, 239, 0.25);
+    --cell-psi-text: #f5d0fe;
+    --cell-im-bg: rgba(59, 130, 246, 0.25);
+    --cell-im-text: #93c5fd;
+    --cell-ap-bg: rgba(20, 184, 166, 0.25);
+    --cell-ap-text: #99f6e4;
+    --cell-r-bg: rgba(100, 116, 139, 0.25);
+    --cell-r-text: #cbd5e1;
     --cell-empty-bg: rgba(30, 41, 59, 0.5);
     --cell-empty-text: #64748b;
 }
@@ -847,9 +863,25 @@ body.dark-mode .styled-table td.aluno-name-cell {
     background-color: var(--cell-class-bg);
     color: var(--cell-class-text);
 }
-.sched-cell.follow {
-    background-color: var(--cell-follow-bg);
-    color: var(--cell-follow-text);
+.sched-cell.ac {
+    background-color: var(--cell-ac-bg);
+    color: var(--cell-ac-text);
+}
+.sched-cell.psi {
+    background-color: var(--cell-psi-bg);
+    color: var(--cell-psi-text);
+}
+.sched-cell.im {
+    background-color: var(--cell-im-bg);
+    color: var(--cell-im-text);
+}
+.sched-cell.ap {
+    background-color: var(--cell-ap-bg);
+    color: var(--cell-ap-text);
+}
+.sched-cell.r {
+    background-color: var(--cell-r-bg);
+    color: var(--cell-r-text);
 }
 .sched-cell.empty {
     background-color: var(--cell-empty-bg);
@@ -917,9 +949,25 @@ body.dark-mode .styled-table td.aluno-name-cell {
     background: var(--cell-class-bg);
     color: var(--cell-class-text);
 }
-.popover-btn.btn-opt-follow {
-    background: var(--cell-follow-bg);
-    color: var(--cell-follow-text);
+.popover-btn.btn-opt-ac {
+    background: var(--cell-ac-bg);
+    color: var(--cell-ac-text);
+}
+.popover-btn.btn-opt-psi {
+    background: var(--cell-psi-bg);
+    color: var(--cell-psi-text);
+}
+.popover-btn.btn-opt-im {
+    background: var(--cell-im-bg);
+    color: var(--cell-im-text);
+}
+.popover-btn.btn-opt-ap {
+    background: var(--cell-ap-bg);
+    color: var(--cell-ap-text);
+}
+.popover-btn.btn-opt-r {
+    background: var(--cell-r-bg);
+    color: var(--cell-r-text);
 }
 
 .popover-custom-area {
