@@ -407,8 +407,30 @@ function closePopover() {
     activePopover = { alunoNome: null, dia: null, horario: null, targetCell: null };
 }
 
+function openConflictResolutionModal(message, onConfirm) {
+    const modal = document.getElementById('conflict-resolution-modal-overlay');
+    if (!modal) return;
+    document.getElementById('conflict-message-text').innerHTML = message;
+    
+    const confirmBtn = document.getElementById('btn-confirm-conflict-swap');
+    confirmBtn.onclick = () => {
+        onConfirm();
+    };
+    modal.classList.add('active');
+}
+
+function closeConflictResolutionModal() {
+    const modal = document.getElementById('conflict-resolution-modal-overlay');
+    if (modal) modal.classList.remove('active');
+}
+
 async function updateCellStatus(newStatus) {
-    const { alunoNome, dia, horario } = activePopover;
+    await runUpdateCellStatus(newStatus, false);
+}
+
+async function runUpdateCellStatus(newStatus, forceSwap = false, activeParams = null) {
+    const params = activeParams || { ...activePopover };
+    const { alunoNome, dia, horario } = params;
     if (!alunoNome) return;
 
     let statusValue = newStatus;
@@ -423,7 +445,9 @@ async function updateCellStatus(newStatus) {
         statusValue = label;
     }
 
-    closePopover();
+    if (!forceSwap) {
+        closePopover();
+    }
 
     // Enviar alteração via POST para o Flask
     try {
@@ -434,7 +458,8 @@ async function updateCellStatus(newStatus) {
                 aluno: alunoNome,
                 dia: dia,
                 horario: horario,
-                status: statusValue
+                status: statusValue,
+                force_swap: forceSwap
             })
         });
 
@@ -445,6 +470,12 @@ async function updateCellStatus(newStatus) {
             if (!studentSchedules[alunoNome]) studentSchedules[alunoNome] = {};
             studentSchedules[alunoNome][`${dia}_${horario}`] = statusValue;
             
+            if (forceSwap) {
+                // Recarrega a página para manter grupos, alertas e visualizações 100% sincronizados
+                window.location.reload();
+                return;
+            }
+
             renderSpreadsheet();
             recalculateConflicts();
 
@@ -454,7 +485,23 @@ async function updateCellStatus(newStatus) {
                 showToast('Horário Atualizado', 'Alteração salva no banco de dados.', 'success');
             }
         } else {
-            showToast('Erro ao Salvar', 'Não foi possível atualizar o horário no servidor.', 'danger');
+            if (response.status === 409) {
+                const resData = await response.json();
+                const msg = `O aluno <strong>${resData.conflicting_student}</strong> (${resData.conflicting_turma_name}) já possui o compromisso <strong>${resData.materia_nome}</strong> agendado para ${dia}-feira às ${horario}.`;
+                openConflictResolutionModal(msg, () => {
+                    closeConflictResolutionModal();
+                    runUpdateCellStatus(newStatus, true, params);
+                });
+                return;
+            }
+            let errorMsg = 'Não foi possível atualizar o horário no servidor.';
+            try {
+                const errData = await response.json();
+                if (errData && errData.error) {
+                    errorMsg = errData.error;
+                }
+            } catch(e) {}
+            showToast('Erro ao Salvar', errorMsg, 'danger');
         }
     } catch (error) {
         console.error('Erro de rede ao salvar horário:', error);

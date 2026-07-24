@@ -847,7 +847,6 @@ def get_all_schedules_json():
     }
     return json.dumps(payload), 200
 
-
 @app.route('/aluno/update_schedule/<int:turma_id>', methods=['POST'])
 @login_required
 def update_student_schedule(turma_id):
@@ -861,18 +860,116 @@ def update_student_schedule(turma_id):
     dia = data.get('dia')
     horario = str(data.get('horario', '')).strip()  # ex.: "07:30"
     novo_status = data.get('status')
+    force_swap = data.get('force_swap', False)
 
     if horario not in HORARIOS_GRADE:
         return json.dumps({"error": "Horário inválido"}), 400
+
+    dia_abrev_map = {'Segunda': 'Seg', 'Terça': 'Ter', 'Quarta': 'Qua', 'Quinta': 'Qui', 'Sexta': 'Sex', 'Sábado': 'Sab'}
+    dia_abrev = dia_abrev_map.get(dia, dia)
+    dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
+
+    # Validação de conflitos para compromissos restritos
+    RESTRICTED_MAP = {
+        'ac': 'Acompanhamento Comportamental',
+        'psi': 'Psicoterapia',
+        'ap': 'Acompanhamento Pedagógico',
+        'r': 'Realocado'
+    }
+
+    conflito_aluno = None
+    conflito_turma_id = None
+    conflito_turma_name = None
+
+    if novo_status in RESTRICTED_MAP:
+        turmas = Turma.query.filter_by(user_id=user.id).all()
+        
+        def slot_matches(h, target_horario, target_horario_salvar):
+            if str(h).strip() == target_horario_salvar:
+                return True
+            interval = obter_intervalo_minutos(h)
+            if interval:
+                ini, fim = interval
+                return target_horario in slots_ocupados_no_intervalo(ini, fim)
+            return False
+
+        horario_salvar_temp = format_horario_slot(horario)
+
+        for t in turmas:
+            if not t.base_data:
+                continue
+            try:
+                other_df = pd.read_csv(BytesIO(t.base_data))
+                for _, row in other_df.iterrows():
+                    materia = row['materia']
+                    if pd.isna(materia):
+                        continue
+                    
+                    materia_str = str(materia).strip()
+                    line_status = None
+                    if materia_str in ('Acompanhamento Comportamental', 'AC') or 'Acompanhamento Comportamental' in materia_str:
+                        line_status = 'ac'
+                    elif materia_str in ('Psicoterapia', 'PSI') or 'Psicoterapia' in materia_str:
+                        line_status = 'psi'
+                    elif materia_str in ('Acompanhamento Pedagógico', 'AP') or 'Acompanhamento Pedagógico' in materia_str:
+                        line_status = 'ap'
+                    elif materia_str in ('Realocado', 'R') or 'Realocado' in materia_str:
+                        line_status = 'r'
+                        
+                    if line_status == novo_status:
+                        line_aluno_limpo = str(row['aluno']).replace('_', ' ')
+                        if line_aluno_limpo.lower() != aluno_nome.lower():
+                            if dias_completos.get(row['dia'], row['dia']) == dia:
+                                if slot_matches(row['horario'], horario, horario_salvar_temp):
+                                    conflito_aluno = line_aluno_limpo
+                                    conflito_turma_id = t.id
+                                    conflito_turma_name = t.nome
+                                    break
+                if conflito_aluno:
+                    break
+            except Exception as e:
+                print(f"Erro ao verificar conflito: {e}")
+
+        if conflito_aluno:
+            if not force_swap:
+                return json.dumps({
+                    "conflict": True,
+                    "conflicting_student": conflito_aluno,
+                    "conflicting_turma_name": conflito_turma_name,
+                    "conflicting_turma_id": conflito_turma_id,
+                    "materia_nome": RESTRICTED_MAP[novo_status]
+                }), 409
+            else:
+                try:
+                    aluno_conflito_key = conflito_aluno.replace(' ', '_')
+                    horario_salvar_temp = format_horario_slot(horario)
+                    
+                    if conflito_turma_id != turma_id:
+                        conf_turma = Turma.query.get(conflito_turma_id)
+                        conf_df = pd.read_csv(BytesIO(conf_turma.base_data))
+                        
+                        cond_horario_conf = conf_df['horario'].apply(lambda h: slot_matches(h, horario, horario_salvar_temp))
+                        cond_conf = (conf_df['aluno'].str.lower() == aluno_conflito_key.lower()) & (conf_df['dia'] == dia_abrev) & cond_horario_conf
+                        if not conf_df[cond_conf].empty:
+                            conf_df.loc[cond_conf, 'materia'] = '---'
+                            
+                        out_conf = BytesIO()
+                        conf_df.to_csv(out_conf, index=False, encoding='utf-8')
+                        conf_turma.base_data = out_conf.getvalue()
+                except Exception as e:
+                    print(f"Erro ao realizar swap em outra turma: {e}")
     
     try:
         df = pd.read_csv(BytesIO(turma.base_data))
-        
-        dia_abrev_map = {'Segunda': 'Seg', 'Terça': 'Ter', 'Quarta': 'Qua', 'Quinta': 'Qui', 'Sexta': 'Sex', 'Sábado': 'Sab'}
-        dia_abrev = dia_abrev_map.get(dia, dia)
-        
         aluno_key = aluno_nome.replace(' ', '_')
         horario_salvar = format_horario_slot(horario)
+
+        if force_swap and conflito_aluno and conflito_turma_id == turma_id:
+            aluno_conflito_key = conflito_aluno.replace(' ', '_')
+            cond_horario_conf = df['horario'].apply(lambda h: str(h).strip() == horario_salvar or (obter_intervalo_minutos(h) and horario in slots_ocupados_no_intervalo(obter_intervalo_minutos(h)[0], obter_intervalo_minutos(h)[1])))
+            cond_conf = (df['aluno'].str.lower() == aluno_conflito_key.lower()) & (df['dia'] == dia_abrev) & cond_horario_conf
+            if not df[cond_conf].empty:
+                df.loc[cond_conf, 'materia'] = '---'
 
         def _match_horario(h):
             if str(h).strip() == horario_salvar:
