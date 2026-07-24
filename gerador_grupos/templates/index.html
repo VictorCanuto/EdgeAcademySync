@@ -418,10 +418,11 @@
 
     <!-- Popover Planilha -->
     <div class="popover-menu" id="popover-schedule-menu">
-        <div class="popover-header">
+        <div class="popover-header" style="position: relative; padding-right: 24px;">
             <span>Alterar Compromisso:</span>
             <span id="popover-student-name" style="font-weight: bold; display: block; margin-top: 2px;">Aluno</span>
             <span id="popover-time-info" style="font-size: 0.75rem; color: var(--text-muted);">Segunda-feira - 08:00</span>
+            <button class="popover-close" onclick="closePopover()" style="position: absolute; right: 0px; top: 0px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-muted); line-height: 1; font-weight: bold;">&times;</button>
         </div>
         <div class="popover-actions">
             <button class="popover-btn btn-opt-free" onclick="updateCellStatus('free')">

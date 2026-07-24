@@ -394,8 +394,29 @@ function openPopover(event, alunoNome, dia, hora) {
     let leftPos = rect.left + scrollLeft - (popover.offsetWidth / 2) + (rect.width / 2);
     let topPos = rect.top + scrollTop - popover.offsetHeight - 8;
 
-    if (leftPos < 10) leftPos = 10;
-    if (topPos < 10) topPos = rect.bottom + scrollTop + 8;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Ajuste horizontal (evitar sair pelas laterais da janela)
+    if (leftPos < 10) {
+        leftPos = 10;
+    } else if (leftPos + popover.offsetWidth > scrollLeft + viewportWidth - 10) {
+        leftPos = scrollLeft + viewportWidth - popover.offsetWidth - 10;
+    }
+
+    // Ajuste vertical (evitar sair pelo topo da janela)
+    // Se sair pelo topo, joga para baixo da célula
+    if (rect.top - popover.offsetHeight - 8 < 10) {
+        topPos = rect.bottom + scrollTop + 8;
+    }
+
+    // Se sair por baixo, joga para cima da base da janela
+    if (topPos + popover.offsetHeight > scrollTop + viewportHeight - 10) {
+        topPos = scrollTop + viewportHeight - popover.offsetHeight - 10;
+    }
+
+    // Garantia final para não sumir acima do topo do documento
+    if (topPos < 10) topPos = 10;
 
     popover.style.left = `${leftPos}px`;
     popover.style.top = `${topPos}px`;
