@@ -566,7 +566,18 @@ function renderKanban() {
                         🗓️ ${g.Dia} (${g.Horário})
                     </span>
                 </div>
-                <div class="grp-badge">${g.Membros.length} alunos</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="grp-badge">${g.Membros.length} alunos</div>
+                    <div class="export-dropdown" id="export-dropdown-grp-${g.Grupo}" style="margin: 0;">
+                        <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;" onclick="toggleGroupExportMenu(${g.Grupo}); event.stopPropagation();">
+                            ⬇️
+                        </button>
+                        <div class="export-menu" style="width: 140px; right: 0;">
+                            <a href="/download/grupo/${window.flaskData.turmaId}/${g.Grupo}?format=xlsx" class="export-item" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none;">Excel (.xlsx)</a>
+                            <a href="/download/grupo/${window.flaskData.turmaId}/${g.Grupo}?format=csv" class="export-item" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none;">CSV</a>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="column-cards-container" id="column-cards-grp-${g.Grupo}"></div>
@@ -1065,9 +1076,19 @@ function toggleCustomQuestion(selectElement, containerId) {
     }
 }
 
-function toggleExportMenu() {
-    const wrapper = document.getElementById('export-dropdown-wrapper');
-    if (wrapper) wrapper.classList.toggle('active');
+function toggleExportMenu(id) {
+    const wrapper = document.getElementById(id);
+    if (wrapper) {
+        document.querySelectorAll('.export-dropdown').forEach(el => {
+            if (el.id !== id) el.classList.remove('active');
+        });
+        wrapper.classList.toggle('active');
+    }
+}
+
+function toggleGroupExportMenu(grupoId) {
+    const id = `export-dropdown-grp-${grupoId}`;
+    toggleExportMenu(id);
 }
 
 // ==========================================================================
@@ -1312,11 +1333,10 @@ function setupGlobalEventListeners() {
             }
         }
 
-        const exp = document.getElementById('export-dropdown-wrapper');
-        if (exp && exp.classList.contains('active')) {
-            if (!exp.contains(e.target)) {
-                exp.classList.remove('active');
-            }
+        if (!e.target.closest('.export-dropdown')) {
+            document.querySelectorAll('.export-dropdown').forEach(el => {
+                el.classList.remove('active');
+            });
         }
     });
 }
@@ -1470,6 +1490,102 @@ function clearAllFilters(e) {
     selectedCompareStudents.clear();
 
     renderSpreadsheet();
+}
+
+// ==========================================================================
+// EXPORTAÇÃO UNIFICADA DE PLANILHAS (GRADE E GRUPOS)
+// ==========================================================================
+function openUnifiedExportModal() {
+    const overlay = document.getElementById('unified-export-modal-overlay');
+    if (!overlay) return;
+
+    const hasGroups = window.flaskData.hasGroups && window.flaskData.grupos && window.flaskData.grupos.length > 0;
+    
+    const groupFilterArea = document.getElementById('export-schedule-group-filter-area');
+    const groupsSection = document.getElementById('export-groups-section-container');
+    
+    if (hasGroups) {
+        groupFilterArea.style.display = 'block';
+        groupsSection.style.display = 'flex'; // Exibe a seção de grupos formados como flex
+        
+        // Popular checkboxes de grupos
+        const container = document.getElementById('export-groups-checkbox-list');
+        const checkAllLabel = container.querySelector('label');
+        const hr = container.querySelector('hr');
+        
+        container.innerHTML = '';
+        container.appendChild(checkAllLabel);
+        container.appendChild(hr);
+
+        document.getElementById('export-check-all-groups').checked = true;
+
+        const grupos = window.flaskData.grupos || [];
+        grupos.forEach(g => {
+            const lbl = document.createElement('label');
+            lbl.style.cssText = "display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 0.8rem; transition: background 0.15s ease;";
+            lbl.innerHTML = `
+                <input type="checkbox" class="export-group-checkbox" value="${g.Grupo}" checked onchange="updateExportCheckAllState()">
+                <span>Grupo ${g.Grupo} — ${g.Dia} (${g.Horário})</span>
+            `;
+            container.appendChild(lbl);
+        });
+
+        const semGrupo = window.flaskData.alunosSemGrupo || [];
+        if (semGrupo.length > 0) {
+            const lbl = document.createElement('label');
+            lbl.style.cssText = "display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 0.8rem; transition: background 0.15s ease;";
+            lbl.innerHTML = `
+                <input type="checkbox" class="export-group-checkbox" value="sem-grupo" checked onchange="updateExportCheckAllState()">
+                <span>Estudantes sem Grupo (${semGrupo.length})</span>
+            `;
+            container.appendChild(lbl);
+        }
+    } else {
+        groupFilterArea.style.display = 'none';
+        groupsSection.style.display = 'none';
+    }
+
+    overlay.style.display = 'flex';
+}
+
+function closeUnifiedExportModal() {
+    const overlay = document.getElementById('unified-export-modal-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+function toggleExportCheckAll(chk) {
+    const checkboxes = document.querySelectorAll('.export-group-checkbox');
+    checkboxes.forEach(c => c.checked = chk.checked);
+}
+
+function updateExportCheckAllState() {
+    const checkboxes = Array.from(document.querySelectorAll('.export-group-checkbox'));
+    const allChecked = checkboxes.every(c => c.checked);
+    document.getElementById('export-check-all-groups').checked = allChecked;
+}
+
+function submitGroupExport(format) {
+    const checkboxes = Array.from(document.querySelectorAll('.export-group-checkbox'));
+    const hasGroups = window.flaskData.hasGroups && window.flaskData.grupos && window.flaskData.grupos.length > 0;
+    const selected = hasGroups ? checkboxes.filter(c => c.checked).map(c => c.value) : [];
+    
+    if (hasGroups && selected.length === 0) {
+        alert("Por favor, selecione pelo menos um grupo para exportar.");
+        return;
+    }
+
+    const turmaId = window.flaskData.turmaId;
+    let url = `/download/schedule/${format}/${turmaId}`;
+    
+    if (hasGroups) {
+        const allChecked = document.getElementById('export-check-all-groups').checked;
+        if (selected.length < checkboxes.length || !allChecked) {
+            url += `?grupos=${selected.join(',')}`;
+        }
+    }
+
+    window.location.href = url;
+    closeUnifiedExportModal();
 }
 
 function toggleDayCollapse(dia) {

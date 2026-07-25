@@ -1709,3 +1709,10 @@ body.dark-mode .styled-table th.day-header:hover {
 .styled-table td.collapsed-day-placeholder:hover {
     background-color: var(--border-color-hover) !important;
 }
+
+#export-groups-checkbox-list label {
+    transition: background 0.15s ease;
+}
+#export-groups-checkbox-list label:hover {
+    background-color: var(--border-color);
+}
