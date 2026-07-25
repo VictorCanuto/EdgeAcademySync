@@ -54,7 +54,9 @@
             <div class="user-widget">
                 <div class="user-avatar">{{ session.username[0]|upper }}</div>
                 <div class="user-name">{{ session.username }}</div>
-                <a href="{{ url_for('logout') }}" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.8rem; text-decoration: none;">Sair</a>
+                <a href="{{ url_for('logout') }}" class="btn" style="border: 1px solid #EF4444; color: #EF4444; background: transparent; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; text-decoration: none; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease;" onmouseover="this.style.background='rgba(239, 68, 68, 0.08)'" onmouseout="this.style.background='transparent'">
+                    Sair
+                </a>
             </div>
             {% endif %}
         </div>
@@ -569,7 +571,7 @@
         <div class="glass-panel modal-card" style="max-width: 650px; width: 100%;">
             <div class="modal-header">
                 <h2>Exportar Planilhas e Dados</h2>
-                <button class="modal-close-btn" onclick="closeUnifiedExportModal()">&times;</button>
+                <button onclick="closeUnifiedExportModal()" style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
             </div>
             <div class="modal-body" style="padding-top: 10px;">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
