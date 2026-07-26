@@ -1536,8 +1536,8 @@ def download_csv(turma_id):
         return "Erro ao carregar dados do banco.", 500
         
     df = grupos_para_dataframe(result['grupos'])
-    buffer = BytesIO(df.to_csv(index=False, encoding='utf-8').encode())
-    return send_file(buffer, mimetype='text/csv', as_attachment=True, download_name='grupos.csv')
+    buffer = BytesIO(df.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig'))
+    return send_file(buffer, mimetype='text/csv', as_attachment=True, download_name=f'grupos_{turma.nome}.csv')
 
 @app.route('/download/pdf/<int:turma_id>')
 @login_required
@@ -1597,6 +1597,826 @@ def get_aluno_schedule(nome_aluno, turma_id):
     schedule_pivot = schedule_pivot[list(dias_map.values())]
 
     return render_template("_aluno_schedule.html", aluno=nome_aluno, schedule=schedule_pivot)
+
+@app.route('/download/schedule/xlsx/<int:turma_id>')
+@login_required
+def download_schedule_xlsx(turma_id):
+    user = User.query.filter_by(username=session['username']).first()
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.base_data:
+        return "Dados não encontrados.", 404
+        
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        df = pd.read_csv(BytesIO(turma.base_data))
+        
+        # Filtrar por grupos selecionados (se houver parâmetro ?grupos=...)
+        groups_param = request.args.get('grupos')
+        if groups_param and groups_param != 'all' and turma.groups_result:
+            try:
+                result_g = pickle.loads(turma.groups_result)
+                grupos_list = result_g.get('grupos', [])
+                sem_grupo_list = result_g.get('alunos_sem_grupo', [])
+                
+                allowed_students = set()
+                selected_ids = [x.strip() for x in groups_param.split(',')]
+                for s_id in selected_ids:
+                    if s_id == 'sem-grupo':
+                        for a in sem_grupo_list:
+                            allowed_students.add(a.replace('_', ' ').strip().lower())
+                    else:
+                        try:
+                            g_num = int(s_id)
+                            for g in grupos_list:
+                                if int(g.get("Grupo", 0)) == g_num:
+                                    for m in g.get("Membros", []):
+                                        allowed_students.add(_get_nome_membro(m).replace('_', ' ').strip().lower())
+                        except ValueError:
+                            pass
+                            
+                if allowed_students:
+                    df = df[df['aluno'].str.replace('_', ' ').str.strip().str.lower().isin(allowed_students)]
+            except Exception as ex_filter:
+                print(f"Erro ao filtrar por grupos: {ex_filter}")
+        
+        # Mapeamentos de dia
+        dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+        dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Grade de Horários"
+        ws.views.sheetView[0].showGridLines = True
+        
+        # Estilos
+        font_header_dia = Font(name='Segoe UI', size=11, bold=True, color='FFFFFF')
+        fill_header_dia = PatternFill(start_color='4F46E5', end_color='4F46E5', fill_type='solid') # Primary color (indigo)
+        
+        font_header_hora = Font(name='Segoe UI', size=9, bold=True, color='334155')
+        fill_header_hora = PatternFill(start_color='F1F5F9', end_color='F1F5F9', fill_type='solid') # Slate 100
+        
+        font_aluno = Font(name='Segoe UI', size=10, bold=True, color='0F172A')
+        fill_aluno = PatternFill(start_color='F8FAFC', end_color='F8FAFC', fill_type='solid') # Slate 50
+        
+        align_center = Alignment(horizontal='center', vertical='center')
+        align_left = Alignment(horizontal='left', vertical='center')
+        
+        thin_border_side = Side(border_style="thin", color="CBD5E1") # Slate 300
+        border_all = Border(left=thin_border_side, right=thin_border_side, top=thin_border_side, bottom=thin_border_side)
+        
+        # Cores dos status
+        STATUS_COLORS = {
+            'L': 'D4EDDA',   # Free (green)
+            'AC': 'FFE0B2',  # Acompanhamento Comportamental (orange)
+            'PSI': 'EBD4FC', # Psicoterapia (purple)
+            'X': 'FCC2C2',   # Aula de Graduação (red)
+            'IM': 'CCE5FF',  # Imersão (blue)
+            'AP': 'D1ECF1',  # Acompanhamento Pedagógico (mint)
+            'R': 'E2E3E5',   # Realocado (grey)
+        }
+        
+        font_status = Font(name='Segoe UI', size=9, bold=True, color='1E293B')
+        
+        # Cabeçalho 1 (Dias)
+        ws.merge_cells('A1:A2')
+        ws['A1'] = "Estudante"
+        ws['A1'].font = Font(name='Segoe UI', size=11, bold=True, color='FFFFFF')
+        ws['A1'].fill = fill_header_dia
+        ws['A1'].alignment = align_center
+        ws['A1'].border = border_all
+        ws['A2'].border = border_all
+        
+        col_idx = 2
+        for dia in dias_semana:
+            start_col = col_idx
+            for hora in HORARIOS_GRADE:
+                cell_hora = ws.cell(row=2, column=col_idx)
+                cell_hora.value = hora
+                cell_hora.font = font_header_hora
+                cell_hora.fill = fill_header_hora
+                cell_hora.alignment = align_center
+                cell_hora.border = border_all
+                col_idx += 1
+                
+            end_col = col_idx - 1
+            start_letter = get_column_letter(start_col)
+            end_letter = get_column_letter(end_col)
+            ws.merge_cells(f"{start_letter}1:{end_letter}1")
+            cell_dia = ws[f"{start_letter}1"]
+            cell_dia.value = dia
+            cell_dia.font = font_header_dia
+            cell_dia.fill = fill_header_dia
+            cell_dia.alignment = align_center
+            
+            for c in range(start_col, end_col + 1):
+                ws.cell(row=1, column=c).border = border_all
+                
+        # Varrer alunos e preencher as células
+        alunos_unicos = sorted(df['aluno'].unique())
+        schedules = {}
+        for aluno in alunos_unicos:
+            nome_limpo = aluno.replace('_', ' ')
+            schedules[nome_limpo] = {}
+            for dia in dias_semana:
+                for slot in HORARIOS_GRADE:
+                    schedules[nome_limpo][f"{dia}_{slot}"] = 'L'
+                    
+        for _, row in df.iterrows():
+            materia = row['materia']
+            if pd.isna(materia) or str(materia).strip() in ('', '---'):
+                continue
+                
+            intervalo = obter_intervalo_minutos(row['horario'])
+            if intervalo is None:
+                continue
+                
+            nome_limpo = str(row['aluno']).replace('_', ' ')
+            dia_completo = dias_completos.get(row['dia'], row['dia'])
+            materia_str = str(materia).strip()
+            
+            if materia_str in ('Acompanhamento Comportamental', 'AC') or 'Acompanhamento Comportamental' in materia_str:
+                status = 'AC'
+            elif materia_str in ('Psicoterapia', 'PSI') or 'Psicoterapia' in materia_str:
+                status = 'PSI'
+            elif materia_str in ('Imersão', 'IM') or 'Imersão' in materia_str:
+                status = 'IM'
+            elif materia_str in ('Acompanhamento Pedagógico', 'AP') or 'Acompanhamento Pedagógico' in materia_str:
+                status = 'AP'
+            elif materia_str in ('Realocado', 'R') or 'Realocado' in materia_str:
+                status = 'R'
+            elif materia_str.startswith('Custom:'):
+                status = materia_str[7:].strip()
+            else:
+                status = 'X'
+                
+            ini, fim = intervalo
+            aluno_sched = schedules.get(nome_limpo)
+            if aluno_sched is not None:
+                for slot in slots_ocupados_no_intervalo(ini, fim):
+                    aluno_sched[f"{dia_completo}_{slot}"] = status
+
+        row_idx = 3
+        for aluno_nome in sorted(schedules.keys()):
+            cell_aluno = ws.cell(row=row_idx, column=1)
+            cell_aluno.value = aluno_nome
+            cell_aluno.font = font_aluno
+            cell_aluno.fill = fill_aluno
+            cell_aluno.alignment = align_left
+            cell_aluno.border = border_all
+            
+            col_idx = 2
+            for dia in dias_semana:
+                for slot in HORARIOS_GRADE:
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    status = schedules[aluno_nome][f"{dia}_{slot}"]
+                    cell.value = status
+                    cell.font = font_status
+                    cell.alignment = align_center
+                    cell.border = border_all
+                    
+                    color = STATUS_COLORS.get(status)
+                    if color:
+                        cell.fill = PatternFill(start_color=color, end_color=color, fill_type='solid')
+                    else:
+                        cell.fill = PatternFill(start_color='F5F3FF', end_color='F5F3FF', fill_type='solid')
+                        
+                    col_idx += 1
+            row_idx += 1
+            
+        ws.column_dimensions['A'].width = 30
+        for c in range(2, col_idx):
+            col_letter = get_column_letter(c)
+            ws.column_dimensions[col_letter].width = 6
+            
+        ws.row_dimensions[1].height = 28
+        ws.row_dimensions[2].height = 20
+        for r in range(3, row_idx):
+            ws.row_dimensions[r].height = 24
+            
+        out_buf = BytesIO()
+        wb.save(out_buf)
+        out_buf.seek(0)
+        
+        return send_file(
+            out_buf, 
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+            as_attachment=True, 
+            download_name=f'grade_horarios_{turma.nome}.xlsx'
+        )
+    except Exception as e:
+        print(f"Erro ao exportar XLSX de grade: {e}")
+        return f"Erro ao gerar planilha Excel: {e}", 500
+
+@app.route('/download/schedule/csv/<int:turma_id>')
+@login_required
+def download_schedule_csv(turma_id):
+    user = User.query.filter_by(username=session['username']).first()
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.base_data:
+        return "Dados não encontrados.", 404
+        
+    try:
+        df = pd.read_csv(BytesIO(turma.base_data))
+        
+        # Filtrar por grupos selecionados (se houver parâmetro ?grupos=...)
+        groups_param = request.args.get('grupos')
+        if groups_param and groups_param != 'all' and turma.groups_result:
+            try:
+                result_g = pickle.loads(turma.groups_result)
+                grupos_list = result_g.get('grupos', [])
+                sem_grupo_list = result_g.get('alunos_sem_grupo', [])
+                
+                allowed_students = set()
+                selected_ids = [x.strip() for x in groups_param.split(',')]
+                for s_id in selected_ids:
+                    if s_id == 'sem-grupo':
+                        for a in sem_grupo_list:
+                            allowed_students.add(a.replace('_', ' ').strip().lower())
+                    else:
+                        try:
+                            g_num = int(s_id)
+                            for g in grupos_list:
+                                if int(g.get("Grupo", 0)) == g_num:
+                                    for m in g.get("Membros", []):
+                                        allowed_students.add(_get_nome_membro(m).replace('_', ' ').strip().lower())
+                        except ValueError:
+                            pass
+                            
+                if allowed_students:
+                    df = df[df['aluno'].str.replace('_', ' ').str.strip().str.lower().isin(allowed_students)]
+            except Exception as ex_filter:
+                print(f"Erro ao filtrar por grupos: {ex_filter}")
+        
+        dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+        dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
+        
+        alunos_unicos = sorted(df['aluno'].unique())
+        schedules = {}
+        for aluno in alunos_unicos:
+            nome_limpo = aluno.replace('_', ' ')
+            schedules[nome_limpo] = {}
+            for dia in dias_semana:
+                for slot in HORARIOS_GRADE:
+                    schedules[nome_limpo][f"{dia}_{slot}"] = 'L'
+                    
+        for _, row in df.iterrows():
+            materia = row['materia']
+            if pd.isna(materia) or str(materia).strip() in ('', '---'):
+                continue
+                
+            intervalo = obter_intervalo_minutos(row['horario'])
+            if intervalo is None:
+                continue
+                
+            nome_limpo = str(row['aluno']).replace('_', ' ')
+            dia_completo = dias_completos.get(row['dia'], row['dia'])
+            materia_str = str(materia).strip()
+            
+            if materia_str in ('Acompanhamento Comportamental', 'AC') or 'Acompanhamento Comportamental' in materia_str:
+                status = 'AC'
+            elif materia_str in ('Psicoterapia', 'PSI') or 'Psicoterapia' in materia_str:
+                status = 'PSI'
+            elif materia_str in ('Imersão', 'IM') or 'Imersão' in materia_str:
+                status = 'IM'
+            elif materia_str in ('Acompanhamento Pedagógico', 'AP') or 'Acompanhamento Pedagógico' in materia_str:
+                status = 'AP'
+            elif materia_str in ('Realocado', 'R') or 'Realocado' in materia_str:
+                status = 'R'
+            elif materia_str.startswith('Custom:'):
+                status = materia_str[7:].strip()
+            else:
+                status = 'X'
+                
+            ini, fim = intervalo
+            aluno_sched = schedules.get(nome_limpo)
+            if aluno_sched is not None:
+                for slot in slots_ocupados_no_intervalo(ini, fim):
+                    aluno_sched[f"{dia_completo}_{slot}"] = status
+                    
+        # Montar cabeçalhos
+        headers = ["Estudante"]
+        for dia in dias_semana:
+            for slot in HORARIOS_GRADE:
+                headers.append(f"{dia} - {slot}")
+                
+        # Montar linhas
+        rows = []
+        for aluno_nome in sorted(schedules.keys()):
+            row = [aluno_nome]
+            for dia in dias_semana:
+                for slot in HORARIOS_GRADE:
+                    row.append(schedules[aluno_nome][f"{dia}_{slot}"])
+            rows.append(row)
+            
+        grid_df = pd.DataFrame(rows, columns=headers)
+        buffer = BytesIO(grid_df.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig'))
+        return send_file(
+            buffer, 
+            mimetype='text/csv', 
+            as_attachment=True, 
+            download_name=f'grade_horarios_{turma.nome}.csv'
+        )
+    except Exception as e:
+        print(f"Erro ao exportar CSV de grade: {e}")
+        return f"Erro ao gerar CSV de grade: {e}", 500
+
+@app.route('/download/groups/xlsx/<int:turma_id>')
+@login_required
+def download_groups_xlsx(turma_id):
+    user = User.query.filter_by(username=session['username']).first()
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.groups_result:
+        return "Nenhum grupo gerado.", 404
+        
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        result = pickle.loads(turma.groups_result)
+        grupos = result.get('grupos', [])
+        
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Grupos Formados"
+        ws.views.sheetView[0].showGridLines = True
+        
+        # Estilos
+        font_title = Font(name='Segoe UI', size=14, bold=True, color='FFFFFF')
+        fill_title = PatternFill(start_color='4F46E5', end_color='4F46E5', fill_type='solid') # Indigo
+        
+        font_group_header = Font(name='Segoe UI', size=11, bold=True, color='1E293B')
+        fill_group_header = PatternFill(start_color='F1F5F9', end_color='F1F5F9', fill_type='solid') # Slate 100
+        
+        font_header = Font(name='Segoe UI', size=10, bold=True, color='FFFFFF')
+        fill_header = PatternFill(start_color='64748B', end_color='64748B', fill_type='solid') # Slate 500
+        
+        font_data = Font(name='Segoe UI', size=10, color='334155')
+        
+        align_center = Alignment(horizontal='center', vertical='center')
+        align_left = Alignment(horizontal='left', vertical='center')
+        
+        thin_side = Side(border_style="thin", color="CBD5E1")
+        border_all = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+        
+        # Título
+        ws.merge_cells('A1:D1')
+        ws['A1'] = f"Grupos Formados — Turma: {turma.nome}"
+        ws['A1'].font = font_title
+        ws['A1'].fill = fill_title
+        ws['A1'].alignment = align_center
+        ws['A1'].border = border_all
+        ws.row_dimensions[1].height = 36
+        
+        # Headers
+        headers = ["Grupo", "Dia", "Horário", "Estudante"]
+        for c_idx, h in enumerate(headers, 1):
+            cell = ws.cell(row=2, column=c_idx)
+            cell.value = h
+            cell.font = font_header
+            cell.fill = fill_header
+            cell.alignment = align_center
+            cell.border = border_all
+        ws.row_dimensions[2].height = 24
+        
+        row_idx = 3
+        for g in sorted(grupos, key=lambda x: x.get("Grupo", 0)):
+            membros_nomes = [_get_nome_membro(m) for m in g.get("Membros", [])]
+            num_membros = len(membros_nomes)
+            if num_membros == 0:
+                continue
+                
+            start_row = row_idx
+            for m_idx, m in enumerate(sorted(membros_nomes)):
+                ws.cell(row=row_idx, column=4, value=m).font = font_data
+                ws.cell(row=row_idx, column=4).border = border_all
+                ws.cell(row=row_idx, column=4).alignment = align_left
+                
+                # Preencher temporariamente para caso não mescle ou para bordas
+                ws.cell(row=row_idx, column=1, value=f"Grupo {g.get('Grupo')}").border = border_all
+                ws.cell(row=row_idx, column=2, value=g.get('Dia')).border = border_all
+                ws.cell(row=row_idx, column=3, value=g.get('Horário')).border = border_all
+                
+                row_idx += 1
+            end_row = row_idx - 1
+            
+            ws.merge_cells(start_row=start_row, start_column=1, end_row=end_row, end_column=1)
+            ws.merge_cells(start_row=start_row, start_column=2, end_row=end_row, end_column=2)
+            ws.merge_cells(start_row=start_row, start_column=3, end_row=end_row, end_column=3)
+            
+            ws.cell(row=start_row, column=1).font = font_group_header
+            ws.cell(row=start_row, column=1).alignment = align_center
+            
+            ws.cell(row=start_row, column=2).font = font_data
+            ws.cell(row=start_row, column=2).alignment = align_center
+            
+            ws.cell(row=start_row, column=3).font = font_data
+            ws.cell(row=start_row, column=3).alignment = align_center
+            
+            for r in range(start_row, end_row + 1):
+                ws.cell(row=r, column=1).fill = fill_group_header
+                ws.cell(row=r, column=2).fill = fill_group_header
+                ws.cell(row=r, column=3).fill = fill_group_header
+                
+        ws.column_dimensions['A'].width = 12
+        ws.column_dimensions['B'].width = 15
+        ws.column_dimensions['C'].width = 20
+        ws.column_dimensions['D'].width = 30
+        
+        out_buf = BytesIO()
+        wb.save(out_buf)
+        out_buf.seek(0)
+        
+        return send_file(
+            out_buf,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=f'grupos_{turma.nome}.xlsx'
+        )
+    except Exception as e:
+        print(f"Erro ao exportar grupos XLSX: {e}")
+        return f"Erro ao gerar Excel de grupos: {e}", 500
+
+@app.route('/download/grupo/<int:turma_id>/<int:grupo_id>')
+@login_required
+def download_grupo_individual(turma_id, grupo_id):
+    user = User.query.filter_by(username=session['username']).first()
+    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    if not turma or not turma.groups_result:
+        return "Nenhum grupo gerado.", 404
+        
+    try:
+        result = pickle.loads(turma.groups_result)
+        grupos = result.get('grupos', [])
+        
+        grupo_especifico = None
+        for g in grupos:
+            if int(g.get("Grupo", 0)) == int(grupo_id):
+                grupo_especifico = g
+                break
+                
+        if not grupo_especifico:
+            return "Grupo não encontrado.", 404
+            
+        membros_nomes = [_get_nome_membro(m) for m in grupo_especifico.get("Membros", [])]
+        export_format = request.args.get('format', 'csv')
+        
+        if export_format == 'xlsx':
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+            
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = f"Grupo {grupo_id}"
+            ws.views.sheetView[0].showGridLines = True
+            
+            # Estilos
+            font_title = Font(name='Segoe UI', size=13, bold=True, color='FFFFFF')
+            fill_title = PatternFill(start_color='4F46E5', end_color='4F46E5', fill_type='solid') # Indigo
+            
+            font_header = Font(name='Segoe UI', size=10, bold=True, color='FFFFFF')
+            fill_header = PatternFill(start_color='64748B', end_color='64748B', fill_type='solid') # Slate 500
+            
+            font_data = Font(name='Segoe UI', size=10, color='334155')
+            
+            align_center = Alignment(horizontal='center', vertical='center')
+            align_left = Alignment(horizontal='left', vertical='center')
+            
+            thin_side = Side(border_style="thin", color="CBD5E1")
+            border_all = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+            
+            # Título
+            ws.merge_cells('A1:C1')
+            ws['A1'] = f"Grupo {grupo_id} — Turma: {turma.nome}"
+            ws['A1'].font = font_title
+            ws['A1'].fill = fill_title
+            ws['A1'].alignment = align_center
+            ws['A1'].border = border_all
+            ws.row_dimensions[1].height = 32
+            
+            # Informações do grupo
+            ws.merge_cells('A2:C2')
+            ws['A2'] = f"Dia: {grupo_especifico.get('Dia')} | Horário: {grupo_especifico.get('Horário')}"
+            ws['A2'].font = Font(name='Segoe UI', size=10, bold=True, color='334155')
+            ws['A2'].fill = PatternFill(start_color='F1F5F9', end_color='F1F5F9', fill_type='solid')
+            ws['A2'].alignment = align_center
+            ws['A2'].border = border_all
+            ws.row_dimensions[2].height = 24
+            
+            # Headers
+            headers = ["Grupo", "Estudante", "Status"]
+            for c_idx, h in enumerate(headers, 1):
+                cell = ws.cell(row=3, column=c_idx)
+                cell.value = h
+                cell.font = font_header
+                cell.fill = fill_header
+                cell.alignment = align_center
+                cell.border = border_all
+            ws.row_dimensions[3].height = 24
+            
+            row_idx = 4
+            for m in sorted(membros_nomes):
+                ws.cell(row=row_idx, column=1, value=f"Grupo {grupo_id}").font = font_data
+                ws.cell(row=row_idx, column=1).alignment = align_center
+                ws.cell(row=row_idx, column=1).border = border_all
+                
+                ws.cell(row=row_idx, column=2, value=m).font = font_data
+                ws.cell(row=row_idx, column=2).alignment = align_left
+                ws.cell(row=row_idx, column=2).border = border_all
+                
+                ws.cell(row=row_idx, column=3, value="Membro").font = font_data
+                ws.cell(row=row_idx, column=3).alignment = align_center
+                ws.cell(row=row_idx, column=3).border = border_all
+                
+                ws.row_dimensions[row_idx].height = 20
+                row_idx += 1
+                
+            ws.column_dimensions['A'].width = 15
+            ws.column_dimensions['B'].width = 30
+            ws.column_dimensions['C'].width = 15
+            
+            out_buf = BytesIO()
+            wb.save(out_buf)
+            out_buf.seek(0)
+            
+            return send_file(
+                out_buf,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                as_attachment=True,
+                download_name=f'grupo_{grupo_id}_{turma.nome}.xlsx'
+            )
+        else:
+            linhas = []
+            for m in sorted(membros_nomes):
+                linhas.append({
+                    "Grupo": f"Grupo {grupo_id}", 
+                    "Dia": grupo_especifico.get("Dia"), 
+                    "Horário": grupo_especifico.get("Horário"), 
+                    "Aluno": m
+                })
+            group_df = pd.DataFrame(linhas)
+            buffer = BytesIO(group_df.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig'))
+            return send_file(
+                buffer, 
+                mimetype='text/csv', 
+                as_attachment=True, 
+                download_name=f'grupo_{grupo_id}_{turma.nome}.csv'
+            )
+    except Exception as e:
+        print(f"Erro ao exportar grupo individual: {e}")
+        return f"Erro ao exportar grupo: {e}", 500
+
+@app.route('/download/all_schedules/<string:export_format>')
+@login_required
+def download_all_schedules(export_format):
+    user = User.query.filter_by(username=session['username']).first()
+    if not user:
+        return "Usuário não encontrado.", 404
+        
+    search_val = request.args.get('search', '').strip().lower()
+    turmas_param = request.args.get('turmas', '').strip()
+    students_param = request.args.get('students', '').strip()
+    
+    query = Turma.query.filter_by(user_id=user.id)
+    if turmas_param:
+        names_list = [x.strip() for x in turmas_param.split(',')]
+        if names_list:
+            query = query.filter(Turma.nome.in_(names_list))
+    turmas = query.all()
+    
+    allowed_students_filter = None
+    if students_param:
+        allowed_students_filter = {x.strip().lower() for x in students_param.split(',')}
+        
+    dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+    dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
+    
+    schedules = {}
+    
+    for t in turmas:
+        if not t.base_data:
+            continue
+        try:
+            df = pd.read_csv(BytesIO(t.base_data))
+            alunos_unicos = df['aluno'].unique()
+            
+            for aluno in alunos_unicos:
+                nome_limpo = aluno.replace('_', ' ')
+                
+                if search_val and search_val not in nome_limpo.lower():
+                    continue
+                    
+                if allowed_students_filter and nome_limpo.lower() not in allowed_students_filter:
+                    continue
+                    
+                schedules[nome_limpo] = {
+                    'turma': t.nome,
+                }
+                for dia in dias_semana:
+                    for slot in HORARIOS_GRADE:
+                        schedules[nome_limpo][f"{dia}_{slot}"] = 'L'
+                        
+            for _, row in df.iterrows():
+                materia = row['materia']
+                if pd.isna(materia) or str(materia).strip() in ('', '---'):
+                    continue
+                intervalo = obter_intervalo_minutos(row['horario'])
+                if intervalo is None:
+                    continue
+                
+                nome_limpo = str(row['aluno']).replace('_', ' ')
+                if nome_limpo not in schedules:
+                    continue
+                    
+                dia_completo = dias_completos.get(row['dia'], row['dia'])
+                materia_str = str(materia).strip()
+                
+                if materia_str in ('Acompanhamento Comportamental', 'AC') or 'Acompanhamento Comportamental' in materia_str:
+                    status = 'AC'
+                elif materia_str in ('Psicoterapia', 'PSI') or 'Psicoterapia' in materia_str:
+                    status = 'PSI'
+                elif materia_str in ('Imersão', 'IM') or 'Imersão' in materia_str:
+                    status = 'IM'
+                elif materia_str in ('Acompanhamento Pedagógico', 'AP') or 'Acompanhamento Pedagógico' in materia_str:
+                    status = 'AP'
+                elif materia_str in ('Realocado', 'R') or 'Realocado' in materia_str:
+                    status = 'R'
+                elif materia_str.startswith('Custom:'):
+                    status = materia_str[7:].strip()
+                else:
+                    status = 'X'
+                    
+                ini, fim = intervalo
+                for slot in slots_ocupados_no_intervalo(ini, fim):
+                    schedules[nome_limpo][f"{dia_completo}_{slot}"] = status
+        except Exception as e:
+            print(f"Erro ao processar turma {t.id} no download geral: {e}")
+            
+    if not schedules:
+        return "Nenhum aluno encontrado com os filtros aplicados.", 404
+        
+    if export_format == 'xlsx':
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Grade Geral"
+        ws.views.sheetView[0].showGridLines = True
+        
+        # Estilos
+        font_header_dia = Font(name='Segoe UI', size=11, bold=True, color='FFFFFF')
+        fill_header_dia = PatternFill(start_color='4F46E5', end_color='4F46E5', fill_type='solid')
+        
+        font_header_hora = Font(name='Segoe UI', size=9, bold=True, color='334155')
+        fill_header_hora = PatternFill(start_color='F1F5F9', end_color='F1F5F9', fill_type='solid')
+        
+        font_aluno = Font(name='Segoe UI', size=10, bold=True, color='0F172A')
+        fill_aluno = PatternFill(start_color='F8FAFC', end_color='F8FAFC', fill_type='solid')
+        
+        font_turma = Font(name='Segoe UI', size=9, color='475569')
+        fill_turma = PatternFill(start_color='F8FAFC', end_color='F8FAFC', fill_type='solid')
+        
+        align_center = Alignment(horizontal='center', vertical='center')
+        align_left = Alignment(horizontal='left', vertical='center')
+        
+        thin_border_side = Side(border_style="thin", color="CBD5E1")
+        border_all = Border(left=thin_border_side, right=thin_border_side, top=thin_border_side, bottom=thin_border_side)
+        
+        STATUS_COLORS = {
+            'L': 'D4EDDA',
+            'AC': 'FFE0B2',
+            'PSI': 'EBD4FC',
+            'X': 'FCC2C2',
+            'IM': 'CCE5FF',
+            'AP': 'D1ECF1',
+            'R': 'E2E3E5',
+        }
+        font_status = Font(name='Segoe UI', size=9, bold=True, color='1E293B')
+        
+        # Cabeçalho
+        ws.merge_cells('A1:A2')
+        ws['A1'] = "Estudante"
+        ws['A1'].font = Font(name='Segoe UI', size=11, bold=True, color='FFFFFF')
+        ws['A1'].fill = fill_header_dia
+        ws['A1'].alignment = align_center
+        ws['A1'].border = border_all
+        ws['A2'].border = border_all
+        
+        ws.merge_cells('B1:B2')
+        ws['B1'] = "Turma"
+        ws['B1'].font = Font(name='Segoe UI', size=11, bold=True, color='FFFFFF')
+        ws['B1'].fill = fill_header_dia
+        ws['B1'].alignment = align_center
+        ws['B1'].border = border_all
+        ws['B2'].border = border_all
+        
+        col_idx = 3
+        for dia in dias_semana:
+            start_col = col_idx
+            for hora in HORARIOS_GRADE:
+                cell_hora = ws.cell(row=2, column=col_idx)
+                cell_hora.value = hora
+                cell_hora.font = font_header_hora
+                cell_hora.fill = fill_header_hora
+                cell_hora.alignment = align_center
+                cell_hora.border = border_all
+                col_idx += 1
+                
+            end_col = col_idx - 1
+            start_letter = get_column_letter(start_col)
+            end_letter = get_column_letter(end_col)
+            ws.merge_cells(f"{start_letter}1:{end_letter}1")
+            cell_dia = ws[f"{start_letter}1"]
+            cell_dia.value = dia
+            cell_dia.font = font_header_dia
+            cell_dia.fill = fill_header_dia
+            cell_dia.alignment = align_center
+            
+            for c in range(start_col, end_col + 1):
+                ws.cell(row=1, column=c).border = border_all
+                
+        row_idx = 3
+        for aluno_nome in sorted(schedules.keys()):
+            cell_aluno = ws.cell(row=row_idx, column=1)
+            cell_aluno.value = aluno_nome
+            cell_aluno.font = font_aluno
+            cell_aluno.fill = fill_aluno
+            cell_aluno.alignment = align_left
+            cell_aluno.border = border_all
+            
+            cell_turma = ws.cell(row=row_idx, column=2)
+            cell_turma.value = schedules[aluno_nome]['turma']
+            cell_turma.font = font_turma
+            cell_turma.fill = fill_turma
+            cell_turma.alignment = align_left
+            cell_turma.border = border_all
+            
+            col_idx = 3
+            for dia in dias_semana:
+                for slot in HORARIOS_GRADE:
+                    cell = ws.cell(row=row_idx, column=col_idx)
+                    status = schedules[aluno_nome][f"{dia}_{slot}"]
+                    cell.value = status
+                    cell.font = font_status
+                    cell.alignment = align_center
+                    cell.border = border_all
+                    
+                    color = STATUS_COLORS.get(status)
+                    if color:
+                        cell.fill = PatternFill(start_color=color, end_color=color, fill_type='solid')
+                    else:
+                        cell.fill = PatternFill(start_color='F5F3FF', end_color='F5F3FF', fill_type='solid')
+                    col_idx += 1
+            row_idx += 1
+            
+        ws.column_dimensions['A'].width = 30
+        ws.column_dimensions['B'].width = 15
+        for c in range(3, col_idx):
+            col_letter = get_column_letter(c)
+            ws.column_dimensions[col_letter].width = 6
+            
+        ws.row_dimensions[1].height = 28
+        ws.row_dimensions[2].height = 20
+        for r in range(3, row_idx):
+            ws.row_dimensions[r].height = 24
+            
+        out_buf = BytesIO()
+        wb.save(out_buf)
+        out_buf.seek(0)
+        
+        return send_file(
+            out_buf,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name='grade_geral_alunos.xlsx'
+        )
+    else:
+        headers = ["Estudante", "Turma"]
+        for dia in dias_semana:
+            for slot in HORARIOS_GRADE:
+                headers.append(f"{dia} - {slot}")
+                
+        rows = []
+        for aluno_nome in sorted(schedules.keys()):
+            row = [aluno_nome, schedules[aluno_nome]['turma']]
+            for dia in dias_semana:
+                for slot in HORARIOS_GRADE:
+                    row.append(schedules[aluno_nome][f"{dia}_{slot}"])
+            rows.append(row)
+            
+        grid_df = pd.DataFrame(rows, columns=headers)
+        buffer = BytesIO(grid_df.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig'))
+        return send_file(
+            buffer,
+            mimetype='text/csv',
+            as_attachment=True,
+            download_name='grade_geral_alunos.csv'
+        )
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

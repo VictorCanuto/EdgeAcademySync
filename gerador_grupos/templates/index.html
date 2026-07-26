@@ -54,7 +54,9 @@
             <div class="user-widget">
                 <div class="user-avatar">{{ session.username[0]|upper }}</div>
                 <div class="user-name">{{ session.username }}</div>
-                <a href="{{ url_for('logout') }}" class="btn btn-ghost" style="padding: 6px 10px; font-size: 0.8rem; text-decoration: none;">Sair</a>
+                <a href="{{ url_for('logout') }}" class="btn" style="border: 1px solid #EF4444; color: #EF4444; background: transparent; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; text-decoration: none; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease;" onmouseover="this.style.background='rgba(239, 68, 68, 0.08)'" onmouseout="this.style.background='transparent'">
+                    Sair
+                </a>
             </div>
             {% endif %}
         </div>
@@ -225,28 +227,18 @@
                 </a>
             </div>
 
-            <div style="display: flex; gap: 12px;">
+            <div style="display: flex; gap: 12px; align-items: center;">
                 {% if turma.em_imersao %}
                 <!-- Reconfigurar grupos de forma dinâmica -->
                 <button class="btn btn-secondary" onclick="showConfigPanelFromWorkspace()">
                     ⚙️ Reconfigurar Grupos
                 </button>
-                
-                <!-- Dropdown de Exportação Unificado -->
-                <div class="export-dropdown" id="export-dropdown-wrapper">
-                    <button class="btn btn-primary" onclick="toggleExportMenu()">
-                        ⬇️ Exportar Grupos
-                    </button>
-                    <div class="export-menu">
-                        <a href="{{ url_for('download_csv', turma_id=turma.id) }}" class="export-item" style="text-decoration:none;">Planilha Geral (CSV)</a>
-                        <a href="{{ url_for('download_pdf', turma_id=turma.id) }}" class="export-item" style="text-decoration:none;">Calendário de Grupos (PDF)</a>
-                    </div>
-                </div>
-                {% else %}
-                <a href="{{ url_for('download_csv', turma_id=turma.id) }}" class="btn btn-primary" style="text-decoration:none;">
-                    ⬇️ Exportar Planilha (CSV)
-                </a>
                 {% endif %}
+
+                <!-- Botão Único de Exportação -->
+                <button class="btn btn-primary" onclick="openUnifiedExportModal()">
+                    ⬇️ Exportar Dados
+                </button>
             </div>
         </div>
 
@@ -570,6 +562,70 @@
                     <option value="{{ dia.valor }}">{{ dia.texto }}</option>
                     {% endfor %}
                 </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Unificado de Exportação -->
+    <div class="modal-overlay" id="unified-export-modal-overlay">
+        <div class="glass-panel modal-card" style="max-width: 650px; width: 100%;">
+            <div class="modal-header">
+                <h2>Exportar Planilhas e Dados</h2>
+                <button onclick="closeUnifiedExportModal()" style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+            </div>
+            <div class="modal-body" style="padding-top: 10px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
+                    <!-- Seção 1: Grade de Horários -->
+                    <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column;">
+                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-primary);">📅 Grade de Horários (Compromissos)</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; flex-grow: 1;">
+                            Exporta a planilha com a disponibilidade de 30 em 30 minutos e todos os compromissos cadastrados.
+                        </p>
+                        
+                        <!-- Filtro de grupos na grade -->
+                        <div id="export-schedule-group-filter-area" style="display: none; margin-bottom: 16px;">
+                            <label style="font-size: 0.8rem; font-weight: bold; display: block; margin-bottom: 6px;">Selecionar grupos a incluir:</label>
+                            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; padding: 6px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-body);" id="export-groups-checkbox-list">
+                                <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; cursor: pointer; padding: 4px; border-radius: 4px; font-size: 0.8rem;">
+                                    <input type="checkbox" id="export-check-all-groups" onchange="toggleExportCheckAll(this)" checked>
+                                    <span>Selecionar Todos os Alunos</span>
+                                </label>
+                                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 2px 0;">
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; margin-top: auto;">
+                            <button class="btn btn-primary" style="flex: 1; font-size: 0.8rem; padding: 8px 12px;" onclick="submitGroupExport('xlsx')">
+                                Excel (.xlsx)
+                            </button>
+                            <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem; padding: 8px 12px;" onclick="submitGroupExport('csv')">
+                                CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Seção 2: Grupos Formados -->
+                    <div id="export-groups-section-container" style="display: none; padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255, 255, 255, 0.02); flex-direction: column;">
+                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-primary);">👥 Divisão de Grupos Formados</h3>
+                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; flex-grow: 1;">
+                            Exporta a listagem com a divisão de alunos em seus respectivos horários e grupos.
+                        </p>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
+                            <a href="{{ url_for('download_groups_xlsx', turma_id=turma.id) }}" class="btn btn-primary" style="font-size: 0.8rem; padding: 8px 12px; text-decoration: none; text-align: center;">
+                                Excel Geral (.xlsx)
+                            </a>
+                            <div style="display: flex; gap: 8px;">
+                                <a href="{{ url_for('download_csv', turma_id=turma.id) }}" class="btn btn-secondary" style="flex: 1; font-size: 0.8rem; padding: 8px 12px; text-decoration: none; text-align: center;">
+                                    CSV Geral
+                                </a>
+                                <a href="{{ url_for('download_pdf', turma_id=turma.id) }}" class="btn btn-secondary" style="flex: 1; font-size: 0.8rem; padding: 8px 12px; text-decoration: none; text-align: center;">
+                                    PDF Geral
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
