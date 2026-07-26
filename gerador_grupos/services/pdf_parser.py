@@ -126,8 +126,22 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]) -> Optional[pd.DataFrame
             text = ""
             for page in reader.pages:
                 text += page.extract_text() + "\n"
-                
-            aluno_key = os.path.splitext(os.path.basename(caminho_pdf))[0]
+
+
+            match = re.search(
+                r"Nome\s*:\s*(.+?)(?=\s*Curso\s*:)",
+                text,
+                re.IGNORECASE | re.DOTALL,
+            )
+
+            print("-----------")
+            print(os.path.splitext(os.path.basename(caminho_pdf))[0])
+            print(match);
+
+            if match:
+                aluno_key = re.sub(r"\s+", " ", match.group(1)).strip().replace(" ", "_")
+            else:
+                aluno_key = os.path.splitext(os.path.basename(caminho_pdf))[0]
             
             # Encontrar a matricula
             match_matricula = re.search(r"Matr[ií]cula:\s*(\d+)", text, re.IGNORECASE)

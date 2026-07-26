@@ -949,7 +949,11 @@ def update_student_schedule(turma_id):
                         conf_df = pd.read_csv(BytesIO(conf_turma.base_data))
                         
                         cond_horario_conf = conf_df['horario'].apply(lambda h: slot_matches(h, horario, horario_salvar_temp))
-                        cond_conf = (conf_df['aluno'].str.lower() == aluno_conflito_key.lower()) & (conf_df['dia'] == dia_abrev) & cond_horario_conf
+                        cond_conf = (
+                            conf_df['aluno'].apply(lambda a: str(a).replace(' ', '_').strip().lower() == aluno_conflito_key.lower())
+                            & (conf_df['dia'] == dia_abrev)
+                            & cond_horario_conf
+                        )
                         if not conf_df[cond_conf].empty:
                             conf_df.loc[cond_conf, 'materia'] = '---'
                             
@@ -962,12 +966,16 @@ def update_student_schedule(turma_id):
     try:
         df = pd.read_csv(BytesIO(turma.base_data))
         aluno_key = aluno_nome.replace(' ', '_')
+        # Match "João Silva" e "João_Silva" como o mesmo aluno
+        def _aluno_keys_equal(a, target_key):
+            return str(a).replace(' ', '_').strip().lower() == target_key.lower()
+
         horario_salvar = format_horario_slot(horario)
 
         if force_swap and conflito_aluno and conflito_turma_id == turma_id:
             aluno_conflito_key = conflito_aluno.replace(' ', '_')
             cond_horario_conf = df['horario'].apply(lambda h: str(h).strip() == horario_salvar or (obter_intervalo_minutos(h) and horario in slots_ocupados_no_intervalo(obter_intervalo_minutos(h)[0], obter_intervalo_minutos(h)[1])))
-            cond_conf = (df['aluno'].str.lower() == aluno_conflito_key.lower()) & (df['dia'] == dia_abrev) & cond_horario_conf
+            cond_conf = df['aluno'].apply(lambda a: _aluno_keys_equal(a, aluno_conflito_key)) & (df['dia'] == dia_abrev) & cond_horario_conf
             if not df[cond_conf].empty:
                 df.loc[cond_conf, 'materia'] = '---'
 
@@ -977,7 +985,10 @@ def update_student_schedule(turma_id):
             return obter_hora_inicio(h) == horario
 
         cond_horario = df['horario'].apply(_match_horario)
-        condicao = (df['aluno'].str.lower() == aluno_key.lower()) & (df['dia'] == dia_abrev) & cond_horario
+        cond_aluno = df['aluno'].apply(lambda a: _aluno_keys_equal(a, aluno_key))
+        # Normaliza chave no CSV (espaços → '_') para não duplicar na UI
+        df.loc[cond_aluno, 'aluno'] = aluno_key
+        condicao = cond_aluno & (df['dia'] == dia_abrev) & cond_horario
         
         materia_val = '---'
         if novo_status == 'class':
@@ -1009,6 +1020,7 @@ def update_student_schedule(turma_id):
         # Salvar CSV atualizado
         csv_buffer = BytesIO()
         df.to_csv(csv_buffer, index=False, encoding='utf-8')
+
         turma.base_data = csv_buffer.getvalue()
         
         # Se houver grupos formados, atualizar o cache de compatibilidade e detectar conflito
@@ -1379,7 +1391,7 @@ def view_turma(turma_id):
     if turma.base_data:
         try:
             df = pd.read_csv(BytesIO(turma.base_data))
-            alunos = sorted([str(a).replace('_', ' ') for a in df['aluno'].unique()])
+            alunos = sorted({str(a).replace('_', ' ') for a in df['aluno'].unique()})
             base_data_info = {"alunos": len(alunos), "dias": len(df['dia'].unique()), "horarios": len(df['horario'].unique()), "lista_alunos": alunos}
             ranking_data = calcular_ranking_disponibilidade(df.copy())
         except Exception as e:
