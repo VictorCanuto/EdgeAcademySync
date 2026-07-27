@@ -941,9 +941,9 @@
                 if (turmasSection) turmasSection.style.display = 'block';
                 if (alunosSection) alunosSection.style.display = 'none';
 
-                // Força o checkbox "Em imersão" a iniciar marcado para a aba Turmas
+                // Garante que o checkbox "Em imersão" inicie desmarcado por padrão
                 const checkbox = document.getElementById('em_imersao');
-                if (checkbox) checkbox.checked = true;
+                if (checkbox) checkbox.checked = false;
 
                 // Sempre mostrar todos os badges quando estiver na aba de turmas
                 document.querySelectorAll('.turma-card').forEach(card => {
@@ -1650,9 +1650,9 @@
         }
 
         function openCreateModal() {
-            // Inicializa o checkbox 'Em imersão' baseado na aba ativa
+            // Inicializa o checkbox 'Em imersão' desmarcado por padrão
             const checkbox = document.getElementById('em_imersao');
-            if (checkbox) checkbox.checked = (activeLandingTab === 'imersao');
+            if (checkbox) checkbox.checked = false;
 
             document.getElementById('create-turma-modal').classList.add('active');
             document.getElementById('turma_nome').focus();
