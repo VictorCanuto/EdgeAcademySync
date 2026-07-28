@@ -706,7 +706,7 @@ def reset_password(token):
 @login_required
 def get_schedules_json(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return json.dumps({}), 200
         
@@ -772,7 +772,7 @@ def get_all_schedules_json():
     if not user:
         return json.dumps({}), 200
         
-    turmas = Turma.query.filter_by(user_id=user.id).all()
+    turmas = Turma.query.all()
     schedules = {}
     student_turma_map = {}
     student_turma_id_map = {}
@@ -851,7 +851,7 @@ def get_all_schedules_json():
 @login_required
 def update_student_schedule(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return json.dumps({"error": "Dados não encontrados"}), 404
         
@@ -882,7 +882,7 @@ def update_student_schedule(turma_id):
     conflito_turma_name = None
 
     if novo_status in RESTRICTED_MAP:
-        turmas = Turma.query.filter_by(user_id=user.id).all()
+        turmas = Turma.query.all()
         
         def slot_matches(h, target_horario, target_horario_salvar):
             if str(h).strip() == target_horario_salvar:
@@ -1179,7 +1179,7 @@ def index():
                 flash('ID da turma inválido.', 'error')
                 return redirect(url_for('index'))
                 
-            turma = Turma.query.filter_by(id=int(turma_id), user_id=user.id).first()
+            turma = Turma.query.filter_by(id=int(turma_id)).first()
             if turma:
                 db.session.delete(turma)
                 db.session.commit()
@@ -1195,7 +1195,7 @@ def index():
                 flash('ID da turma ou nome inválido.', 'error')
                 return redirect(url_for('index'))
                 
-            turma = Turma.query.filter_by(id=int(turma_id), user_id=user.id).first()
+            turma = Turma.query.filter_by(id=int(turma_id)).first()
             if turma:
                 old_nome = turma.nome
                 turma.nome = nome
@@ -1206,7 +1206,7 @@ def index():
             return redirect(url_for('index'))
 
     # LÓGICA GET: Listar turmas
-    turmas = Turma.query.filter_by(user_id=user.id).all()
+    turmas = Turma.query.all()
     turmas_info = []
     for t in turmas:
         alunos_count = 0
@@ -1245,7 +1245,7 @@ def view_turma(turma_id):
     if not user:
         return redirect(url_for('login'))
         
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma:
         flash('Turma não encontrada.', 'error')
         return redirect(url_for('index'))
@@ -1445,7 +1445,7 @@ def view_turma(turma_id):
 @login_required
 def trocar_aluno(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         flash('Dados de grupos não encontrados. Por favor, gere os grupos novamente.', 'error')
         return redirect(url_for('view_turma', turma_id=turma_id))
@@ -1496,7 +1496,7 @@ def trocar_aluno(turma_id):
 @login_required 
 def clear_session(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if turma:
         turma.base_data = None
         turma.groups_result = None
@@ -1518,7 +1518,7 @@ def clear_session(turma_id):
 @login_required
 def download_csv(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma:
         return "Turma não encontrada.", 404
         
@@ -1543,7 +1543,7 @@ def download_csv(turma_id):
 @login_required
 def download_pdf(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
         
@@ -1559,7 +1559,7 @@ def download_pdf(turma_id):
 @login_required
 def get_aluno_schedule(nome_aluno, turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return render_template_string("<h3>Erro</h3><p>Dados não encontrados no banco.</p>"), 404
 
@@ -1602,7 +1602,7 @@ def get_aluno_schedule(nome_aluno, turma_id):
 @login_required
 def download_schedule_xlsx(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return "Dados não encontrados.", 404
         
@@ -1814,7 +1814,7 @@ def download_schedule_xlsx(turma_id):
 @login_required
 def download_schedule_csv(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return "Dados não encontrados.", 404
         
@@ -1927,7 +1927,7 @@ def download_schedule_csv(turma_id):
 @login_required
 def download_groups_xlsx(turma_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
         
@@ -2044,7 +2044,7 @@ def download_groups_xlsx(turma_id):
 @login_required
 def download_grupo_individual(turma_id, grupo_id):
     user = User.query.filter_by(username=session['username']).first()
-    turma = Turma.query.filter_by(id=turma_id, user_id=user.id).first()
+    turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
         
@@ -2180,7 +2180,7 @@ def download_all_schedules(export_format):
     turmas_param = request.args.get('turmas', '').strip()
     students_param = request.args.get('students', '').strip()
     
-    query = Turma.query.filter_by(user_id=user.id)
+    query = Turma.query
     if turmas_param:
         names_list = [x.strip() for x in turmas_param.split(',')]
         if names_list:
