@@ -1613,34 +1613,44 @@ def download_schedule_xlsx(turma_id):
 
         df = pd.read_csv(BytesIO(turma.base_data))
         
-        # Filtrar por grupos selecionados (se houver parâmetro ?grupos=...)
-        groups_param = request.args.get('grupos')
-        if groups_param and groups_param != 'all' and turma.groups_result:
+        # Filtrar por lista direta de alunos (se houver parâmetro ?students=...)
+        students_param = request.args.get('students')
+        if students_param:
             try:
-                result_g = pickle.loads(turma.groups_result)
-                grupos_list = result_g.get('grupos', [])
-                sem_grupo_list = result_g.get('alunos_sem_grupo', [])
-                
-                allowed_students = set()
-                selected_ids = [x.strip() for x in groups_param.split(',')]
-                for s_id in selected_ids:
-                    if s_id == 'sem-grupo':
-                        for a in sem_grupo_list:
-                            allowed_students.add(a.replace('_', ' ').strip().lower())
-                    else:
-                        try:
-                            g_num = int(s_id)
-                            for g in grupos_list:
-                                if int(g.get("Grupo", 0)) == g_num:
-                                    for m in g.get("Membros", []):
-                                        allowed_students.add(_get_nome_membro(m).replace('_', ' ').strip().lower())
-                        except ValueError:
-                            pass
-                            
-                if allowed_students:
-                    df = df[df['aluno'].str.replace('_', ' ').str.strip().str.lower().isin(allowed_students)]
-            except Exception as ex_filter:
-                print(f"Erro ao filtrar por grupos: {ex_filter}")
+                allowed_students_list = {x.strip().lower() for x in students_param.split(',')}
+                if allowed_students_list:
+                    df = df[df['aluno'].str.replace('_', ' ').str.strip().str.lower().isin(allowed_students_list)]
+            except Exception as ex_stu:
+                print(f"Erro ao filtrar por alunos: {ex_stu}")
+        else:
+            # Filtrar por grupos selecionados (se houver parâmetro ?grupos=...)
+            groups_param = request.args.get('grupos')
+            if groups_param and groups_param != 'all' and turma.groups_result:
+                try:
+                    result_g = pickle.loads(turma.groups_result)
+                    grupos_list = result_g.get('grupos', [])
+                    sem_grupo_list = result_g.get('alunos_sem_grupo', [])
+                    
+                    allowed_students = set()
+                    selected_ids = [x.strip() for x in groups_param.split(',')]
+                    for s_id in selected_ids:
+                        if s_id == 'sem-grupo':
+                            for a in sem_grupo_list:
+                                allowed_students.add(a.replace('_', ' ').strip().lower())
+                        else:
+                            try:
+                                g_num = int(s_id)
+                                for g in grupos_list:
+                                    if int(g.get("Grupo", 0)) == g_num:
+                                        for m in g.get("Membros", []):
+                                            allowed_students.add(_get_nome_membro(m).replace('_', ' ').strip().lower())
+                            except ValueError:
+                                pass
+                                
+                    if allowed_students:
+                        df = df[df['aluno'].str.replace('_', ' ').str.strip().str.lower().isin(allowed_students)]
+                except Exception as ex_filter:
+                    print(f"Erro ao filtrar por grupos: {ex_filter}")
         
         # Mapeamentos de dia
         dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
@@ -1821,34 +1831,44 @@ def download_schedule_csv(turma_id):
     try:
         df = pd.read_csv(BytesIO(turma.base_data))
         
-        # Filtrar por grupos selecionados (se houver parâmetro ?grupos=...)
-        groups_param = request.args.get('grupos')
-        if groups_param and groups_param != 'all' and turma.groups_result:
+        # Filtrar por lista direta de alunos (se houver parâmetro ?students=...)
+        students_param = request.args.get('students')
+        if students_param:
             try:
-                result_g = pickle.loads(turma.groups_result)
-                grupos_list = result_g.get('grupos', [])
-                sem_grupo_list = result_g.get('alunos_sem_grupo', [])
-                
-                allowed_students = set()
-                selected_ids = [x.strip() for x in groups_param.split(',')]
-                for s_id in selected_ids:
-                    if s_id == 'sem-grupo':
-                        for a in sem_grupo_list:
-                            allowed_students.add(a.replace('_', ' ').strip().lower())
-                    else:
-                        try:
-                            g_num = int(s_id)
-                            for g in grupos_list:
-                                if int(g.get("Grupo", 0)) == g_num:
-                                    for m in g.get("Membros", []):
-                                        allowed_students.add(_get_nome_membro(m).replace('_', ' ').strip().lower())
-                        except ValueError:
-                            pass
-                            
-                if allowed_students:
-                    df = df[df['aluno'].str.replace('_', ' ').str.strip().str.lower().isin(allowed_students)]
-            except Exception as ex_filter:
-                print(f"Erro ao filtrar por grupos: {ex_filter}")
+                allowed_students_list = {x.strip().lower() for x in students_param.split(',')}
+                if allowed_students_list:
+                    df = df[df['aluno'].str.replace('_', ' ').str.strip().str.lower().isin(allowed_students_list)]
+            except Exception as ex_stu:
+                print(f"Erro ao filtrar por alunos: {ex_stu}")
+        else:
+            # Filtrar por grupos selecionados (se houver parâmetro ?grupos=...)
+            groups_param = request.args.get('grupos')
+            if groups_param and groups_param != 'all' and turma.groups_result:
+                try:
+                    result_g = pickle.loads(turma.groups_result)
+                    grupos_list = result_g.get('grupos', [])
+                    sem_grupo_list = result_g.get('alunos_sem_grupo', [])
+                    
+                    allowed_students = set()
+                    selected_ids = [x.strip() for x in groups_param.split(',')]
+                    for s_id in selected_ids:
+                        if s_id == 'sem-grupo':
+                            for a in sem_grupo_list:
+                                allowed_students.add(a.replace('_', ' ').strip().lower())
+                        else:
+                            try:
+                                g_num = int(s_id)
+                                for g in grupos_list:
+                                    if int(g.get("Grupo", 0)) == g_num:
+                                        for m in g.get("Membros", []):
+                                            allowed_students.add(_get_nome_membro(m).replace('_', ' ').strip().lower())
+                            except ValueError:
+                                pass
+                                
+                    if allowed_students:
+                        df = df[df['aluno'].str.replace('_', ' ').str.strip().str.lower().isin(allowed_students)]
+                except Exception as ex_filter:
+                    print(f"Erro ao filtrar por grupos: {ex_filter}")
         
         dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
         dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}

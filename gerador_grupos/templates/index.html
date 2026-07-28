@@ -581,6 +581,16 @@
                         <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; flex-grow: 1;">
                             Exporta a planilha com a disponibilidade de 30 em 30 minutos e todos os compromissos cadastrados.
                         </p>
+
+                        <!-- Aviso de filtro ativo no workspace -->
+                        <div id="workspace-export-filter-notice" style="display: none; background: rgba(245, 158, 11, 0.08); border-left: 4px solid #F59E0B; padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; text-align: left;">
+                            <span style="color: #D97706; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                                ⚠️ Exportação Filtrada
+                            </span>
+                            <p style="margin: 0; font-size: 0.75rem; color: var(--text-main); line-height: 1.3;" id="workspace-export-filter-notice-text">
+                                Apenas os alunos visíveis na tela serão incluídos na planilha.
+                            </p>
+                        </div>
                         
                         <!-- Filtro de grupos na grade -->
                         <div id="export-schedule-group-filter-area" style="display: none; margin-bottom: 16px;">

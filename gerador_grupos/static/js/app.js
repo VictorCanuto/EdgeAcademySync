@@ -1495,6 +1495,27 @@ function clearAllFilters(e) {
 // ==========================================================================
 // EXPORTAÇÃO UNIFICADA DE PLANILHAS (GRADE E GRUPOS)
 // ==========================================================================
+function getVisibleStudents() {
+    if (!window.flaskData || !window.flaskData.listaAlunos) return [];
+    const listAlunos = window.flaskData.listaAlunos || [];
+    return listAlunos.filter(alunoNome => {
+        if (activeGroupFilter !== 'all') {
+            const grupoInfo = (window.flaskData.grupos || []).find(g => {
+                return g.Membros.some(m => m.nome.toLowerCase() === alunoNome.toLowerCase());
+            });
+            if (activeGroupFilter === 'sem-grupo') {
+                if (grupoInfo) return false;
+            } else {
+                if (!grupoInfo || String(grupoInfo.Grupo) !== String(activeGroupFilter)) return false;
+            }
+        }
+        if (selectedCompareStudents.size > 0) {
+            if (!selectedCompareStudents.has(alunoNome)) return false;
+        }
+        return true;
+    });
+}
+
 function openUnifiedExportModal() {
     const overlay = document.getElementById('unified-export-modal-overlay');
     if (!overlay) return;
@@ -1503,12 +1524,24 @@ function openUnifiedExportModal() {
     
     const groupFilterArea = document.getElementById('export-schedule-group-filter-area');
     const groupsSection = document.getElementById('export-groups-section-container');
+    const filterNoticeArea = document.getElementById('workspace-export-filter-notice');
+    const filterNoticeText = document.getElementById('workspace-export-filter-notice-text');
+
+    const visibleStudents = getVisibleStudents();
+    const allStudents = window.flaskData.listaAlunos || [];
+    const isFiltered = (selectedCompareStudents.size > 0 || activeGroupFilter !== 'all');
+
+    if (isFiltered && filterNoticeArea && filterNoticeText) {
+        filterNoticeText.innerText = `Apenas os ${visibleStudents.length} de ${allStudents.length} alunos atualmente visíveis na tela serão incluídos na planilha.`;
+        filterNoticeArea.style.display = 'block';
+    } else if (filterNoticeArea) {
+        filterNoticeArea.style.display = 'none';
+    }
     
     if (hasGroups) {
         groupFilterArea.style.display = 'block';
-        groupsSection.style.display = 'flex'; // Exibe a seção de grupos formados como flex
+        groupsSection.style.display = 'flex';
         
-        // Popular checkboxes de grupos
         const container = document.getElementById('export-groups-checkbox-list');
         const checkAllLabel = container.querySelector('label');
         const hr = container.querySelector('hr');
@@ -1577,7 +1610,11 @@ function submitGroupExport(format) {
     const turmaId = window.flaskData.turmaId;
     let url = `/download/schedule/${format}/${turmaId}`;
     
-    if (hasGroups) {
+    const isFiltered = (selectedCompareStudents.size > 0 || activeGroupFilter !== 'all');
+    if (isFiltered) {
+        const visibleStudents = getVisibleStudents();
+        url += `?students=${encodeURIComponent(visibleStudents.join(','))}`;
+    } else if (hasGroups) {
         const allChecked = document.getElementById('export-check-all-groups').checked;
         if (selected.length < checkboxes.length || !allChecked) {
             url += `?grupos=${selected.join(',')}`;
