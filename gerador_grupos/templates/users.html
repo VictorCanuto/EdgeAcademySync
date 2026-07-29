@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usuários - AcademySync</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
+    <style>
+        body {
+            background: var(--bg-card);
+        }
+
+        .users-container {
+            /* max-width: 1200px; */
+            width: 100%;
+            margin: 40px auto;
+            padding: 0 20px;
+            background: var(--bg-card);
+        }
+
+        .landing-title-section {
+            margin-bottom: 30px;
+        }
+
+        .landing-title-section h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+
+        .landing-title-section p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="main-header">
+
+        <div class="logo-block">
+            <div class="logo-icon">A</div>
+            <div class="logo-text">
+                <h1>AcademySync</h1>
+                <p>Edge Academy Study Groups</p>
+            </div>
+        </div>
+         
+        <div class="header-actions">
+
+            <a 
+                href="{{ url_for('index') }}" 
+                class="btn btn-secondary" 
+                style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                ⬅️ Voltar ao AcademySync
+            </a>
+        
+            {% if session.username %}
+            <div class="user-profile-menu"
+                style="display: flex; align-items: center; gap: 16px; border-left: 1px solid var(--border-color); padding-left: 16px;">
+                <div class="user-avatar-block"
+                    style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <div class="user-avatar"
+                        style="margin: 0; width: 34px; height: 34px; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--border-color); color: var(--text-main);">
+                        {{ session.username[0]|upper }}
+                    </div>
+                    <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-main); line-height: 1;">
+                        {{ session.username.split()[0]|capitalize }}
+                    </span>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn"
+                    style="border: 1px solid #EF4444; color: #EF4444; background: transparent; padding: 6px 12px; font-size: 0.85rem; text-decoration: none; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease;"
+                    onmouseover="this.style.background='rgba(239, 68, 68, 0.08)'"
+                    onmouseout="this.style.background='transparent'">
+                    Sair
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="users-container">
+        <div class="landing-title-section">
+            <h2>Gerenciar Usuários</h2>
+            <p>Gerencie as contas cadastradas e as permissões de administrador.</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; gap: 15px; flex-wrap: wrap;">
+            <div class="search-bar-container" style="max-width: 400px; width: 100%; position: relative;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="search-user-input" class="form-input"
+                    placeholder="Buscar por nome ou e-mail..." oninput="filterUsersTable()"
+                    style="padding: 12px 16px 12px 42px; font-size: 0.9rem;">
+            </div>
+        </div>
+
+        <div class="glass-panel" style="padding: 0; border-radius: 16px; overflow: hidden; flex:1;">
+            <div class="table-wrapper" style="overflow-x: auto;">
+                <table class="styled-table" style="text-align: left;" id="users-table" style="width: 100%; margin: 0;">
+                    <thead>
+                        <tr style="text-align: left;">
+                            <th style="padding: 14px 20px;">Usuário</th>
+                            <th style="padding: 14px 20px;">E-mail</th>
+                            <th style="padding: 14px 20px;">Papel</th>
+                            <th style="padding: 14px 20px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr class="user-row" data-username="{{ u.username|lower }}" data-email="{{ u.email|lower }}">
+                            <td style="padding: 14px 20px; font-weight: 600; color: var(--text-main);">
+                                {{ u.username }}
+                                {% if u.username == session.username %}
+                                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 500;">(você)</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 14px 20px; color: var(--text-muted);">{{ u.email }}</td>
+                            <td style="padding: 14px 20px; text-align: center;">
+                                {% if u.is_admin %}
+                                <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: rgba(34, 197, 94, 0.15); color: #16a34a;">Admin</span>
+                                {% else %}
+                                <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--border-color); color: var(--text-muted);">Usuário</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 14px 20px; text-align: center;">
+                                {% if not u.is_admin %}
+                                <form action="{{ url_for('manage_users') }}" method="POST" style="display: inline;">
+                                    <input type="hidden" name="action" value="promote_admin">
+                                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    <button type="submit" class="btn btn-secondary"
+                                        style="padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; font-weight: 600;"
+                                        onclick="return confirm('Tornar {{ u.username }} administrador?');">
+                                        Tornar admin
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="padding: 28px 20px; text-align: center; color: var(--text-muted);">
+                                Nenhum usuário encontrado.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer
+            style="margin-top: 60px; padding: 20px 0; border-top: 1px solid var(--border-color); text-align: center; font-size: 0.8rem; color: var(--text-muted);">
+            <p>&copy; 2026 AcademySync. Todos os direitos reservados.</p>
+        </footer>
+    </main>
+
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;"></div>
+
+    <script>
+        (function initTheme() {
+            const checkbox = document.getElementById('checkbox-theme');
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                if (checkbox) checkbox.checked = true;
+            }
+            if (checkbox) {
+                checkbox.addEventListener('change', function () {
+                    if (this.checked) {
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.documentElement.removeAttribute('data-theme');
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            }
+        })();
+
+        function filterUsersTable() {
+            const query = (document.getElementById('search-user-input')?.value || '').trim().toLowerCase();
+            document.querySelectorAll('#users-table .user-row').forEach(row => {
+                const username = row.dataset.username || '';
+                const email = row.dataset.email || '';
+                const match = !query || username.includes(query) || email.includes(query);
+                row.style.display = match ? '' : 'none';
+            });
+        }
+
+        function showToast(title, desc, type = 'info') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const el = document.createElement('div');
+            el.className = 'glass-panel';
+            el.style.cssText = 'padding: 14px 18px; min-width: 260px; border-left: 4px solid ' +
+                (type === 'success' ? '#16a34a' : type === 'danger' || type === 'error' ? '#ef4444' : 'var(--color-primary)') + ';';
+            el.innerHTML = '<strong style="display:block; margin-bottom:4px; color:var(--text-main);">' + title + '</strong>' +
+                '<span style="font-size:0.85rem; color:var(--text-muted);">' + desc + '</span>';
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 4000);
+        }
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        showToast(
+            '{{ "Erro" if category in ["danger", "error"] else ("Sucesso" if category == "success" else "Notificação") }}',
+            {{ message|tojson }},
+            '{{ category }}'
+        );
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+    </script>
+</body>
+
+</html>
