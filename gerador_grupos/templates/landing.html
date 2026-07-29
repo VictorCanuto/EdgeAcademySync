@@ -323,6 +323,12 @@
             <button class="header-tab-btn" id="tab-btn-academy" onclick="switchLandingTab('academy')">
                 Alunos
             </button>
+
+            {% if is_admin %}
+                <a href="{{ url_for('manage_users') }}" class="header-tab-btn" id="tab-btn-users" style="text-decoration: none;">
+                    Gerenciar Usuários
+                </a>
+            {% endif %}
         </div>
 
         <div class="header-actions">
@@ -913,7 +919,12 @@
 
     <script>
         // Lógica das Abas do Hub (Prototipação Frontend)
-        let activeLandingTab = localStorage.getItem('academysync_active_landing_tab') || 'home';
+        const LANDING_TABS = ['home', 'imersao', 'academy'];
+        let activeLandingTab = localStorage.getItem('academysync_active_landing_tab');
+        if (!LANDING_TABS.includes(activeLandingTab)) {
+            activeLandingTab = 'home';
+            localStorage.setItem('academysync_active_landing_tab', activeLandingTab);
+        }
 
         function filterTurmasGrid() {
             const query = (document.getElementById('search-turma-input').value || '').toLowerCase().trim();
@@ -934,6 +945,10 @@
         }
 
         function switchLandingTab(tab) {
+            if (!LANDING_TABS.includes(tab)) {
+                tab = 'home';
+            }
+
             activeLandingTab = tab;
             localStorage.setItem('academysync_active_landing_tab', tab);
 
@@ -950,15 +965,11 @@
             const turmasSection = document.getElementById('turmas-section');
             const alunosSection = document.getElementById('alunos-section');
 
-            if (tab === 'home') {
-                if (homeSection) homeSection.style.display = 'block';
-                if (turmasSection) turmasSection.style.display = 'none';
-                if (alunosSection) alunosSection.style.display = 'none';
-            } else if (tab === 'imersao') {
-                if (homeSection) homeSection.style.display = 'none';
-                if (turmasSection) turmasSection.style.display = 'block';
-                if (alunosSection) alunosSection.style.display = 'none';
+            if (homeSection) homeSection.style.display = tab === 'home' ? 'block' : 'none';
+            if (turmasSection) turmasSection.style.display = tab === 'imersao' ? 'block' : 'none';
+            if (alunosSection) alunosSection.style.display = tab === 'academy' ? 'block' : 'none';
 
+            if (tab === 'imersao') {
                 // Garante que o checkbox "Em imersão" inicie desmarcado por padrão
                 const checkbox = document.getElementById('em_imersao');
                 if (checkbox) checkbox.checked = false;
@@ -973,10 +984,6 @@
 
                 filterTurmasGrid();
             } else if (tab === 'academy') {
-                if (homeSection) homeSection.style.display = 'none';
-                if (turmasSection) turmasSection.style.display = 'none';
-                if (alunosSection) alunosSection.style.display = 'block';
-
                 filterTurmasGrid(); // Garante a ocultação das turmas na aba Alunos
                 loadAllStudentsSchedules(); // Carrega os alunos consolidados de todas as turmas
             }

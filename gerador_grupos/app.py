@@ -1284,8 +1284,53 @@ def index():
 
     has_security_question = bool(user.security_question and user.security_answer_hash)
     return render_template('landing.html', 
-                           turmas=turmas_info, 
+                           turmas=turmas_info,
                            has_security_question=has_security_question)
+
+@app.route('/users', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def manage_users():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'promote_admin':
+            target_id = request.form.get('user_id')
+            if not target_id:
+                flash('Usuário inválido.', 'error')
+                return redirect(url_for('manage_users'))
+
+            target = User.query.filter_by(id=int(target_id)).first()
+            if not target:
+                flash('Usuário não encontrado.', 'error')
+                return redirect(url_for('manage_users'))
+
+            if target.is_admin:
+                flash(f'"{target.username}" já é administrador.', 'error')
+                return redirect(url_for('manage_users'))
+
+            target.is_admin = True
+            db.session.commit()
+            flash(f'"{target.username}" agora é administrador.', 'success')
+            return redirect(url_for('manage_users'))
+
+        flash('Ação inválida.', 'error')
+        return redirect(url_for('manage_users'))
+
+    users_info = [
+        {
+            "id": u.id,
+            "username": u.username,
+            "email": u.email,
+            "is_admin": bool(u.is_admin),
+        }
+        for u in User.query.order_by(User.username).all()
+    ]
+    return render_template('users.html', users=users_info)
 
 @app.route('/turma/<int:turma_id>', methods=['GET', 'POST'])
 @login_required
