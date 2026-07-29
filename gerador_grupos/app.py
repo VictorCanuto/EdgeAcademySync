@@ -1191,13 +1191,13 @@ def index():
                 upload_folder_user = os.path.join(user_data_folder, 'uploads') if user_data_folder else 'uploads'
                 os.makedirs(upload_folder_user, exist_ok=True)
 
-                for file in files:
+                for idx, file in enumerate(files):
                     filename = secure_filename(file.filename)
-                    filepath = os.path.join(upload_folder_user, filename)
+                    filepath = os.path.join(upload_folder_user, f"{idx}_{filename}")
                     file.save(filepath)
                     filepaths.append(filepath)
                 
-                base_df = processar_pdfs_para_dataframe(filepaths)
+                base_df, process_info = processar_pdfs_para_dataframe(filepaths)
                 
                 # Limpar PDFs temporários
                 try:
@@ -1207,6 +1207,11 @@ def index():
                 except Exception as e:
                     print(f"AVISO: Falha ao limpar PDFs temporários: {e}")
                 
+                falha_arquivos = process_info.get("falha_arquivos", [])
+                sucesso_pdfs = len(process_info.get("sucesso_alunos", []))
+                total_pdfs = process_info.get("total_arquivos", len(files))
+                nao_processados_count = process_info.get("nao_processados_count", len(falha_arquivos))
+                
                 if base_df is not None and not base_df.empty:
                     csv_buffer = BytesIO()
                     base_df.to_csv(csv_buffer, index=False, encoding='utf-8')
@@ -1214,9 +1219,31 @@ def index():
                     db.session.commit()
                     
                     save_studant(base_df, new_turma.id)
-                    flash(f'Turma "{nome}" criada com {len(base_df["aluno"].unique())} alunos do(s) PDF(s) com sucesso!', 'success')
+                    num_alunos = len(base_df["aluno"].unique())
+                    
+                    if falha_arquivos:
+                        flash(json.dumps({
+                            "turma_nome": nome,
+                            "num_alunos": num_alunos,
+                            "sucesso_pdfs": sucesso_pdfs,
+                            "total_pdfs": total_pdfs,
+                            "nao_processados_count": nao_processados_count,
+                            "falha_arquivos": falha_arquivos
+                        }), 'unprocessed_modal')
+                    else:
+                        flash(f'Turma "{nome}" criada com {num_alunos} alunos do(s) PDF(s) com sucesso!', 'success')
                 else:
-                    flash(f'Turma "{nome}" criada vazia. Não foi possível extrair dados dos PDFs.', 'warning')
+                    if falha_arquivos:
+                        flash(json.dumps({
+                            "turma_nome": nome,
+                            "num_alunos": 0,
+                            "sucesso_pdfs": 0,
+                            "total_pdfs": total_pdfs,
+                            "nao_processados_count": nao_processados_count,
+                            "falha_arquivos": falha_arquivos
+                        }), 'unprocessed_modal')
+                    else:
+                        flash(f'Turma "{nome}" criada vazia. Não foi possível extrair dados dos PDFs.', 'warning')
             else:
                 flash(f'Turma "{nome}" criada com sucesso!', 'success')
                 
@@ -1365,13 +1392,13 @@ def view_turma(turma_id):
             upload_folder_user = os.path.join(user_data_folder, 'uploads') if user_data_folder else 'uploads'
             os.makedirs(upload_folder_user, exist_ok=True)
 
-            for file in files:
+            for idx, file in enumerate(files):
                 filename = secure_filename(file.filename)
-                filepath = os.path.join(upload_folder_user, filename)
+                filepath = os.path.join(upload_folder_user, f"{idx}_{filename}")
                 file.save(filepath)
                 filepaths.append(filepath)
             
-            base_df = processar_pdfs_para_dataframe(filepaths)
+            base_df, process_info = processar_pdfs_para_dataframe(filepaths)
             
             # Limpa os PDFs temporários salvos no disco
             try:
@@ -1381,6 +1408,11 @@ def view_turma(turma_id):
             except Exception as e:
                 print(f"AVISO: Falha ao limpar PDFs temporários: {e}")
     
+            falha_arquivos = process_info.get("falha_arquivos", [])
+            sucesso_pdfs = len(process_info.get("sucesso_alunos", []))
+            total_pdfs = process_info.get("total_arquivos", len(files))
+            nao_processados_count = process_info.get("nao_processados_count", len(falha_arquivos))
+
             if base_df is not None and not base_df.empty:
                 # 1. Carrega dados existentes da turma, se houver, e realiza o merge cumulativo
                 if turma.base_data:
@@ -1407,9 +1439,30 @@ def view_turma(turma_id):
                 # 3. Sincroniza alunos na tabela Aluno
                 sincronizar_tabelas_dos_alunos(turma.id, base_df)
                 
-                flash(f'Dados processados com sucesso! Total na turma: {len(base_df["aluno"].unique())} aluno(s).', 'success')
+                total_turma = len(base_df["aluno"].unique())
+                if falha_arquivos:
+                    flash(json.dumps({
+                        "turma_nome": turma.nome,
+                        "num_alunos": total_turma,
+                        "sucesso_pdfs": sucesso_pdfs,
+                        "total_pdfs": total_pdfs,
+                        "nao_processados_count": nao_processados_count,
+                        "falha_arquivos": falha_arquivos
+                    }), 'unprocessed_modal')
+                else:
+                    flash(f'Dados processados com sucesso! Total na turma: {total_turma} aluno(s).', 'success')
             else:
-                flash('Não foi possível extrair dados válidos dos PDFs.', 'error')
+                if falha_arquivos:
+                    flash(json.dumps({
+                        "turma_nome": turma.nome,
+                        "num_alunos": 0,
+                        "sucesso_pdfs": 0,
+                        "total_pdfs": total_pdfs,
+                        "nao_processados_count": nao_processados_count,
+                        "falha_arquivos": falha_arquivos
+                    }), 'unprocessed_modal')
+                else:
+                    flash('Não foi possível extrair dados válidos dos PDFs.', 'error')
             
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({"success": True, "redirect_url": url_for('view_turma', turma_id=turma_id)})

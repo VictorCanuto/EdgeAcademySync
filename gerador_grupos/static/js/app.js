@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initTheme() {
     const savedTheme = localStorage.getItem('theme') || 'light';
     const themeCheckbox = document.getElementById('checkbox-theme');
-    
+
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
         if (themeCheckbox) themeCheckbox.checked = true;
@@ -228,7 +228,7 @@ function renderSpreadsheet() {
 
     // Header 1: Dias da Semana
     const trDays = document.createElement('tr');
-    
+
     const thEstudantes = document.createElement('th');
     thEstudantes.rowSpan = 2;
     thEstudantes.className = 'sticky-header estudantes-header';
@@ -238,7 +238,7 @@ function renderSpreadsheet() {
     DIAS_SEMANA.forEach(dia => {
         const th = document.createElement('th');
         th.className = 'sticky-header day-header';
-        
+
         const isCollapsed = collapsedDays.includes(dia);
         if (isCollapsed) {
             th.colSpan = 1;
@@ -279,12 +279,12 @@ function renderSpreadsheet() {
         // Célula fixa do estudante
         const tdName = document.createElement('td');
         tdName.className = 'aluno-name-cell';
-        
+
         // Descobrir grupo do estudante
         const grupoInfo = window.flaskData.grupos.find(g => {
             return g.Membros.some(m => m.nome.toLowerCase() === alunoNome.toLowerCase());
         });
-        
+
         tdName.innerHTML = `
             <div style="display:flex; align-items:center; gap:8px;">
                 <div class="user-avatar" style="width:24px; height:24px; font-size:0.75rem; background: var(--color-primary); color:white;">
@@ -302,7 +302,7 @@ function renderSpreadsheet() {
 
         // Células de horários
         const agendaAluno = studentSchedules[alunoNome] || {};
-        
+
         DIAS_SEMANA.forEach(dia => {
             const isCollapsed = collapsedDays.includes(dia);
             if (isCollapsed) {
@@ -369,7 +369,7 @@ function renderSpreadsheet() {
 // ==========================================================================
 function openPopover(event, alunoNome, dia, hora) {
     event.stopPropagation();
-    
+
     activePopover = {
         alunoNome: alunoNome,
         dia: dia,
@@ -380,7 +380,7 @@ function openPopover(event, alunoNome, dia, hora) {
     const popover = document.getElementById('popover-schedule-menu');
     document.getElementById('popover-student-name').innerText = alunoNome;
     document.getElementById('popover-time-info').innerText = `${dia}-feira às ${hora}`;
-    
+
     document.getElementById('custom-label').value = '';
     document.getElementById('custom-sigla').value = '';
 
@@ -390,7 +390,7 @@ function openPopover(event, alunoNome, dia, hora) {
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
 
     popover.style.display = 'block';
-    
+
     let leftPos = rect.left + scrollLeft - (popover.offsetWidth / 2) + (rect.width / 2);
     let topPos = rect.top + scrollTop - popover.offsetHeight - 8;
 
@@ -432,7 +432,7 @@ function openConflictResolutionModal(message, onConfirm) {
     const modal = document.getElementById('conflict-resolution-modal-overlay');
     if (!modal) return;
     document.getElementById('conflict-message-text').innerHTML = message;
-    
+
     const confirmBtn = document.getElementById('btn-confirm-conflict-swap');
     confirmBtn.onclick = () => {
         onConfirm();
@@ -486,11 +486,11 @@ async function runUpdateCellStatus(newStatus, forceSwap = false, activeParams = 
 
         if (response.ok) {
             const data = await response.json();
-            
+
             // Atualizar cache local
             if (!studentSchedules[alunoNome]) studentSchedules[alunoNome] = {};
             studentSchedules[alunoNome][`${dia}_${horario}`] = statusValue;
-            
+
             if (forceSwap) {
                 // Recarrega a página para manter grupos, alertas e visualizações 100% sincronizados
                 window.location.reload();
@@ -521,7 +521,7 @@ async function runUpdateCellStatus(newStatus, forceSwap = false, activeParams = 
                 if (errData && errData.error) {
                     errorMsg = errData.error;
                 }
-            } catch(e) {}
+            } catch (e) { }
             showToast('Erro ao Salvar', errorMsg, 'danger');
         }
     } catch (error) {
@@ -546,14 +546,14 @@ function renderKanban() {
         const hours = parseHorarioMinutes(g.Horário);
         const bloco = blocos.find(b => b.id === `b${g.Grupo}`) || { dia: g.Dia, inicio: hours.inicio, fim: hours.fim };
         const hasConflict = activeConflicts.some(c => c.alunoGrupo === g.Grupo);
-        
+
         const col = document.createElement('div');
         col.className = 'glass-panel kanban-column';
         if (hasConflict) {
             col.classList.add('com-conflito');
         }
         col.id = `kanban-col-grupo-${g.Grupo}`;
-        
+
         col.setAttribute('ondragover', 'allowDrop(event)');
         col.setAttribute('ondragleave', 'handleDragLeave(event)');
         col.setAttribute('ondrop', `handleDrop(event, ${g.Grupo})`);
@@ -689,7 +689,7 @@ function handleDragLeave(ev) {
 function handleDrop(ev, destGrupo) {
     ev.preventDefault();
     ev.currentTarget.style.boxShadow = 'none';
-    
+
     const alunoNome = ev.dataTransfer.getData('text/plain');
     const origGrupoStr = ev.dataTransfer.getData('grupo-origem');
     const origGrupo = origGrupoStr === 'null' ? null : parseInt(origGrupoStr);
@@ -705,13 +705,13 @@ function executeMoveOnServer(alunoNome, grupoAId, grupoBId) {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/trocar_aluno/' + window.flaskData.turmaId;
-    
+
     const inputA = document.createElement('input');
     inputA.type = 'hidden';
     inputA.name = 'aluno_a';
     inputA.value = alunoNome;
     form.appendChild(inputA);
-    
+
     if (grupoAId !== null) {
         const inputGrpA = document.createElement('input');
         inputGrpA.type = 'hidden';
@@ -719,7 +719,7 @@ function executeMoveOnServer(alunoNome, grupoAId, grupoBId) {
         inputGrpA.value = String(grupoAId);
         form.appendChild(inputGrpA);
     }
-    
+
     if (grupoBId !== null) {
         const inputGrpB = document.createElement('input');
         inputGrpB.type = 'hidden';
@@ -727,9 +727,9 @@ function executeMoveOnServer(alunoNome, grupoAId, grupoBId) {
         inputGrpB.value = String(grupoBId);
         form.appendChild(inputGrpB);
     }
-    
+
     document.body.appendChild(form);
-    
+
     // Salvar aba ativa para restaurar pós-refresh
     localStorage.setItem('academysync_active_tab', 'groups');
     form.submit();
@@ -742,9 +742,9 @@ function isStudentCompatibleWithGroup(alunoNome, grupoNum) {
     if (!g) return true;
 
     // Mapear dia e hora
-    const diaAbrevMap = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'};
+    const diaAbrevMap = { 'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado' };
     const diaCompleto = diaAbrevMap[g.Dia] || g.Dia;
-    
+
     const hours = parseHorarioMinutes(g.Horário);
     const hInicio = hours.inicio, hFim = hours.fim;
 
@@ -835,7 +835,7 @@ function renderAlertsDrawer() {
 
 function focusConflictStudent(alunoNome) {
     toggleAlertDrawer(false);
-    
+
     if (localStorage.getItem('academysync_active_tab') === 'spreadsheet') {
         renderSpreadsheet();
         showToast('Localizado', `Encontre a linha de ${alunoNome} na planilha geral.`, 'info');
@@ -858,7 +858,7 @@ function toggleSugDropdown(event, alunoNome, grupoId) {
     const dd = document.getElementById(`sugs-dropdown-${alunoNome.replace(/\s+/g, '-')}`);
     if (!dd) return;
     const isActive = dd.classList.contains('active');
-    
+
     document.querySelectorAll('.sugs-dropdown').forEach(el => el.classList.remove('active'));
 
     if (!isActive) {
@@ -870,7 +870,7 @@ function toggleSugDropdown(event, alunoNome, grupoId) {
 function renderSuggestions(alunoNome, grupoId, container) {
     container.innerHTML = '';
     const grupos = window.flaskData.grupos;
-    
+
     // Mapear compatibilidade direta com grupos
     let compGrupos = [];
     grupos.forEach(g => {
@@ -885,13 +885,13 @@ function renderSuggestions(alunoNome, grupoId, container) {
         // Tentar sugestão de trocas 1-para-1 a partir das sugestões vindas do Flask
         const gOrig = grupos.find(x => x.Grupo === grupoId);
         let m = gOrig ? gOrig.Membros.find(x => x.nome.toLowerCase() === alunoNome.toLowerCase()) : null;
-        
+
         if (m && m.sugestoes && m.sugestoes.troca_simples && m.sugestoes.troca_simples.length > 0) {
             m.sugestoes.troca_simples.forEach(t => {
                 const item = document.createElement('div');
                 item.className = 'sug-item';
                 item.innerHTML = `🔄 Trocar com <strong>${t.trocar_com}</strong> (Grupo ${t.grupo_destino})`;
-                
+
                 // Evento clique da troca
                 item.onclick = () => {
                     executeSwapOnServer(alunoNome, grupoId, t.trocar_com, t.grupo_destino);
@@ -918,7 +918,7 @@ function executeSwapOnServer(alunoA, grupoA, alunoB, grupoB) {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/trocar_aluno/' + window.flaskData.turmaId;
-    
+
     const inputA = document.createElement('input');
     inputA.type = 'hidden';
     inputA.name = 'aluno_a';
@@ -930,7 +930,7 @@ function executeSwapOnServer(alunoA, grupoA, alunoB, grupoB) {
     inputGrpA.name = 'grupo_a_id';
     inputGrpA.value = String(grupoA);
     form.appendChild(inputGrpA);
-    
+
     const inputB = document.createElement('input');
     inputB.type = 'hidden';
     inputB.name = 'aluno_b';
@@ -944,7 +944,7 @@ function executeSwapOnServer(alunoA, grupoA, alunoB, grupoB) {
     form.appendChild(inputGrpB);
 
     document.body.appendChild(form);
-    
+
     localStorage.setItem('academysync_active_tab', 'groups');
     form.submit();
 }
@@ -991,12 +991,12 @@ function openGroupMatrix(grupoNum) {
             });
 
             // Verificar se é o slot ativo de reuniões
-            const diaAbrevMap = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'};
+            const diaAbrevMap = { 'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado' };
             const isImersao = (diaAbrevMap[g.Dia] === dia); // Comparação simplificada por dia
 
             const td = document.createElement('td');
             td.className = 'group-matrix-cell';
-            
+
             if (todosLivres) {
                 td.className += ' free-sinc';
                 td.innerText = 'LIVRE';
@@ -1104,7 +1104,7 @@ function addNewConfigBlock() {
     card.className = 'bloco-edit-card';
     card.id = `config-bloco-card-${idx}`;
     card.innerHTML = `<button type="button" class="bloco-remove-btn" onclick="this.parentElement.remove()">&times;</button>`;
-    
+
     const fields = temp.cloneNode(true);
     fields.style.display = 'grid';
     card.appendChild(fields);
@@ -1121,7 +1121,7 @@ function addNewReconfigBlock() {
     card.className = 'bloco-edit-card';
     card.id = `reconfig-bloco-card-${idx}`;
     card.innerHTML = `<button type="button" class="bloco-remove-btn" onclick="this.parentElement.remove()">&times;</button>`;
-    
+
     const fields = temp.cloneNode(true);
     fields.style.display = 'grid';
     card.appendChild(fields);
@@ -1273,10 +1273,10 @@ function showToast(title, desc, type = 'info') {
 
     const toast = document.createElement('div');
     toast.className = 'toast';
-    
+
     let icon = 'ℹ️';
     let border = 'var(--color-primary)';
-    
+
     if (type === 'success') {
         icon = '✅';
         border = 'var(--color-success)';
@@ -1290,7 +1290,7 @@ function showToast(title, desc, type = 'info') {
         icon = 'ℹ️';
         border = 'var(--color-secondary)';
     }
-    
+
     toast.style.borderLeftColor = border;
 
     toast.innerHTML = `
@@ -1310,13 +1310,77 @@ function showToast(title, desc, type = 'info') {
     }, 5000);
 }
 
+function openUnprocessedPDFsModal(data) {
+    const modal = document.getElementById('unprocessed-pdfs-modal-overlay');
+    const summary = document.getElementById('unprocessed-modal-summary');
+    const list = document.getElementById('unprocessed-modal-files-list');
+    if (!modal || !summary || !list) return;
+
+    const falhas = data.falha_arquivos || [];
+    const numAlunos = data.num_alunos || 0;
+    const totalPDFs = data.total_pdfs || (numAlunos + falhas.length);
+    const naoProcessadosCount = data.nao_processados_count || falhas.length;
+    const turmaNome = data.turma_nome || '';
+
+    if (numAlunos > 0) {
+        summary.innerHTML = `Dos <strong>${totalPDFs} arquivo(s) PDF</strong> enviados para a turma <strong>"${turmaNome}"</strong>, <strong>${numAlunos} aluno(s)</strong> foram cadastrados com sucesso. No entanto, <strong>${naoProcessadosCount} arquivo(s) PDF não foram processados</strong>:`;
+    } else {
+        summary.innerHTML = `Não foi possível processar <strong>${naoProcessadosCount} de ${totalPDFs} arquivo(s) PDF</strong> enviados para a turma <strong>"${turmaNome}"</strong>:`;
+    }
+
+    list.innerHTML = '';
+    falhas.forEach(item => {
+        const itemEl = document.createElement('div');
+        itemEl.style.cssText = "display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.85rem;";
+
+        let fileName = typeof item === 'string' ? item : item.file;
+        let type = typeof item === 'object' ? item.type : 'leitura';
+        let alunoNome = typeof item === 'object' ? item.aluno : null;
+
+        let icon = type === 'duplicado' ? 'ℹ️' : '📄';
+        let color = type === 'duplicado' ? 'var(--text-main)' : '#DC2626';
+        let reasonBadge = type === 'duplicado'
+            ? `<span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #2563EB; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Aluno Duplicado${alunoNome ? ': ' + alunoNome : ''}</span>`
+            : `<span style="font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); color: #DC2626; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Erro de Leitura</span>`;
+
+        itemEl.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; color: ${color}; font-weight: 600; word-break: break-all;">
+                <span>${icon}</span>
+                <span>${fileName}</span>
+            </div>
+            <div style="flex-shrink: 0;">${reasonBadge}</div>
+        `;
+        list.appendChild(itemEl);
+    });
+
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
+
+function closeUnprocessedPDFsModal() {
+    const modal = document.getElementById('unprocessed-pdfs-modal-overlay');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+
 function displayFlaskFlashMessages() {
-    // Executa no carregamento da página para mostrar mensagens flash injetadas pelo Flask como Toasts
     if (window.flaskData.flashMessages) {
         window.flaskData.flashMessages.forEach(msg => {
             let cat = msg.category;
-            let type = cat === 'error' || cat === 'danger' ? 'danger' : (cat === 'success' ? 'success' : (cat === 'warning' ? 'warning' : 'info'));
-            showToast(type === 'danger' ? 'Erro' : (type === 'success' ? 'Sucesso' : 'Notificação'), msg.message, type);
+            if (cat === 'unprocessed_modal') {
+                try {
+                    let data = JSON.parse(msg.message);
+                    openUnprocessedPDFsModal(data);
+                } catch (e) {
+                    console.error("Erro ao abrir modal de PDFs não processados:", e);
+                }
+            } else {
+                let type = cat === 'error' || cat === 'danger' ? 'danger' : (cat === 'warning' ? 'warning' : (cat === 'success' ? 'success' : 'info'));
+                let title = type === 'danger' ? 'Erro' : (type === 'warning' ? 'Aviso' : (type === 'success' ? 'Sucesso' : 'Notificação'));
+                showToast(title, msg.message, type);
+            }
         });
     }
 }
@@ -1372,7 +1436,7 @@ function openCompareModal() {
         // Limpar campo de busca
         const searchInput = document.getElementById('compare-search-input');
         if (searchInput) searchInput.value = '';
-        
+
         populateCompareModalList();
     }
 }
@@ -1411,7 +1475,7 @@ function populateCompareModalList() {
             <input type="checkbox" id="chk-comp-${alunoNome}" value="${alunoNome}" ${isChecked} onchange="handleCompareCheckboxChange(this)">
             <label for="chk-comp-${alunoNome}">${alunoNome}</label>
         `;
-        
+
         // Clicar no item todo também marca o checkbox
         item.addEventListener('click', (e) => {
             if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
@@ -1430,7 +1494,7 @@ function populateCompareModalList() {
 function handleCompareCheckboxChange(checkbox) {
     const card = checkbox.closest('.compare-student-item');
     if (!card) return;
-    
+
     if (checkbox.checked) {
         card.classList.add('selected');
     } else {
@@ -1441,7 +1505,7 @@ function handleCompareCheckboxChange(checkbox) {
 function filterCompareList() {
     const query = document.getElementById('compare-search-input').value.toLowerCase();
     const items = document.querySelectorAll('.compare-student-item');
-    
+
     items.forEach(item => {
         const labelText = item.querySelector('label').innerText.toLowerCase();
         if (labelText.includes(query)) {
@@ -1467,7 +1531,7 @@ function selectAllCompare(select) {
 function applyCompareFilter() {
     const checkboxes = document.querySelectorAll('#compare-students-list input[type="checkbox"]');
     selectedCompareStudents.clear();
-    
+
     checkboxes.forEach(chk => {
         if (chk.checked) {
             selectedCompareStudents.add(chk.value);
@@ -1480,7 +1544,7 @@ function applyCompareFilter() {
 
 function clearAllFilters(e) {
     if (e) e.preventDefault();
-    
+
     // Resetar filtro de grupo
     const groupSelect = document.getElementById('filter-group-select');
     if (groupSelect) groupSelect.value = 'all';
@@ -1521,7 +1585,7 @@ function openUnifiedExportModal() {
     if (!overlay) return;
 
     const hasGroups = window.flaskData.hasGroups && window.flaskData.grupos && window.flaskData.grupos.length > 0;
-    
+
     const groupFilterArea = document.getElementById('export-schedule-group-filter-area');
     const groupsSection = document.getElementById('export-groups-section-container');
     const filterNoticeArea = document.getElementById('workspace-export-filter-notice');
@@ -1537,15 +1601,15 @@ function openUnifiedExportModal() {
     } else if (filterNoticeArea) {
         filterNoticeArea.style.display = 'none';
     }
-    
+
     if (hasGroups) {
         groupFilterArea.style.display = 'block';
         groupsSection.style.display = 'flex';
-        
+
         const container = document.getElementById('export-groups-checkbox-list');
         const checkAllLabel = container.querySelector('label');
         const hr = container.querySelector('hr');
-        
+
         container.innerHTML = '';
         container.appendChild(checkAllLabel);
         container.appendChild(hr);
@@ -1601,7 +1665,7 @@ function submitGroupExport(format) {
     const checkboxes = Array.from(document.querySelectorAll('.export-group-checkbox'));
     const hasGroups = window.flaskData.hasGroups && window.flaskData.grupos && window.flaskData.grupos.length > 0;
     const selected = hasGroups ? checkboxes.filter(c => c.checked).map(c => c.value) : [];
-    
+
     if (hasGroups && selected.length === 0) {
         alert("Por favor, selecione pelo menos um grupo para exportar.");
         return;
@@ -1609,7 +1673,7 @@ function submitGroupExport(format) {
 
     const turmaId = window.flaskData.turmaId;
     let url = `/download/schedule/${format}/${turmaId}`;
-    
+
     const isFiltered = (selectedCompareStudents.size > 0 || activeGroupFilter !== 'all');
     if (isFiltered) {
         const visibleStudents = getVisibleStudents();

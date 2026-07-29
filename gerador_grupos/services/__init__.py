@@ -1,7 +1,7 @@
 # services/__init__.py
 from .pdf_reader import ler_pdfs_para_excel
 from .pdf_processor import processar_excel, criar_base_de_dados_consolidada
-from .pdf_parser import processar_pdfs_para_dataframe, processar_pdfs_para_dataframe_original
+from .pdf_parser import processar_pdfs_para_dataframe
 
 # Importe as outras funções que o app.py precisa
 try:
@@ -24,7 +24,6 @@ __all__ = [
     'processar_excel', 
     'criar_base_de_dados_consolidada',
     'processar_pdfs_para_dataframe',
-    'processar_pdfs_para_dataframe_original',
     'formar_grupos',
     'sugerir_trocas', 
     'executar_troca',

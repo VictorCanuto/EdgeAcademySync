@@ -325,9 +325,10 @@
             </button>
 
             {% if is_admin %}
-                <a href="{{ url_for('manage_users') }}" class="header-tab-btn" id="tab-btn-users" style="text-decoration: none;">
-                    Gerenciar Usuários
-                </a>
+            <a href="{{ url_for('manage_users') }}" class="header-tab-btn" id="tab-btn-users"
+                style="text-decoration: none;">
+                Gerenciar Usuários
+            </a>
             {% endif %}
         </div>
 
@@ -358,7 +359,9 @@
                     </span>
                 </div>
                 <a href="{{ url_for('logout') }}" class="btn"
-                    style="border: 1px solid #EF4444; color: #EF4444; background: transparent; padding: 6px 12px; font-size: 0.85rem; text-decoration: none; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease;" onmouseover="this.style.background='rgba(239, 68, 68, 0.08)'" onmouseout="this.style.background='transparent'">
+                    style="border: 1px solid #EF4444; color: #EF4444; background: transparent; padding: 6px 12px; font-size: 0.85rem; text-decoration: none; font-weight: 600; border-radius: 8px; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease;"
+                    onmouseover="this.style.background='rgba(239, 68, 68, 0.08)'"
+                    onmouseout="this.style.background='transparent'">
                     Sair
                 </a>
             </div>
@@ -432,32 +435,34 @@
             <div class="home-center-content"
                 style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; margin: 40px auto 0 auto; width: 100%;">
                 {% if is_admin %}
-                    <div class="glass-panel"
-                        style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-                        <button class="btn btn-primary" onclick="handleHomeAddTurmaClick()"
-                            style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
-                            + Adicionar Turmas
-                        </button>
-                    </div>
+                <div class="glass-panel"
+                    style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                    <button class="btn btn-primary" onclick="handleHomeAddTurmaClick()"
+                        style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
+                        + Adicionar Turmas
+                    </button>
+                </div>
                 {% else %}
-                    <!-- Caixa do primeiro botão (+ Adicionar Turmas) -->
-                    <div class="glass-panel"
-                        style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-                        <button class="btn btn-primary"  style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;" id="tab-btn-imersao" onclick="switchLandingTab('imersao')">
-                            Ver  Turmas
-                            </button>
-                    </div>
+                <!-- Caixa do primeiro botão (+ Adicionar Turmas) -->
+                <div class="glass-panel"
+                    style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                    <button class="btn btn-primary"
+                        style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;"
+                        id="tab-btn-imersao" onclick="switchLandingTab('imersao')">
+                        Ver Turmas
+                    </button>
+                </div>
                 {% endif %}
 
                 {% if is_admin %}
                 <!-- Caixa do segundo botão (Cadastrar Novo Periodo) -->
-                    <div class="glass-panel"
-                        style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-                        <button class="btn btn-primary" onclick="openHomeNewPeriodoModal()"
-                            style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
-                            Cadastrar Novo Periodo
-                        </button>
-                    </div>
+                <div class="glass-panel"
+                    style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                    <button class="btn btn-primary" onclick="openHomeNewPeriodoModal()"
+                        style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
+                        Cadastrar Novo Periodo
+                    </button>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -484,10 +489,10 @@
                         style="padding: 12px 16px 12px 42px; font-size: 0.9rem;">
                 </div>
                 {% if is_admin %}
-                    <button class="btn btn-primary" onclick="openCreateModal()"
-                        style="border-radius: 8px; font-weight: 600; padding: 10px 20px;">
-                        + Nova turma
-                    </button>
+                <button class="btn btn-primary" onclick="openCreateModal()"
+                    style="border-radius: 8px; font-weight: 600; padding: 10px 20px;">
+                    + Nova turma
+                </button>
                 {% endif %}
             </div>
 
@@ -503,26 +508,26 @@
                     </div>
 
                     {% if is_admin %}
-                        <button class="turma-edit-btn" onclick="openEditModal(event, {{ t.id }}, '{{ t.nome|escape }}')"
-                            title="Editar Nome da Turma">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                        </button>  
+                    <button class="turma-edit-btn" onclick="openEditModal(event, {{ t.id }}, '{{ t.nome|escape }}')"
+                        title="Editar Nome da Turma">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
                     {% endif %}
-                    
+
                     {% if is_admin %}
-                        <button class="turma-delete-btn" onclick="confirmDelete(event, {{ t.id }}, '{{ t.nome }}')"
-                            title="Excluir Turma">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="3 6 5 6 21 6"></polyline>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                </path>
-                            </svg>
-                        </button>
+                    <button class="turma-delete-btn" onclick="confirmDelete(event, {{ t.id }}, '{{ t.nome }}')"
+                        title="Excluir Turma">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                            </path>
+                        </svg>
+                    </button>
                     {% endif %}
 
                     <div class="turma-card-meta">
@@ -553,44 +558,55 @@
                 <!-- Barra de Legenda -->
                 <div class="legend-bar" style="margin-bottom: 20px; flex-wrap: wrap; gap: 12px 16px;">
                     <div class="legend-item">
-                        <div class="legend-color" style="background: var(--cell-free-bg); border: 1px solid var(--border-color);"></div>
+                        <div class="legend-color"
+                            style="background: var(--cell-free-bg); border: 1px solid var(--border-color);"></div>
                         <span>Livre (L)</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: var(--cell-ac-bg); border: 1px solid var(--border-color);"></div>
+                        <div class="legend-color"
+                            style="background: var(--cell-ac-bg); border: 1px solid var(--border-color);"></div>
                         <span>Acompanhamento Comportamental (AC)</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: var(--cell-psi-bg); border: 1px solid var(--border-color);"></div>
+                        <div class="legend-color"
+                            style="background: var(--cell-psi-bg); border: 1px solid var(--border-color);"></div>
                         <span>Psicoterapia (PSI)</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: var(--cell-class-bg); border: 1px solid var(--border-color);"></div>
+                        <div class="legend-color"
+                            style="background: var(--cell-class-bg); border: 1px solid var(--border-color);"></div>
                         <span>Aulas de Graduação (X)</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: var(--cell-im-bg); border: 1px solid var(--border-color);"></div>
+                        <div class="legend-color"
+                            style="background: var(--cell-im-bg); border: 1px solid var(--border-color);"></div>
                         <span>Imersão (IM)</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: var(--cell-ap-bg); border: 1px solid var(--border-color);"></div>
+                        <div class="legend-color"
+                            style="background: var(--cell-ap-bg); border: 1px solid var(--border-color);"></div>
                         <span>Acompanhamento Pedagógico (AP)</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: var(--cell-r-bg); border: 1px solid var(--border-color);"></div>
+                        <div class="legend-color"
+                            style="background: var(--cell-r-bg); border: 1px solid var(--border-color);"></div>
                         <span>Realocado (R)</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: rgba(139, 92, 246, 0.2); border: 1px dashed #8b5cf6;"></div>
+                        <div class="legend-color"
+                            style="background: rgba(139, 92, 246, 0.2); border: 1px dashed #8b5cf6;"></div>
                         <span>Outros (Sigla)</span>
                     </div>
                 </div>
 
                 <!-- Barra de Filtros Geral -->
-                <div class="spreadsheet-filters-bar" style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex: 1; max-width: 800px;">
+                <div class="spreadsheet-filters-bar"
+                    style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between;">
+                    <div
+                        style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex: 1; max-width: 800px;">
                         <!-- Busca por Aluno -->
-                        <div class="search-bar-container" style="max-width: 280px; width: 100%; position: relative; margin: 0;">
+                        <div class="search-bar-container"
+                            style="max-width: 280px; width: 100%; position: relative; margin: 0;">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                 style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); pointer-events: none;">
@@ -604,28 +620,35 @@
 
                         <!-- Filtro de Turma (Múltiplo) -->
                         <div>
-                            <button class="btn btn-secondary" id="btn-filter-turmas" style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;" onclick="openFilterTurmasModal()">
+                            <button class="btn btn-secondary" id="btn-filter-turmas"
+                                style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;"
+                                onclick="openFilterTurmasModal()">
                                 📂 Filtrar Turmas
                             </button>
                         </div>
 
                         <!-- Botão Comparar Alunos -->
                         <div>
-                            <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;" onclick="openAllCompareModal()">
+                            <button class="btn btn-secondary"
+                                style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;"
+                                onclick="openAllCompareModal()">
                                 🔍 Comparar Alunos
                             </button>
                         </div>
 
                         <!-- Botão Exportar Dados -->
                         <div>
-                            <button class="btn btn-primary" style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;" onclick="openAllExportModal()">
+                            <button class="btn btn-primary"
+                                style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;"
+                                onclick="openAllExportModal()">
                                 ⬇️ Exportar Dados
                             </button>
                         </div>
                     </div>
 
                     <!-- Status do Filtro -->
-                    <div id="filter-all-active-status" style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-left: auto;">
+                    <div id="filter-all-active-status"
+                        style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-left: auto;">
                         <!-- Injetado via JS -->
                     </div>
                 </div>
@@ -648,7 +671,7 @@
     <!-- Modal para Criar Nova Turma (Modificado) -->
     <div class="modal-overlay" id="create-turma-modal">
         <div class="glass-panel modal-card" style="padding: 24px; position: relative;">
-            
+
             <div class="modal-header"
                 style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">Adicionar turma</h3>
@@ -757,9 +780,11 @@
     <!-- Modal de Filtragem de Turmas (Múltiplas) -->
     <div class="modal-overlay" id="filter-turmas-modal-overlay">
         <div class="glass-panel modal-card" style="padding: 24px; position: relative; max-width: 500px; width: 100%;">
-            <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="modal-header"
+                style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">📂 Filtrar Turmas</h3>
-                <button class="modal-close" onclick="closeFilterTurmasModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
+                <button class="modal-close" onclick="closeFilterTurmasModal()"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
             </div>
 
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">
@@ -767,21 +792,29 @@
             </p>
 
             <div class="compare-search-wrapper" style="position: relative; margin-bottom: 16px;">
-                <input type="text" id="filter-turmas-search-input" class="form-input" placeholder="Buscar turma..." oninput="filterTurmasList()" style="width:100%; box-sizing:border-box; padding: 10px 12px; font-size:0.85rem;">
+                <input type="text" id="filter-turmas-search-input" class="form-input" placeholder="Buscar turma..."
+                    oninput="filterTurmasList()"
+                    style="width:100%; box-sizing:border-box; padding: 10px 12px; font-size:0.85rem;">
             </div>
 
             <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;" onclick="selectAllFilterTurmas(true)">Selecionar Todas</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;" onclick="selectAllFilterTurmas(false)">Limpar Seleção</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;"
+                    onclick="selectAllFilterTurmas(true)">Selecionar Todas</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;"
+                    onclick="selectAllFilterTurmas(false)">Limpar Seleção</button>
             </div>
 
-            <div class="compare-students-list-wrapper" id="filter-turmas-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.1);">
+            <div class="compare-students-list-wrapper" id="filter-turmas-list"
+                style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.1);">
                 <!-- Injetado via JS -->
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                <button class="btn btn-secondary" onclick="closeFilterTurmasModal()" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:600;">Cancelar</button>
-                <button class="btn btn-primary" onclick="applyTurmaFilters()" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:700;">Aplicar Filtros</button>
+                <button class="btn btn-secondary" onclick="closeFilterTurmasModal()"
+                    style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:600;">Cancelar</button>
+                <button class="btn btn-primary" onclick="applyTurmaFilters()"
+                    style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:700;">Aplicar
+                    Filtros</button>
             </div>
         </div>
     </div>
@@ -789,9 +822,11 @@
     <!-- Modal de Comparação Geral de Alunos (Múltiplos) -->
     <div class="modal-overlay" id="all-compare-students-modal-overlay">
         <div class="glass-panel modal-card" style="padding: 24px; position: relative; max-width: 500px; width: 100%;">
-            <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="modal-header"
+                style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">🔍 Comparar Alunos</h3>
-                <button class="modal-close" onclick="closeAllCompareModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
+                <button class="modal-close" onclick="closeAllCompareModal()"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
             </div>
 
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">
@@ -799,21 +834,29 @@
             </p>
 
             <div class="compare-search-wrapper" style="position: relative; margin-bottom: 16px;">
-                <input type="text" id="all-compare-search-input" class="form-input" placeholder="Buscar aluno..." oninput="filterAllCompareList()" style="width:100%; box-sizing:border-box; padding: 10px 12px; font-size:0.85rem;">
+                <input type="text" id="all-compare-search-input" class="form-input" placeholder="Buscar aluno..."
+                    oninput="filterAllCompareList()"
+                    style="width:100%; box-sizing:border-box; padding: 10px 12px; font-size:0.85rem;">
             </div>
 
             <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;" onclick="selectAllAllCompare(true)">Selecionar Todos</button>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;" onclick="selectAllAllCompare(false)">Limpar Seleção</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;"
+                    onclick="selectAllAllCompare(true)">Selecionar Todos</button>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size:0.75rem; border-radius: 6px;"
+                    onclick="selectAllAllCompare(false)">Limpar Seleção</button>
             </div>
 
-            <div class="compare-students-list-wrapper" id="all-compare-students-list" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.1);">
+            <div class="compare-students-list-wrapper" id="all-compare-students-list"
+                style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 8px; margin-bottom: 20px; background: rgba(0, 0, 0, 0.1);">
                 <!-- Injetado via JS -->
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                <button class="btn btn-secondary" onclick="closeAllCompareModal()" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:600;">Cancelar</button>
-                <button class="btn btn-primary" onclick="applyAllCompareFilter()" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:700;">Aplicar Comparação</button>
+                <button class="btn btn-secondary" onclick="closeAllCompareModal()"
+                    style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:600;">Cancelar</button>
+                <button class="btn btn-primary" onclick="applyAllCompareFilter()"
+                    style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:700;">Aplicar
+                    Comparação</button>
             </div>
         </div>
     </div>
@@ -823,8 +866,10 @@
         <div class="popover-header" style="position: relative; padding-right: 24px;">
             <span>Alterar Compromisso:</span>
             <span id="all-popover-student-name" style="font-weight: bold; display: block; margin-top: 2px;">Aluno</span>
-            <span id="all-popover-time-info" style="font-size: 0.75rem; color: var(--text-muted);">Segunda-feira - 08:00</span>
-            <button class="popover-close" onclick="closeAllPopover()" style="position: absolute; right: 0px; top: 0px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-muted); line-height: 1; font-weight: bold;">&times;</button>
+            <span id="all-popover-time-info" style="font-size: 0.75rem; color: var(--text-muted);">Segunda-feira -
+                08:00</span>
+            <button class="popover-close" onclick="closeAllPopover()"
+                style="position: absolute; right: 0px; top: 0px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-muted); line-height: 1; font-weight: bold;">&times;</button>
         </div>
         <div class="popover-actions">
             <button class="popover-btn btn-opt-free" onclick="updateAllCellStatus('free')">
@@ -850,10 +895,14 @@
         <div class="popover-custom-area">
             <div class="popover-custom-title">Compromisso Customizado</div>
             <div class="popover-custom-fields">
-                <input type="text" id="all-custom-label" class="form-input" placeholder="Ex: Psicóloga" style="padding: 6px 10px; font-size: 0.8rem;">
+                <input type="text" id="all-custom-label" class="form-input" placeholder="Ex: Psicóloga"
+                    style="padding: 6px 10px; font-size: 0.8rem;">
                 <div style="display: flex; gap: 8px;">
-                    <input type="text" id="all-custom-sigla" class="form-input" placeholder="Sigla (1 letra)" maxlength="1" style="padding: 6px 10px; font-size: 0.8rem; width: 60px; text-transform: uppercase; text-align: center;">
-                    <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; flex: 1;" onclick="updateAllCellStatus('custom')">Salvar</button>
+                    <input type="text" id="all-custom-sigla" class="form-input" placeholder="Sigla (1 letra)"
+                        maxlength="1"
+                        style="padding: 6px 10px; font-size: 0.8rem; width: 60px; text-transform: uppercase; text-align: center;">
+                    <button class="btn btn-primary" style="padding: 6px 12px; font-size: 0.8rem; flex: 1;"
+                        onclick="updateAllCellStatus('custom')">Salvar</button>
                 </div>
             </div>
         </div>
@@ -864,11 +913,16 @@
         <div class="glass-panel modal-card" style="max-width: 450px; width: 100%;">
             <div class="modal-header">
                 <h2>Exportar Dados da Grade Geral</h2>
-                <button onclick="closeAllExportModal()" style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+                <button onclick="closeAllExportModal()"
+                    style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease; display: flex; align-items: center; justify-content: center;"
+                    onmouseover="this.style.color='#EF4444'"
+                    onmouseout="this.style.color='var(--text-muted)'">&times;</button>
             </div>
             <div class="modal-body" style="padding-top: 10px;">
-                <div style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #F59E0B; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                    <span style="color: #D97706; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <div
+                    style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #F59E0B; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+                    <span
+                        style="color: #D97706; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
                         ⚠️ Exportação Filtrada
                     </span>
                     <p style="margin: 0; font-size: 0.85rem; color: var(--text-main); line-height: 1.4;">
@@ -890,21 +944,29 @@
     <!-- Modal de Resolução de Conflito -->
     <div class="modal-overlay" id="conflict-resolution-modal-overlay">
         <div class="glass-panel modal-card" style="padding: 24px; position: relative; max-width: 450px; width: 100%;">
-            <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="font-weight: 700; color: var(--color-danger); margin: 0; display: flex; align-items: center; gap: 8px;">
+            <div class="modal-header"
+                style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <h3
+                    style="font-weight: 700; color: var(--color-danger); margin: 0; display: flex; align-items: center; gap: 8px;">
                     ⚠️ Conflito de Horário
                 </h3>
-                <button class="modal-close" onclick="closeConflictResolutionModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
+                <button class="modal-close" onclick="closeConflictResolutionModal()"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
             </div>
-            
-            <div class="modal-body" style="margin-bottom: 24px; color: var(--text-main); font-size: 0.95rem; line-height: 1.5;">
+
+            <div class="modal-body"
+                style="margin-bottom: 24px; color: var(--text-main); font-size: 0.95rem; line-height: 1.5;">
                 <p id="conflict-message-text"></p>
-                <p style="margin-top: 12px; font-weight: 500; color: var(--text-muted);">Deseja transferir o horário para o novo aluno (isso desmarcará o atual) ou cancelar?</p>
+                <p style="margin-top: 12px; font-weight: 500; color: var(--text-muted);">Deseja transferir o horário
+                    para o novo aluno (isso desmarcará o atual) ou cancelar?</p>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                <button class="btn btn-secondary" onclick="closeConflictResolutionModal()" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:600;">Cancelar</button>
-                <button class="btn btn-primary" id="btn-confirm-conflict-swap" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:700; background: var(--color-danger); border-color: var(--color-danger);">Realizar Troca</button>
+                <button class="btn btn-secondary" onclick="closeConflictResolutionModal()"
+                    style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:600;">Cancelar</button>
+                <button class="btn btn-primary" id="btn-confirm-conflict-swap"
+                    style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:700; background: var(--color-danger); border-color: var(--color-danger);">Realizar
+                    Troca</button>
             </div>
         </div>
     </div>
@@ -914,6 +976,50 @@
         <input type="hidden" name="action" value="delete_turma">
         <input type="hidden" name="turma_id" id="delete-turma-id">
     </form>
+
+    <!-- Modal de PDFs Não Processados -->
+    <div class="modal-overlay" id="unprocessed-pdfs-modal-overlay">
+        <div class="glass-panel modal-card" style="max-width: 520px; width: 100%; padding: 24px; position: relative;">
+            <div class="modal-header"
+                style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <h3
+                    style="font-weight: 700; color: #D97706; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.15rem;">
+                    ⚠️ PDFs Não Processados
+                </h3>
+                <button onclick="closeUnprocessedPDFsModal()"
+                    style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease;"
+                    onmouseover="this.style.color='#EF4444'"
+                    onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+            </div>
+
+            <div class="modal-body" style="color: var(--text-main); font-size: 0.9rem; line-height: 1.5;">
+                <p id="unprocessed-modal-summary" style="margin-bottom: 14px; font-weight: 500;"></p>
+
+                <div style="margin-bottom: 16px;">
+                    <label
+                        style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 8px;">
+                        Arquivos com erro na leitura:
+                    </label>
+                    <div id="unprocessed-modal-files-list"
+                        style="max-height: 180px; overflow-y: auto; background: rgba(0, 0, 0, 0.04); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;">
+                    </div>
+                </div>
+
+                <div
+                    style="background: rgba(245, 158, 11, 0.08); border-left: 3px solid #F59E0B; padding: 10px 12px; border-radius: 6px; font-size: 0.8rem; color: var(--text-muted);">
+                    💡 <strong>Dica:</strong> Verifique se os arquivos são PDFs com texto selecionável (com tabela de
+                    horários). Arquivos digitalizados como imagem requerem leitura OCR antes do envio.
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-primary" onclick="closeUnprocessedPDFsModal()"
+                    style="padding: 10px 20px; font-weight: 700; border-radius: 8px; font-size: 0.85rem; cursor: pointer;">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div class="toast-container" id="toast-messages-container"></div>
 
@@ -1001,7 +1107,7 @@
         let collapsedAllDays = [];
         let selectedAllCompareStudents = new Set();
         let selectedFilterTurmas = new Set();
-        
+
         const DIAS_SEMANA_ALL = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         const DIAS_CURTOS_ALL = {
             'Segunda': 'Seg', 'Terça': 'Ter', 'Quarta': 'Qua', 'Quinta': 'Qui', 'Sexta': 'Sex', 'Sábado': 'Sab'
@@ -1561,7 +1667,7 @@
             const modal = document.getElementById('conflict-resolution-modal-overlay');
             if (!modal) return;
             document.getElementById('conflict-message-text').innerHTML = message;
-            
+
             const confirmBtn = document.getElementById('btn-confirm-conflict-swap');
             confirmBtn.onclick = () => {
                 onConfirm();
@@ -1650,7 +1756,7 @@
                         if (errData && errData.error) {
                             errorMsg = errData.error;
                         }
-                    } catch(e) {}
+                    } catch (e) { }
                     showToast('Erro ao Salvar', errorMsg, 'danger');
                 }
             } catch (error) {
@@ -1791,10 +1897,10 @@
             const searchVal = document.getElementById('filter-all-student-search').value.trim();
             const selectedTurmas = Array.from(selectedFilterTurmas || []);
             const selectedStudents = Array.from(selectedAllCompareStudents || []);
-            
+
             let url = `/download/all_schedules/${format}`;
             const params = [];
-            
+
             if (searchVal) {
                 params.push(`search=${encodeURIComponent(searchVal)}`);
             }
@@ -1804,13 +1910,68 @@
             if (selectedStudents.length > 0) {
                 params.push(`students=${encodeURIComponent(selectedStudents.join(','))}`);
             }
-            
+
             if (params.length > 0) {
                 url += `?${params.join('&')}`;
             }
-            
+
             window.location.href = url;
             closeAllExportModal();
+        }
+
+        function openUnprocessedPDFsModal(data) {
+            const modal = document.getElementById('unprocessed-pdfs-modal-overlay');
+            const summary = document.getElementById('unprocessed-modal-summary');
+            const list = document.getElementById('unprocessed-modal-files-list');
+            if (!modal || !summary || !list) return;
+
+            const falhas = data.falha_arquivos || [];
+            const numAlunos = data.num_alunos || 0;
+            const totalPDFs = data.total_pdfs || (numAlunos + falhas.length);
+            const naoProcessadosCount = data.nao_processados_count || falhas.length;
+            const turmaNome = data.turma_nome || '';
+
+            if (numAlunos > 0) {
+                summary.innerHTML = `Dos <strong>${totalPDFs} arquivo(s) PDF</strong> enviados para a turma <strong>"${turmaNome}"</strong>, <strong>${numAlunos} aluno(s)</strong> foram cadastrados com sucesso. No entanto, <strong>${naoProcessadosCount} arquivo(s) PDF não foram processados</strong>:`;
+            } else {
+                summary.innerHTML = `Não foi possível processar <strong>${naoProcessadosCount} de ${totalPDFs} arquivo(s) PDF</strong> enviados para a turma <strong>"${turmaNome}"</strong>:`;
+            }
+
+            list.innerHTML = '';
+            falhas.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.style.cssText = "display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.85rem;";
+
+                let fileName = typeof item === 'string' ? item : item.file;
+                let type = typeof item === 'object' ? item.type : 'leitura';
+                let alunoNome = typeof item === 'object' ? item.aluno : null;
+
+                let icon = type === 'duplicado' ? 'ℹ️' : '📄';
+                let color = type === 'duplicado' ? 'var(--text-main)' : '#DC2626';
+                let reasonBadge = type === 'duplicado'
+                    ? `<span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #2563EB; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Aluno Duplicado${alunoNome ? ': ' + alunoNome : ''}</span>`
+                    : `<span style="font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); color: #DC2626; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Erro de Leitura</span>`;
+
+                itemEl.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; color: ${color}; font-weight: 600; word-break: break-all;">
+                        <span>${icon}</span>
+                        <span>${fileName}</span>
+                    </div>
+                    <div style="flex-shrink: 0;">${reasonBadge}</div>
+                `;
+                list.appendChild(itemEl);
+            });
+
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+        }
+
+        function closeUnprocessedPDFsModal() {
+            const modal = document.getElementById('unprocessed-pdfs-modal-overlay');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1832,30 +1993,40 @@
             {% if messages %}
             {% for category, message in messages %}
             let cat = '{{ category }}';
-            let type = cat === 'error' || cat === 'danger' ? 'danger' : (cat === 'success' ? 'success' : 'info');
-            showToast(type === 'danger' ? 'Erro' : (type === 'success' ? 'Sucesso' : 'Notificação'), '{{ message }}', type);
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
+            if (cat === 'unprocessed_modal') {
+                try {
+                    let data = JSON.parse({{ message | tojson }});
+        openUnprocessedPDFsModal(data);
+                } catch (e) {
+            console.error("Erro ao abrir modal de PDFs não processados:", e);
+        }
+            } else {
+            let type = cat === 'error' || cat === 'danger' ? 'danger' : (cat === 'warning' ? 'warning' : (cat === 'success' ? 'success' : 'info'));
+            let title = type === 'danger' ? 'Erro' : (type === 'warning' ? 'Aviso' : (type === 'success' ? 'Sucesso' : 'Notificação'));
+            showToast(title, '{{ message }}', type);
+        }
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
 
-            // Tema claro/escuro
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            const themeCheckbox = document.getElementById('checkbox-theme');
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark-mode');
-                if (themeCheckbox) themeCheckbox.checked = true;
-            }
-            if (themeCheckbox) {
-                themeCheckbox.addEventListener('change', () => {
-                    if (themeCheckbox.checked) {
-                        document.body.classList.add('dark-mode');
-                        localStorage.setItem('theme', 'dark');
-                    } else {
-                        document.body.classList.remove('dark-mode');
-                        localStorage.setItem('theme', 'light');
-                    }
-                });
-            }
+        // Tema claro/escuro
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        const themeCheckbox = document.getElementById('checkbox-theme');
+        if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+            if (themeCheckbox) themeCheckbox.checked = true;
+        }
+        if (themeCheckbox) {
+            themeCheckbox.addEventListener('change', () => {
+                if (themeCheckbox.checked) {
+                    document.body.classList.add('dark-mode');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+        }
         });
     </script>
 </body>
