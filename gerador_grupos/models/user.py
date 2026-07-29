@@ -9,6 +9,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     security_question = db.Column(db.String(256), nullable=True)
     security_answer_hash = db.Column(db.String(256), nullable=True)
+    is_admin = db.Column(db.Boolean, default=False)
     
     # Armazenamento em banco de dados para evitar perda de dados por discos efêmeros
     base_data = db.Column(db.LargeBinary, nullable=True)      # Conteúdo do CSV consolidado

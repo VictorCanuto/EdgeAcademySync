@@ -221,11 +221,16 @@
     <div id="view-workspace" style="display: flex; flex-direction: column; flex: 1;">
         <!-- Workspace Header -->
         <div class="workspace-header">
+            {% if is_admin %}
+                <div class="workspace-title-bar">
+                    <a href="{{ url_for('clear_session', turma_id=turma.id) }}" class="back-dash-btn" onclick="return confirm('Tem certeza de que deseja limpar os PDFs e redefinir o sistema?');">
+                        🗑️ Limpar Workspace / Recomeçar
+                    </a>
+                </div>
+            {% else %}
             <div class="workspace-title-bar">
-                <a href="{{ url_for('clear_session', turma_id=turma.id) }}" class="back-dash-btn" onclick="return confirm('Tem certeza de que deseja limpar os PDFs e redefinir o sistema?');">
-                    🗑️ Limpar Workspace / Recomeçar
-                </a>
             </div>
+            {% endif %}
 
             <div style="display: flex; gap: 12px; align-items: center;">
                 {% if turma.em_imersao %}

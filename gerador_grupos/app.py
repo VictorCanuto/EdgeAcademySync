@@ -1,7 +1,7 @@
 import os
 import pickle
 import json
-from flask import (Flask, request, render_template, session, redirect, url_for, flash, send_file, render_template_string, jsonify)
+from flask import (Flask, request, render_template, session, redirect, url_for, flash, send_file, render_template_string, jsonify, abort, g)
 from werkzeug.utils import secure_filename
 import pandas as pd
 from io import BytesIO
@@ -159,6 +159,20 @@ with app.app_context():
         print(f"Erro na migração de Turmas: {e}")
 
 # --- Funções de Autenticação e Decorators ---
+def get_current_user():
+    """Carrega o usuário logado uma vez por request e guarda em flask.g."""
+    if 'user' in g:
+        return g.user
+
+    g.user = None
+    if 'username' in session:
+        g.user = User.query.filter_by(username=session['username']).first()
+    return g.user
+
+def is_current_user_admin():
+    user = get_current_user()
+    return bool(user and user.is_admin)
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -166,6 +180,37 @@ def login_required(f):
             return redirect(url_for('login', next=request.url))
         return f(*args, **kwargs)
     return decorated_function
+
+def negar_acesso_admin():
+    """Resposta padrão para tentativas de ação sem permissão de administrador."""
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+        return jsonify({"error": "Permissão negada."}), 403
+    # Redirecionar para 'index' a partir da própria 'index' causaria loop de redirecionamento
+    if request.endpoint == 'index':
+        abort(403)
+    flash('Você não tem permissão para realizar esta ação.', 'error')
+    return redirect(url_for('index'))
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login', next=request.url))
+
+        user = get_current_user()
+
+        if not user:
+            flash('Usuário não encontrado.', 'error')
+            return redirect(url_for('login'))
+
+        if not user.is_admin:
+            return negar_acesso_admin()
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.context_processor
+def inject_permissions():
+    return {'is_admin': is_current_user_admin()}
 
 def get_user_data_folder():
     """Retorna o caminho para a pasta de dados do usuário logado (usado temporariamente para processar uploads)."""
@@ -705,7 +750,7 @@ def reset_password(token):
 @app.route('/aluno/schedules_json/<int:turma_id>')
 @login_required
 def get_schedules_json(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return json.dumps({}), 200
@@ -768,7 +813,7 @@ def get_schedules_json(turma_id):
 @app.route('/aluno/all_schedules_json')
 @login_required
 def get_all_schedules_json():
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     if not user:
         return json.dumps({}), 200
         
@@ -850,7 +895,7 @@ def get_all_schedules_json():
 @app.route('/aluno/update_schedule/<int:turma_id>', methods=['POST'])
 @login_required
 def update_student_schedule(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return json.dumps({"error": "Dados não encontrados"}), 404
@@ -1116,12 +1161,16 @@ def update_student_schedule(turma_id):
 @app.route('/', methods=['GET', 'POST'])
 @login_required # Este decorator FORÇA o login para acessar a esta página
 def index():
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     if not user:
         return redirect(url_for('login'))
         
     if request.method == 'POST':
         action = request.form.get('action')
+
+        # Todas as ações POST desta página alteram turmas e são restritas a administradores
+        if not user.is_admin:
+            return negar_acesso_admin()
         
         if action == 'create_turma':
             nome = request.form.get('turma_nome', '').strip()
@@ -1241,7 +1290,7 @@ def index():
 @app.route('/turma/<int:turma_id>', methods=['GET', 'POST'])
 @login_required
 def view_turma(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     if not user:
         return redirect(url_for('login'))
         
@@ -1254,6 +1303,10 @@ def view_turma(turma_id):
     
     if request.method == 'POST':
         action = request.form.get('action')
+
+        # Importar PDFs e gerar grupos são operações restritas a administradores
+        if not user.is_admin:
+            return negar_acesso_admin()
         
         if action == 'process_pdfs':
             files = request.files.getlist('pdf_files')
@@ -1443,8 +1496,9 @@ def view_turma(turma_id):
 
 @app.route('/trocar_aluno/<int:turma_id>', methods=['POST'])
 @login_required
+@admin_required
 def trocar_aluno(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         flash('Dados de grupos não encontrados. Por favor, gere os grupos novamente.', 'error')
@@ -1494,8 +1548,9 @@ def trocar_aluno(turma_id):
 
 @app.route('/clear/<int:turma_id>')
 @login_required 
+@admin_required
 def clear_session(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if turma:
         turma.base_data = None
@@ -1517,7 +1572,7 @@ def clear_session(turma_id):
 @app.route('/download/csv/<int:turma_id>')
 @login_required
 def download_csv(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma:
         return "Turma não encontrada.", 404
@@ -1542,7 +1597,7 @@ def download_csv(turma_id):
 @app.route('/download/pdf/<int:turma_id>')
 @login_required
 def download_pdf(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
@@ -1558,7 +1613,7 @@ def download_pdf(turma_id):
 @app.route('/aluno/<nome_aluno>/<int:turma_id>')
 @login_required
 def get_aluno_schedule(nome_aluno, turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return render_template_string("<h3>Erro</h3><p>Dados não encontrados no banco.</p>"), 404
@@ -1601,7 +1656,7 @@ def get_aluno_schedule(nome_aluno, turma_id):
 @app.route('/download/schedule/xlsx/<int:turma_id>')
 @login_required
 def download_schedule_xlsx(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return "Dados não encontrados.", 404
@@ -1813,7 +1868,7 @@ def download_schedule_xlsx(turma_id):
 @app.route('/download/schedule/csv/<int:turma_id>')
 @login_required
 def download_schedule_csv(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return "Dados não encontrados.", 404
@@ -1926,7 +1981,7 @@ def download_schedule_csv(turma_id):
 @app.route('/download/groups/xlsx/<int:turma_id>')
 @login_required
 def download_groups_xlsx(turma_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
@@ -2043,7 +2098,7 @@ def download_groups_xlsx(turma_id):
 @app.route('/download/grupo/<int:turma_id>/<int:grupo_id>')
 @login_required
 def download_grupo_individual(turma_id, grupo_id):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
@@ -2172,7 +2227,7 @@ def download_grupo_individual(turma_id, grupo_id):
 @app.route('/download/all_schedules/<string:export_format>')
 @login_required
 def download_all_schedules(export_format):
-    user = User.query.filter_by(username=session['username']).first()
+    user = get_current_user()
     if not user:
         return "Usuário não encontrado.", 404
         
