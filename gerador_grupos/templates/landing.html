@@ -323,6 +323,12 @@
             <button class="header-tab-btn" id="tab-btn-academy" onclick="switchLandingTab('academy')">
                 Alunos
             </button>
+
+            {% if is_admin %}
+                <a href="{{ url_for('manage_users') }}" class="header-tab-btn" id="tab-btn-users" style="text-decoration: none;">
+                    Gerenciar Usuários
+                </a>
+            {% endif %}
         </div>
 
         <div class="header-actions">
@@ -425,23 +431,34 @@
             <!-- Botões centrais em caixas retangulares separadas -->
             <div class="home-center-content"
                 style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; margin: 40px auto 0 auto; width: 100%;">
-                <!-- Caixa do primeiro botão (+ Adicionar Turmas) -->
-                <div class="glass-panel"
-                    style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-                    <button class="btn btn-primary" onclick="handleHomeAddTurmaClick()"
-                        style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
-                        + Adicionar Turmas
-                    </button>
-                </div>
+                {% if is_admin %}
+                    <div class="glass-panel"
+                        style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                        <button class="btn btn-primary" onclick="handleHomeAddTurmaClick()"
+                            style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
+                            + Adicionar Turmas
+                        </button>
+                    </div>
+                {% else %}
+                    <!-- Caixa do primeiro botão (+ Adicionar Turmas) -->
+                    <div class="glass-panel"
+                        style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                        <button class="btn btn-primary"  style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;" id="tab-btn-imersao" onclick="switchLandingTab('imersao')">
+                            Ver  Turmas
+                            </button>
+                    </div>
+                {% endif %}
 
+                {% if is_admin %}
                 <!-- Caixa do segundo botão (Cadastrar Novo Periodo) -->
-                <div class="glass-panel"
-                    style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
-                    <button class="btn btn-primary" onclick="openHomeNewPeriodoModal()"
-                        style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
-                        Cadastrar Novo Periodo
-                    </button>
-                </div>
+                    <div class="glass-panel"
+                        style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
+                        <button class="btn btn-primary" onclick="openHomeNewPeriodoModal()"
+                            style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
+                            Cadastrar Novo Periodo
+                        </button>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
@@ -466,10 +483,12 @@
                         placeholder="Buscar turma pelo nome..." oninput="filterTurmasGrid()"
                         style="padding: 12px 16px 12px 42px; font-size: 0.9rem;">
                 </div>
-                <button class="btn btn-primary" onclick="openCreateModal()"
-                    style="border-radius: 8px; font-weight: 600; padding: 10px 20px;">
-                    + Nova turma
-                </button>
+                {% if is_admin %}
+                    <button class="btn btn-primary" onclick="openCreateModal()"
+                        style="border-radius: 8px; font-weight: 600; padding: 10px 20px;">
+                        + Nova turma
+                    </button>
+                {% endif %}
             </div>
 
             <div class="turmas-grid">
@@ -483,24 +502,28 @@
                         {% endif %}
                     </div>
 
-                    <button class="turma-edit-btn" onclick="openEditModal(event, {{ t.id }}, '{{ t.nome|escape }}')"
-                        title="Editar Nome da Turma">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-
-                    <button class="turma-delete-btn" onclick="confirmDelete(event, {{ t.id }}, '{{ t.nome }}')"
-                        title="Excluir Turma">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                            </path>
-                        </svg>
-                    </button>
+                    {% if is_admin %}
+                        <button class="turma-edit-btn" onclick="openEditModal(event, {{ t.id }}, '{{ t.nome|escape }}')"
+                            title="Editar Nome da Turma">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>  
+                    {% endif %}
+                    
+                    {% if is_admin %}
+                        <button class="turma-delete-btn" onclick="confirmDelete(event, {{ t.id }}, '{{ t.nome }}')"
+                            title="Excluir Turma">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                </path>
+                            </svg>
+                        </button>
+                    {% endif %}
 
                     <div class="turma-card-meta">
                         {% if t.alunos_count > 0 %}
@@ -625,6 +648,7 @@
     <!-- Modal para Criar Nova Turma (Modificado) -->
     <div class="modal-overlay" id="create-turma-modal">
         <div class="glass-panel modal-card" style="padding: 24px; position: relative;">
+            
             <div class="modal-header"
                 style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">Adicionar turma</h3>
@@ -895,7 +919,12 @@
 
     <script>
         // Lógica das Abas do Hub (Prototipação Frontend)
-        let activeLandingTab = localStorage.getItem('academysync_active_landing_tab') || 'home';
+        const LANDING_TABS = ['home', 'imersao', 'academy'];
+        let activeLandingTab = localStorage.getItem('academysync_active_landing_tab');
+        if (!LANDING_TABS.includes(activeLandingTab)) {
+            activeLandingTab = 'home';
+            localStorage.setItem('academysync_active_landing_tab', activeLandingTab);
+        }
 
         function filterTurmasGrid() {
             const query = (document.getElementById('search-turma-input').value || '').toLowerCase().trim();
@@ -916,6 +945,10 @@
         }
 
         function switchLandingTab(tab) {
+            if (!LANDING_TABS.includes(tab)) {
+                tab = 'home';
+            }
+
             activeLandingTab = tab;
             localStorage.setItem('academysync_active_landing_tab', tab);
 
@@ -932,15 +965,11 @@
             const turmasSection = document.getElementById('turmas-section');
             const alunosSection = document.getElementById('alunos-section');
 
-            if (tab === 'home') {
-                if (homeSection) homeSection.style.display = 'block';
-                if (turmasSection) turmasSection.style.display = 'none';
-                if (alunosSection) alunosSection.style.display = 'none';
-            } else if (tab === 'imersao') {
-                if (homeSection) homeSection.style.display = 'none';
-                if (turmasSection) turmasSection.style.display = 'block';
-                if (alunosSection) alunosSection.style.display = 'none';
+            if (homeSection) homeSection.style.display = tab === 'home' ? 'block' : 'none';
+            if (turmasSection) turmasSection.style.display = tab === 'imersao' ? 'block' : 'none';
+            if (alunosSection) alunosSection.style.display = tab === 'academy' ? 'block' : 'none';
 
+            if (tab === 'imersao') {
                 // Garante que o checkbox "Em imersão" inicie desmarcado por padrão
                 const checkbox = document.getElementById('em_imersao');
                 if (checkbox) checkbox.checked = false;
@@ -955,10 +984,6 @@
 
                 filterTurmasGrid();
             } else if (tab === 'academy') {
-                if (homeSection) homeSection.style.display = 'none';
-                if (turmasSection) turmasSection.style.display = 'none';
-                if (alunosSection) alunosSection.style.display = 'block';
-
                 filterTurmasGrid(); // Garante a ocultação das turmas na aba Alunos
                 loadAllStudentsSchedules(); // Carrega os alunos consolidados de todas as turmas
             }
