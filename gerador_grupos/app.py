@@ -1318,6 +1318,27 @@ def manage_users():
             flash(f'"{target.username}" agora é administrador.', 'success')
             return redirect(url_for('manage_users'))
 
+        if action == 'delete_user':
+            target_id = request.form.get('user_id')
+            if not target_id:
+                flash('Usuário inválido.', 'error')
+                return redirect(url_for('manage_users'))
+
+            target = User.query.filter_by(id=int(target_id)).first()
+            if not target:
+                flash('Usuário não encontrado.', 'error')
+                return redirect(url_for('manage_users'))
+
+            if target.id == user.id:
+                flash('Você não pode deletar a própria conta.', 'error')
+                return redirect(url_for('manage_users'))
+
+            username = target.username
+            db.session.delete(target)
+            db.session.commit()
+            flash(f'Usuário "{username}" deletado com sucesso.', 'success')
+            return redirect(url_for('manage_users'))
+
         flash('Ação inválida.', 'error')
         return redirect(url_for('manage_users'))
 

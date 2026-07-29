@@ -19,6 +19,90 @@
             background: var(--bg-card);
         }
 
+        .user-actions-menu {
+            position: relative;
+            display: inline-flex;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .user-actions-menu.open {
+            z-index: 50;
+        }
+
+        .user-actions-btn {
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        }
+
+        .user-actions-btn:hover,
+        .user-actions-menu.open .user-actions-btn {
+            background: var(--border-color);
+            color: var(--text-main);
+        }
+
+        .user-actions-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            min-width: 180px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            padding: 6px;
+            display: none;
+            z-index: 100;
+        }
+
+        .user-actions-menu.open .user-actions-dropdown {
+            display: block;
+        }
+
+        .user-actions-dropdown form {
+            margin: 0;
+        }
+
+        .user-actions-item {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: var(--text-main);
+            text-align: left;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-actions-item:hover {
+            background: var(--border-color);
+        }
+
+        .user-actions-item.danger {
+            color: #ef4444;
+        }
+
+        /* Sem overflow: o dropdown precisa flutuar sobre a tabela sem criar scrollbar */
+        .users-table-panel,
+        .users-table-panel .table-wrapper {
+            overflow: visible !important;
+        }
+
         .landing-title-section {
             margin-bottom: 30px;
         }
@@ -101,9 +185,9 @@
             </div>
         </div>
 
-        <div class="glass-panel" style="padding: 0; border-radius: 16px; overflow: hidden; flex:1;">
-            <div class="table-wrapper" style="overflow-x: auto;">
-                <table class="styled-table" style="text-align: left;" id="users-table" style="width: 100%; margin: 0;">
+        <div class="glass-panel users-table-panel" style="padding: 0; border-radius: 16px; flex:1;">
+            <div class="table-wrapper">
+                <table class="styled-table" style="text-align: left; width: 100%; margin: 0;" id="users-table">
                     <thead>
                         <tr style="text-align: left;">
                             <th style="padding: 14px 20px;">Usuário</th>
@@ -130,18 +214,39 @@
                                 {% endif %}
                             </td>
                             <td style="padding: 14px 20px; text-align: center;">
-                                {% if not u.is_admin %}
-                                <form action="{{ url_for('manage_users') }}" method="POST" style="display: inline;">
-                                    <input type="hidden" name="action" value="promote_admin">
-                                    <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    <button type="submit" class="btn btn-secondary"
-                                        style="padding: 6px 12px; font-size: 0.8rem; border-radius: 8px; font-weight: 600;"
-                                        onclick="return confirm('Tornar {{ u.username }} administrador?');">
-                                        Tornar admin
-                                    </button>
-                                </form>
-                                {% else %}
+                                {% if u.username == session.username %}
                                 <span style="font-size: 0.8rem; color: var(--text-muted);">—</span>
+                                {% else %}
+                                <div class="user-actions-menu">
+                                    <button type="button" class="user-actions-btn" onclick="toggleUserActions(this)"
+                                        aria-label="Ações do usuário" title="Ações">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                            <circle cx="12" cy="5" r="2"></circle>
+                                            <circle cx="12" cy="12" r="2"></circle>
+                                            <circle cx="12" cy="19" r="2"></circle>
+                                        </svg>
+                                    </button>
+                                    <div class="user-actions-dropdown">
+                                        {% if not u.is_admin %}
+                                        <form action="{{ url_for('manage_users') }}" method="POST">
+                                            <input type="hidden" name="action" value="promote_admin">
+                                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                                            <button type="submit" class="user-actions-item"
+                                                onclick="return confirm('Tornar {{ u.username }} administrador?');">
+                                                Tornar admin
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        <form action="{{ url_for('manage_users') }}" method="POST">
+                                            <input type="hidden" name="action" value="delete_user">
+                                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                                            <button type="submit" class="user-actions-item danger"
+                                                onclick="return confirm('Deletar o usuário {{ u.username }}? Esta ação não pode ser desfeita.');">
+                                                Deletar usuário
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
                                 {% endif %}
                             </td>
                         </tr>
@@ -195,6 +300,19 @@
                 row.style.display = match ? '' : 'none';
             });
         }
+
+        function toggleUserActions(btn) {
+            const menu = btn.closest('.user-actions-menu');
+            const wasOpen = menu.classList.contains('open');
+            document.querySelectorAll('.user-actions-menu.open').forEach(el => el.classList.remove('open'));
+            if (!wasOpen) menu.classList.add('open');
+        }
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.user-actions-menu')) {
+                document.querySelectorAll('.user-actions-menu.open').forEach(el => el.classList.remove('open'));
+            }
+        });
 
         function showToast(title, desc, type = 'info') {
             const container = document.getElementById('toast-container');
