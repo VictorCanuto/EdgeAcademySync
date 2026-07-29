@@ -207,7 +207,9 @@
                             </td>
                             <td style="padding: 14px 20px; color: var(--text-muted);">{{ u.email }}</td>
                             <td style="padding: 14px 20px; text-align: center;">
-                                {% if u.is_admin %}
+                                {% if u.is_superadmin %}
+                                <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: rgba(168, 85, 247, 0.15); color: #9333ea;">Superadmin</span>
+                                {% elif u.is_admin %}
                                 <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: rgba(34, 197, 94, 0.15); color: #16a34a;">Admin</span>
                                 {% else %}
                                 <span style="display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; background: var(--border-color); color: var(--text-muted);">Usuário</span>
@@ -216,7 +218,7 @@
                             <td style="padding: 14px 20px; text-align: center;">
                                 {% if u.username == session.username %}
                                 <span style="font-size: 0.8rem; color: var(--text-muted);">—</span>
-                                {% else %}
+                                {% elif not u.is_admin or is_superadmin %}
                                 <div class="user-actions-menu">
                                     <button type="button" class="user-actions-btn" onclick="toggleUserActions(this)"
                                         aria-label="Ações do usuário" title="Ações">
@@ -237,6 +239,8 @@
                                             </button>
                                         </form>
                                         {% endif %}
+                
+                                        {% if is_superadmin %}
                                         <form action="{{ url_for('manage_users') }}" method="POST">
                                             <input type="hidden" name="action" value="delete_user">
                                             <input type="hidden" name="user_id" value="{{ u.id }}">
@@ -245,8 +249,11 @@
                                                 Deletar usuário
                                             </button>
                                         </form>
+                                        {% endif %}
                                     </div>
                                 </div>
+                                {% else %}
+                                <span style="font-size: 0.8rem; color: var(--text-muted);">—</span>
                                 {% endif %}
                             </td>
                         </tr>
