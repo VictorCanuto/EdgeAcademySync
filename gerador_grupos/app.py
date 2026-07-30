@@ -26,7 +26,7 @@ load_dotenv()
 
 import re
 
-from services.pdf_parser import processar_pdfs_para_dataframe
+from services.pdf_parser import processar_pdfs_para_dataframe, _limpar_nome_aluno
 from services.group_generator import formar_grupos, horarios_conflitam
 from services.group_manager import sugerir_trocas, executar_troca
 from services.analytics_manager import calcular_ranking_disponibilidade
@@ -1623,6 +1623,22 @@ def view_turma(turma_id):
     if turma.base_data:
         try:
             df = pd.read_csv(BytesIO(turma.base_data))
+            if 'aluno' in df.columns:
+                df['aluno_limpo'] = df['aluno'].apply(lambda x: _limpar_nome_aluno(str(x)).replace(' ', '_'))
+                if (df['aluno'] != df['aluno_limpo']).any():
+                    df['aluno'] = df['aluno_limpo']
+                    df = df.drop(columns=['aluno_limpo'])
+                    csv_buffer = BytesIO()
+                    df.to_csv(csv_buffer, index=False, encoding='utf-8')
+                    turma.base_data = csv_buffer.getvalue()
+                    
+                    for al_obj in turma.alunos:
+                        nome_limpo_raw = _limpar_nome_aluno(al_obj.nome)
+                        if al_obj.nome != nome_limpo_raw:
+                            al_obj.nome = nome_limpo_raw.replace(' ', '_')
+                            al_obj.nome_custom = nome_limpo_raw
+                    db.session.commit()
+
             alunos = sorted({str(a).replace('_', ' ') for a in df['aluno'].unique()})
             base_data_info = {"alunos": len(alunos), "dias": len(df['dia'].unique()), "horarios": len(df['horario'].unique()), "lista_alunos": alunos}
             ranking_data = calcular_ranking_disponibilidade(df.copy())

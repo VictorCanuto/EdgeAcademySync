@@ -14,6 +14,30 @@ def _normalizar(texto: str) -> str:
         texto = str(texto)
     return unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII").strip().lower()
 
+def _limpar_nome_aluno(nome_bruto: str) -> str:
+    if not nome_bruto:
+        return ""
+    
+    texto = os.path.splitext(nome_bruto)[0].replace('_', ' ').strip()
+
+    if " - " in texto or "-" in texto:
+        partes = [p.strip() for p in re.split(r'\s*-\s*', texto) if p.strip()]
+        partes_limpas = [
+            p for p in partes 
+            if not any(lixo in p.lower() for lixo in [
+                "sistema", "gestao", "atividades", "academicas", "academica",
+                "comprovante", "atestado", "matricula", "portal", "discente",
+                "universidade", "instituto", "sigaa", "emitido", "relatorio"
+            ])
+        ]
+        if partes_limpas:
+            texto = partes_limpas[-1]
+
+    texto = re.sub(r'^\d+\s*', '', texto).strip()
+    texto = re.sub(r'^(comprovante|atestado|matricula|relatorio|sigaa)\s*(de\s*)?', '', texto, flags=re.IGNORECASE).strip()
+    texto = re.sub(r'\s+', ' ', texto).strip()
+    return texto
+
 def _eh_grade(df: pd.DataFrame) -> bool:
     cols = [_normalizar(c) for c in df.columns]
     if any(any(d in c for d in DIAS_SEMANA) for c in cols):
@@ -65,7 +89,8 @@ def _processar_single_pdf(caminho_pdf: str):
     Retorna (df_resultado, aluno_key) se obtiver dados, ou (None, aluno_key/filename).
     """
     filename = os.path.basename(caminho_pdf)
-    aluno_key = os.path.splitext(filename)[0]
+    clean_filename = re.sub(r'^\d+_', '', filename)
+    aluno_key = _limpar_nome_aluno(clean_filename).replace(" ", "_")
 
     # 1. Tentar processar via pypdf (rápido e puro Python)
     try:
@@ -75,17 +100,20 @@ def _processar_single_pdf(caminho_pdf: str):
         for page in reader.pages:
             text += page.extract_text() + "\n"
         match = re.search(
-            r"Nome\s*:\s*(.+?)(?=\s*Curso\s*:)",
+            r"Nome\s*:\s*([^\r\n]+?)(?=\s*Curso\s*:|\s*Matr[ií]cula\s*:|\r|\n|$)",
             text,
-            re.IGNORECASE | re.DOTALL,
+            re.IGNORECASE,
         )
         if match:
-            nome_extraido = re.sub(r"\s+", " ", match.group(1)).strip()
-            aluno_key = nome_extraido.replace(" ", "_")
-            print(f"   👤 [PDF Text] Nome do Aluno extraído: {nome_extraido}")
+            raw_name = match.group(1).strip()
+            nome_extraido = _limpar_nome_aluno(raw_name)
+            if nome_extraido:
+                aluno_key = nome_extraido.replace(" ", "_")
+                print(f"   👤 [PDF Text] Nome do Aluno extraído: {nome_extraido}")
         else:
-            clean_name = re.sub(r'^\d+_', '', filename)
-            print(f"   ⚠️ [PDF Text] Campo 'Nome:' não encontrado via regex. Usando nome do arquivo: {clean_name}")
+            nome_extraido = _limpar_nome_aluno(clean_filename)
+            aluno_key = nome_extraido.replace(" ", "_")
+            print(f"   ⚠️ [PDF Text] Campo 'Nome:' não encontrado via regex. Usando nome do arquivo limpo: {nome_extraido}")
 
         match_matricula = re.search(r"Matr[ií]cula:\s*(\d+)", text, re.IGNORECASE)
         matricula_val = match_matricula.group(1) if match_matricula else None
@@ -101,13 +129,13 @@ def _processar_single_pdf(caminho_pdf: str):
 
             dias_semana = ["dom", "seg", "ter", "qua", "qui", "sex", "sab"]
             dias_semana_map = {
-                "dom": "Domingo",
-                "seg": "Segunda-feira",
-                "ter": "Terça-feira",
-                "qua": "Quarta-feira",
-                "qui": "Quinta-feira",
-                "sex": "Sexta-feira",
-                "sab": "Sábado"
+                "dom": "Dom",
+                "seg": "Seg",
+                "ter": "Ter",
+                "qua": "Qua",
+                "qui": "Qui",
+                "sex": "Sex",
+                "sab": "Sab"
             }
 
             rows = []
