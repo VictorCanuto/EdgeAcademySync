@@ -130,6 +130,33 @@ with app.app_context():
     except Exception:
         db.session.rollback()
 
+    # Papéis de usuário: USER | ADMIN | SUPERADMIN
+    try:
+        db.session.execute(db.text("ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT 'USER'"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    # Garante que nenhuma linha fique com papel nulo
+    try:
+        db.session.execute(db.text("UPDATE users SET role = 'USER' WHERE role IS NULL"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    # Bootstrap de superadmin via variável de ambiente: garante que o e-mail indicado
+    # sempre tenha o papel SUPERADMIN, mesmo que o usuário ainda não exista ou tenha
+    # sido rebaixado por engano. Não cria conta nova, apenas promove uma existente.
+    bootstrap_superadmin_email = os.environ.get('BOOTSTRAP_SUPERADMIN_EMAIL')
+    if bootstrap_superadmin_email:
+        try:
+            target = User.query.filter_by(email=bootstrap_superadmin_email).first()
+            if target and target.role != 'SUPERADMIN':
+                target.role = 'SUPERADMIN'
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     try:
         db.session.execute(db.text('ALTER TABLE alunos ADD COLUMN matricula VARCHAR(50)'))
         db.session.commit()
@@ -173,6 +200,10 @@ def is_current_user_admin():
     user = get_current_user()
     return bool(user and user.is_admin)
 
+def is_current_user_superadmin():
+    user = get_current_user()
+    return bool(user and user.is_superadmin)
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -208,9 +239,26 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+def superadmin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in session:
+            return redirect(url_for('login', next=request.url))
+
+        user = get_current_user()
+
+        if not user:
+            flash('Usuário não encontrado.', 'error')
+            return redirect(url_for('login'))
+
+        if not user.is_superadmin:
+            return negar_acesso_admin()
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.context_processor
 def inject_permissions():
-    return {'is_admin': is_current_user_admin()}
+    return {'is_admin': is_current_user_admin(), 'is_superadmin': is_current_user_superadmin()}
 
 def get_user_data_folder():
     """Retorna o caminho para a pasta de dados do usuário logado (usado temporariamente para processar uploads)."""
@@ -504,13 +552,19 @@ def register():
 
         hashed_password = generate_password_hash(password)
         hashed_answer = generate_password_hash(security_ans.strip().lower())
-        
+
+        # Se o e-mail cadastrado bater com o e-mail de bootstrap definido em produção,
+        # a conta já nasce como SUPERADMIN.
+        bootstrap_superadmin_email = os.environ.get('BOOTSTRAP_SUPERADMIN_EMAIL')
+        initial_role = 'SUPERADMIN' if (bootstrap_superadmin_email and email.strip().lower() == bootstrap_superadmin_email.strip().lower()) else 'USER'
+
         new_user = User(
-            username=username, 
-            email=email, 
+            username=username,
+            email=email,
             password_hash=hashed_password,
             security_question=security_q,
-            security_answer_hash=hashed_answer
+            security_answer_hash=hashed_answer,
+            role=initial_role
         )
         db.session.add(new_user)
         db.session.commit()
@@ -1340,9 +1394,34 @@ def manage_users():
                 flash(f'"{target.username}" já é administrador.', 'error')
                 return redirect(url_for('manage_users'))
 
-            target.is_admin = True
+            target.role = 'ADMIN'
             db.session.commit()
             flash(f'"{target.username}" agora é administrador.', 'success')
+            return redirect(url_for('manage_users'))
+
+        if action == 'delete_user':
+            # Somente superadmins podem deletar usuários (admins comuns não podem)
+            if not user.is_superadmin:
+                return negar_acesso_admin()
+
+            target_id = request.form.get('user_id')
+            if not target_id:
+                flash('Usuário inválido.', 'error')
+                return redirect(url_for('manage_users'))
+
+            target = User.query.filter_by(id=int(target_id)).first()
+            if not target:
+                flash('Usuário não encontrado.', 'error')
+                return redirect(url_for('manage_users'))
+
+            if target.id == user.id:
+                flash('Você não pode deletar a própria conta.', 'error')
+                return redirect(url_for('manage_users'))
+
+            username = target.username
+            db.session.delete(target)
+            db.session.commit()
+            flash(f'Usuário "{username}" deletado com sucesso.', 'success')
             return redirect(url_for('manage_users'))
 
         flash('Ação inválida.', 'error')
@@ -1353,7 +1432,9 @@ def manage_users():
             "id": u.id,
             "username": u.username,
             "email": u.email,
+            "role": u.role,
             "is_admin": bool(u.is_admin),
+            "is_superadmin": bool(u.is_superadmin),
         }
         for u in User.query.order_by(User.username).all()
     ]
