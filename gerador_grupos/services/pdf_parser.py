@@ -118,10 +118,6 @@ def _processar_single_pdf(caminho_pdf: str):
         import pypdf
         reader = pypdf.PdfReader(caminho_pdf)
 
-        for i, page in enumerate(reader.pages):
-            print(f"===== PAGE {i} =====")
-            print(repr(page.extract_text()))
-
         text = ""
         for page in reader.pages:
             text += page.extract_text() + "\n"
@@ -135,11 +131,9 @@ def _processar_single_pdf(caminho_pdf: str):
             nome_extraido = _limpar_nome_aluno(raw_name)
             if nome_extraido:
                 aluno_key = nome_extraido.replace(" ", "_")
-                print(f"   👤 [PDF Text] Nome do Aluno extraído: {nome_extraido}")
         else:
             nome_extraido = _limpar_nome_aluno(clean_filename)
             aluno_key = nome_extraido.replace(" ", "_")
-            print(f"   ⚠️ [PDF Text] Campo 'Nome:' não encontrado via regex. Usando nome do arquivo limpo: {nome_extraido}")
 
         match_matricula = re.search(r"Matr[ií]cula:\s*(\d+)", text, re.IGNORECASE)
         matricula_val = match_matricula.group(1) if match_matricula else None
@@ -256,14 +250,9 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]):
     falha_arquivos = []
     seen_students = set()
 
-    print(f"\n==========================================")
-    print(f"🚀 INICIANDO PROCESSAMENTO DE {len(pdf_paths)} ARQUIVOS PDF")
-    print(f"==========================================")
-
     for idx, caminho_pdf in enumerate(pdf_paths, start=1):
         raw_filename = os.path.basename(caminho_pdf)
         clean_filename = re.sub(r'^\d+_', '', raw_filename)
-        print(f"\n[{idx}/{len(pdf_paths)}] 📄 Arquivo: {clean_filename}")
 
         df_single, identificador = _processar_single_pdf(caminho_pdf)
         if df_single is not None and not df_single.empty:
@@ -272,7 +261,6 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]):
             nome_lower = nome_limpo.lower()
 
             if nome_lower in seen_students:
-                print(f"   ℹ️ ALUNO DUPLICADO: '{nome_limpo}' já foi processado neste lote.")
                 falha_arquivos.append({
                     "file": clean_filename,
                     "type": "duplicado",
@@ -281,21 +269,12 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]):
             else:
                 seen_students.add(nome_lower)
                 sucesso_alunos.append(nome_limpo)
-                print(f"   ✅ ALUNO CADASTRADO COM SUCESSO: '{nome_limpo}'")
         else:
-            print(f"   🔴 FALHA DE LEITURA: Não foi possível extrair horários de '{clean_filename}'")
             falha_arquivos.append({
                 "file": clean_filename,
                 "type": "leitura",
                 "aluno": None
             })
-
-    print(f"\n==========================================")
-    print(f"📊 RESUMO DO PROCESSAMENTO NO TERMINAL:")
-    print(f" - Total de PDFs enviados: {len(pdf_paths)}")
-    print(f" - Alunos únicos cadastrados: {len(sucesso_alunos)}")
-    print(f" - PDFs não processados: {len(falha_arquivos)}")
-    print(f"==========================================\n")
 
     process_info = {
         "sucesso_alunos": sucesso_alunos,
