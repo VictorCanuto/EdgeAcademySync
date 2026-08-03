@@ -1149,7 +1149,10 @@
             const searchQuery = (document.getElementById('filter-all-student-search').value || '').toLowerCase().trim();
 
             // Filtros de Aluno
-            const filteredAlunos = allStudentsData.listaAlunos.filter(alunoNome => {
+            const filteredAlunos = allStudentsData.listaAlunos.filter(aluno => {
+                let alunoNome = aluno && aluno.nome;
+                if (!alunoNome) return false;
+
                 // 1. Busca por nome
                 if (searchQuery !== '' && !alunoNome.toLowerCase().includes(searchQuery)) {
                     return false;
@@ -1246,8 +1249,9 @@
             const tbody = document.createElement('tbody');
             table.appendChild(tbody);
 
-            filteredAlunos.forEach(alunoNome => {
+            filteredAlunos.forEach(aluno => {
                 const tr = document.createElement('tr');
+                let alunoNome = aluno["nome"];
 
                 // Célula Estudante
                 const tdName = document.createElement('td');
@@ -1255,6 +1259,7 @@
                 const turmaNome = allStudentsData.studentTurmaMap[alunoNome] || 'Sem Turma';
 
                 tdName.innerHTML = `
+                <div style="display:flex; gap:8px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <div class="user-avatar" style="width:24px; height:24px; font-size:0.75rem; background: var(--color-primary); color:white; flex-shrink: 0;">
                             ${alunoNome[0].toUpperCase()}
@@ -1266,6 +1271,16 @@
                             </span>
                         </div>
                     </div>
+
+                    <div style="display:flex; gap:8px; align-items:flex-start;">
+
+                    {%if is_admin %}
+                        <button>✏️</button>
+                        ${aluno.id != null ? `<button type="button" style="cursor: pointer;" onclick='deleteStudant(${JSON.stringify({id: aluno.id, nome: alunoNome})})'>🗑️</button>` : ''}
+                    {% endif %}
+
+                    </div>
+                </div>
                 `;
                 tr.appendChild(tdName);
 
@@ -1375,7 +1390,9 @@
             if (!container) return;
             container.innerHTML = '';
 
-            const listAlunos = allStudentsData.listaAlunos.filter(alunoNome => {
+            const listAlunos = allStudentsData.listaAlunos.filter(aluno => {
+                const alunoNome = aluno && aluno.nome;
+                if (!alunoNome) return false;
                 if (selectedFilterTurmas.size > 0) {
                     const turmaNome = allStudentsData.studentTurmaMap[alunoNome];
                     if (!selectedFilterTurmas.has(turmaNome)) return false;
@@ -1391,7 +1408,8 @@
             const grid = document.createElement('div');
             grid.className = 'compare-students-grid';
 
-            listAlunos.forEach(alunoNome => {
+            listAlunos.forEach(aluno => {
+                const alunoNome = aluno.nome;
                 const item = document.createElement('div');
                 item.className = 'compare-student-item';
                 const isChecked = selectedAllCompareStudents.has(alunoNome) ? 'checked' : '';
@@ -1400,8 +1418,8 @@
                 }
 
                 item.innerHTML = `
-                    <input type="checkbox" id="all-chk-comp-${alunoNome}" value="${alunoNome}" ${isChecked} onchange="handleAllCompareCheckboxChange(this)">
-                    <label for="all-chk-comp-${alunoNome}">${alunoNome} <span style="font-size:0.7rem; color:var(--text-muted);">(${allStudentsData.studentTurmaMap[alunoNome] || ''})</span></label>
+                    <input type="checkbox" id="all-chk-comp-${aluno.id}" value="${alunoNome}" ${isChecked} onchange="handleAllCompareCheckboxChange(this)">
+                    <label for="all-chk-comp-${aluno.id}">${alunoNome} <span style="font-size:0.7rem; color:var(--text-muted);">(${allStudentsData.studentTurmaMap[alunoNome] || ''})</span></label>
                 `;
 
                 item.addEventListener('click', (e) => {
@@ -2028,6 +2046,19 @@
             });
         }
         });
+
+        function deleteStudant(aluno) {
+            if (!aluno || aluno.id == null) return;
+
+            const { id, nome } = aluno;
+            if (!confirm(`Deletar o aluno ${nome}?`)) return;
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/delete_studant/' + encodeURIComponent(id);
+            document.body.appendChild(form);
+            form.submit();
+        }
     </script>
 </body>
 
