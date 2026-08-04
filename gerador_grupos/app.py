@@ -1368,6 +1368,116 @@ def index():
                            turmas=turmas_info,
                            has_security_question=has_security_question)
 
+@app.route('/add_alunos_batch', methods=['POST'])
+@login_required
+@admin_required
+def add_alunos_batch():
+    user = get_current_user()
+    if not user or not user.is_admin:
+        return jsonify({"success": False, "error": "Acesso não autorizado."}), 403
+
+    turma_id = request.form.get('turma_id')
+    confirm_update = request.form.get('confirm_update') == 'true'
+
+    if not turma_id:
+        return jsonify({"success": False, "error": "Selecione uma turma válida."}), 400
+
+    turma = db.session.get(Turma, int(turma_id)) if str(turma_id).isdigit() else None
+    if not turma:
+        return jsonify({"success": False, "error": "Turma não encontrada."}), 404
+
+    files = request.files.getlist('pdf_files')
+    files = [f for f in files if f and f.filename != '']
+    if not files:
+        return jsonify({"success": False, "error": "Nenhum arquivo PDF enviado."}), 400
+
+    user_data_folder = get_user_data_folder()
+    upload_folder_user = os.path.join(user_data_folder, 'uploads') if user_data_folder else 'uploads'
+    os.makedirs(upload_folder_user, exist_ok=True)
+
+    filepaths = []
+    for idx, file in enumerate(files):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(upload_folder_user, f"{idx}_{filename}")
+        file.save(filepath)
+        filepaths.append(filepath)
+
+    base_df, process_info = processar_pdfs_para_dataframe(filepaths)
+
+    # Limpar PDFs temporários
+    try:
+        for fpath in filepaths:
+            if os.path.exists(fpath):
+                os.remove(fpath)
+    except Exception as e:
+        print(f"AVISO: Falha ao limpar PDFs temporários: {e}")
+
+    if base_df is None or base_df.empty:
+        return jsonify({"success": False, "error": "Não foi possível extrair dados válidos dos PDFs enviados."}), 400
+
+    # Normalizar nomes dos alunos extraídos dos PDFs
+    base_df['aluno'] = base_df['aluno'].apply(lambda x: _limpar_nome_aluno(str(x)).replace(' ', '_'))
+    alunos_enviados = list(base_df['aluno'].unique())
+
+    # Obter lista de alunos que já existem no Banco para esta turma
+    alunos_turma_db = Aluno.query.filter_by(turma_id=turma.id).all()
+    nomes_existentes_set = set()
+    for a in alunos_turma_db:
+        if a.nome:
+            nomes_existentes_set.add(_limpar_nome_aluno(a.nome).lower())
+        if a.nome_custom:
+            nomes_existentes_set.add(_limpar_nome_aluno(a.nome_custom).lower())
+
+    if turma.base_data:
+        try:
+            df_existente = pd.read_csv(BytesIO(turma.base_data))
+            if 'aluno' in df_existente.columns:
+                for al in df_existente['aluno'].unique():
+                    nomes_existentes_set.add(_limpar_nome_aluno(str(al)).lower())
+        except Exception:
+            pass
+
+    existentes = []
+    for al in alunos_enviados:
+        al_limpo = _limpar_nome_aluno(al)
+        if al_limpo.lower() in nomes_existentes_set:
+            existentes.append(al_limpo)
+
+    if existentes and not confirm_update:
+        return jsonify({
+            "requires_confirmation": True,
+            "existing_students": existentes,
+            "turma_id": turma.id,
+            "turma_nome": turma.nome
+        })
+
+    # Atualizar ou mesclar no base_data da turma
+    if turma.base_data:
+        try:
+            existing_df = pd.read_csv(BytesIO(turma.base_data))
+            if 'aluno' in existing_df.columns:
+                existing_df['aluno'] = existing_df['aluno'].apply(lambda x: _limpar_nome_aluno(str(x)).replace(' ', '_'))
+                # Se confirmou atualização para existentes, remove horários antigos desses alunos específicos
+                existing_df = existing_df[~existing_df['aluno'].isin(alunos_enviados)]
+                base_df = pd.concat([existing_df, base_df], ignore_index=True)
+        except Exception as e:
+            print(f"Aviso ao mesclar base_data: {e}")
+
+    # Salvar base_data
+    csv_buffer = BytesIO()
+    base_df.to_csv(csv_buffer, index=False, encoding='utf-8')
+    turma.base_data = csv_buffer.getvalue()
+    db.session.commit()
+
+    # Sincronizar alunos na tabela Aluno
+    sincronizar_tabelas_dos_alunos(turma.id, base_df)
+
+    total_alunos = len(base_df['aluno'].unique())
+    return jsonify({
+        "success": True,
+        "message": f"Aluno(s) processado(s) com sucesso! Total de {total_alunos} aluno(s) na turma '{turma.nome}'."
+    })
+
 @app.route('/users', methods=['GET', 'POST'])
 @login_required
 @admin_required
