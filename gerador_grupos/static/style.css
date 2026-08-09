@@ -25,6 +25,7 @@
     --border-color-hover: rgba(79, 70, 229, 0.2);
     
     --text-main: #0f172a;
+    --text-secondary: #3d4858;
     --text-muted: #64748b;
     --text-on-accent: #ffffff;
     
@@ -69,6 +70,7 @@ body.dark-mode {
     
     --text-main: #f8fafc;
     --text-muted: #94a3b8;
+    --text-secondary: #b0bac9;
     
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.3);
