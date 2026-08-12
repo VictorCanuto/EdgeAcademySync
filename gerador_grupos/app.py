@@ -1773,6 +1773,13 @@ def trocar_aluno(turma_id):
     return redirect(url_for('view_turma', turma_id=turma_id))
 
 
+def _redirect_after_studant_action():
+    return_to_turma_id = request.form.get('return_to_turma_id')
+    if return_to_turma_id and return_to_turma_id.isdigit():
+        return redirect(url_for('view_turma', turma_id=int(return_to_turma_id)))
+    return redirect(url_for('index', tab='academy'))
+
+
 @app.route('/delete_studant/<int:studant_id>', methods=['POST'])
 @login_required
 @admin_required
@@ -1780,7 +1787,7 @@ def delete_studant(studant_id):
     aluno = Aluno.query.filter_by(id=studant_id).first()
     if not aluno:
         flash('Aluno não encontrado.', 'error')
-        return redirect(url_for('index', tab='academy'))
+        return _redirect_after_studant_action()
 
     turma = Turma.query.filter_by(id=aluno.turma_id).first() if aluno.turma_id else None
     nome_alvo = _normalize_name_for_match(aluno.nome_custom or aluno.nome or '')
@@ -1796,7 +1803,7 @@ def delete_studant(studant_id):
         except Exception as e:
             print(f"Erro ao remover aluno do CSV: {e}")
             flash('Erro ao remover aluno dos horários.', 'error')
-            return redirect(url_for('index', tab='academy'))
+            return _redirect_after_studant_action()
 
     # Remove o aluno dos grupos gerados, se existirem
     if turma and turma.groups_result and nome_alvo:
@@ -1810,7 +1817,7 @@ def delete_studant(studant_id):
     db.session.delete(aluno)
     db.session.commit()
     flash('Aluno deletado com sucesso.', 'success')
-    return redirect(url_for('index', tab='academy'))
+    return _redirect_after_studant_action()
 
 
 def _renomear_aluno_em_grupos(result, nome_antigo_normalizado, nova_chave):
@@ -1868,7 +1875,7 @@ def edit_studant(studant_id):
     aluno = Aluno.query.filter_by(id=studant_id).first()
     if not aluno:
         flash('Aluno não encontrado.', 'error')
-        return redirect(url_for('index', tab='academy'))
+        return _redirect_after_studant_action()
 
     old_turma = Turma.query.filter_by(id=aluno.turma_id).first() if aluno.turma_id else None
 
@@ -1892,7 +1899,7 @@ def edit_studant(studant_id):
                 except Exception as e:
                     print(f"Erro ao renomear aluno no CSV: {e}")
                     flash('Erro ao renomear o aluno nos horários (CSV).', 'error')
-                    return redirect(url_for('index', tab='academy'))
+                    return _redirect_after_studant_action()
 
             if old_turma and old_turma.groups_result:
                 try:
@@ -1917,7 +1924,7 @@ def edit_studant(studant_id):
         nova_turma = Turma.query.filter_by(id=nova_turma_id).first()
         if not nova_turma:
             flash('Turma de destino não encontrada.', 'error')
-            return redirect(url_for('index', tab='academy'))
+            return _redirect_after_studant_action()
 
         # Mover as linhas de horário do aluno do CSV da turma antiga para a nova
         if old_turma and old_turma.base_data and nome_atual_normalizado:
@@ -1943,7 +1950,7 @@ def edit_studant(studant_id):
             except Exception as e:
                 print(f"Erro ao mover aluno entre turmas (CSV): {e}")
                 flash('Erro ao mover os horários do aluno para a nova turma.', 'error')
-                return redirect(url_for('index', tab='academy'))
+                return _redirect_after_studant_action()
 
         # Remover o aluno dos grupos formados na turma antiga 
         if old_turma and old_turma.groups_result and nome_atual_normalizado:
@@ -1966,7 +1973,7 @@ def edit_studant(studant_id):
     if pdf_file and pdf_file.filename:
         if not turma_destino:
             flash('Não foi possível anexar o PDF: o aluno não está associado a nenhuma turma.', 'error')
-            return redirect(url_for('index', tab='academy'))
+            return _redirect_after_studant_action()
 
         user_data_folder = get_user_data_folder()
         upload_folder_user = os.path.join(user_data_folder, 'uploads') if user_data_folder else 'uploads'
@@ -2011,13 +2018,13 @@ def edit_studant(studant_id):
             except Exception as e:
                 print(f"Erro ao atualizar horário do aluno via PDF: {e}")
                 flash('Erro ao atualizar o horário do aluno a partir do PDF.', 'error')
-                return redirect(url_for('index', tab='academy'))
+                return _redirect_after_studant_action()
 
     if pdf_atualizado:
         flash('Aluno atualizado: horário substituído a partir do PDF com sucesso.', 'success')
     else:
         flash('Aluno atualizado com sucesso.', 'success')
-    return redirect(url_for('index', tab='academy'))
+    return _redirect_after_studant_action()
 
 
 @app.route('/clear/<int:turma_id>')

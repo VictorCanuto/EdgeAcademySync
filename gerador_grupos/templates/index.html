@@ -739,6 +739,7 @@
                 <form id="edit-studant-form" method="POST" enctype="multipart/form-data"
                     onsubmit="return submitEditStudantForm(event)">
                     <input type="hidden" id="edit-studant-turma-original" value="">
+                    <input type="hidden" name="return_to_turma_id" value="{{ turma.id }}">
                     <div class="form-group">
                         <label for="edit_studant_name" class="form-label">Nome do aluno</label>
                         <input type="text" id="edit_studant_name" name="name" class="form-input"

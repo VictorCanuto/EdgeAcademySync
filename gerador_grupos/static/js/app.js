@@ -1770,6 +1770,13 @@ function deleteStudant() {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/delete_studant/' + encodeURIComponent(aluno.id);
+
+    const returnToInput = document.createElement('input');
+    returnToInput.type = 'hidden';
+    returnToInput.name = 'return_to_turma_id';
+    returnToInput.value = window.flaskData.turmaId;
+    form.appendChild(returnToInput);
+
     document.body.appendChild(form);
     form.submit();
     closeDeleteStudantModal();
