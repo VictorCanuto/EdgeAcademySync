@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AcademySync - Gerador de Grupos</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
 
@@ -695,6 +697,84 @@
         </div>
     </div>
 
+    <!-- Modal de Confirmação: Excluir Aluno -->
+    <div class="modal-overlay" id="delete-studant-modal">
+        <div class="glass-panel modal-card" style="padding: 24px; position: relative;">
+
+            <div style="text-align: center; margin-bottom: 12px;">
+                <i class="fa-regular fa-circle-xmark" style="color: var(--color-danger); font-size: 2rem;"></i>
+            </div>
+
+            <div class="modal-body " style="gap: 8px; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <h3 id="delete-studant-modal-title"
+                    style="font-weight: 700; color: var(--text-main); margin: auto; display: flex; align-items: center; gap: 8px; font-size: 1.15rem;">
+                        Excluir aluno?
+                    </h3>
+                        <p 
+                        id="delete-studant-modal-description"
+                        style="font-size: 0.95rem; font-weight: 500; color: var(--text-secondary); margin:auto"
+                        >
+                        Tem certeza que quer excluir este aluno? Essa ação não pode ser desfeita!
+                        </p>
+                    </div>
+
+                    <div style="display: flex; margin: auto; gap: 10px; margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="closeDeleteStudantModal()">Cancelar</button>
+                        <button class="btn btn-primary" onclick="deleteStudant()">Sim, Excluir!</button>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Edição de Aluno -->
+    <div class="modal-overlay" id="edit-studant-modal">
+        <div class="glass-panel modal-card" style="padding: 24px;">
+            <div class="modal-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-weight: 700;">Editar Aluno</h3>
+                <button class="modal-close" onclick="closeEditStudantModal()"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-studant-form" method="POST" enctype="multipart/form-data"
+                    onsubmit="return submitEditStudantForm(event)">
+                    <input type="hidden" id="edit-studant-turma-original" value="">
+                    <div class="form-group">
+                        <label for="edit_studant_name" class="form-label">Nome do aluno</label>
+                        <input type="text" id="edit_studant_name" name="name" class="form-input"
+                            placeholder="Nome aluno" autocomplete="off">
+                    </div>
+
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label for="edit_studant_turma" class="form-label">Turma</label>
+                        <select id="edit_studant_turma" name="turma_id" class="form-input">
+                            <!-- Preenchido via JS -->
+                        </select>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 4px;">
+                            Alterar a turma move os horários do aluno e o remove dos grupos formados na turma atual.
+                        </span>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label class="form-label">Substituir horário (PDF)</label>
+                        <input type="file" id="edit_studant_pdf" name="pdf_file" accept=".pdf"
+                            style="display: none;" onchange="handleEditStudantPdfSelect()">
+                        <button type="button" class="btn btn-secondary"
+                            style="width: 100%; padding: 10px; font-weight: 600; font-size: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-main); cursor: pointer;"
+                            onclick="document.getElementById('edit_studant_pdf').click()">
+                            Selecionar novo PDF
+                        </button>
+                        <span id="edit_studant_pdf_filename"
+                            style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 4px;"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary"
+                        style="width: 100%; padding: 12px; margin-top: 20px;">Salvar Alterações</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- ==========================================================================
        DADOS FLASK PARA JAVASCRIPT
        ========================================================================== -->
@@ -706,6 +786,9 @@
             username: "{{ session.username }}",
             turmaId: {{ turma.id }},
             turmaNome: "{{ turma.nome }}",
+            isAdmin: {{ 'true' if is_admin else 'false' }},
+            alunoIdMap: {{ aluno_id_map|tojson|safe if aluno_id_map else '{}' }},
+            todasTurmas: {{ todas_turmas|tojson|safe if todas_turmas else '[]' }},
             listaAlunos: {{ base_data_info.lista_alunos|tojson|safe if base_data_info else '[]' }},
             grupos: {{ groups_result.grupos|tojson|safe if (groups_result and groups_result.grupos) else '[]' }},
             alunosSemGrupo: {{ groups_result.alunos_sem_grupo|tojson|safe if (groups_result and groups_result.alunos_sem_grupo) else '[]' }},

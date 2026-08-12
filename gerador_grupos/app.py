@@ -1695,15 +1695,31 @@ def view_turma(turma_id):
 
     has_security_question = bool(user.security_question and user.security_answer_hash)
 
-    return render_template('index.html', 
+    aluno_id_map = {}
+    if base_data_info:
+        lookup_por_chave = {}
+        for a in Aluno.query.filter_by(turma_id=turma.id).all():
+            chave = _normalize_name_for_match(a.nome_custom or a.nome or '')
+            if chave:
+                lookup_por_chave[chave] = a.id
+        for nome_exibicao in base_data_info['lista_alunos']:
+            aid = lookup_por_chave.get(_normalize_name_for_match(nome_exibicao))
+            if aid is not None:
+                aluno_id_map[nome_exibicao] = aid
+
+    todas_turmas = [{"id": t.id, "nome": t.nome} for t in Turma.query.order_by(Turma.nome).all()]
+
+    return render_template('index.html',
                            turma=turma,
-                           base_data_info=base_data_info, 
-                           groups_result=groups_result_dict, 
+                           base_data_info=base_data_info,
+                           groups_result=groups_result_dict,
                            ranking_data=ranking_data,
                            horarios_disponiveis=horarios_disponiveis,
-                           nomes_blocos_opcoes=nomes_blocos_opcoes,    
+                           nomes_blocos_opcoes=nomes_blocos_opcoes,
                            dias_semana_opcoes=dias_semana_opcoes,
-                           has_security_question=has_security_question)
+                           has_security_question=has_security_question,
+                           aluno_id_map=aluno_id_map,
+                           todas_turmas=todas_turmas)
 
 @app.route('/trocar_aluno/<int:turma_id>', methods=['POST'])
 @login_required
