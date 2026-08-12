@@ -26,7 +26,7 @@ load_dotenv()
 
 import re
 
-from services.pdf_parser import processar_pdfs_para_dataframe, _limpar_nome_aluno
+from services.pdf_parser import processar_pdfs_para_dataframe, _limpar_nome_aluno, _processar_single_pdf
 from services.group_generator import formar_grupos, horarios_conflitam
 from services.group_manager import sugerir_trocas, executar_troca
 from services.analytics_manager import calcular_ranking_disponibilidade
@@ -804,7 +804,6 @@ def reset_password(token):
 @app.route('/aluno/schedules_json/<int:turma_id>')
 @login_required
 def get_schedules_json(turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return json.dumps({}), 200
@@ -872,9 +871,19 @@ def get_all_schedules_json():
         return json.dumps({}), 200
         
     turmas = Turma.query.all()
+
+    # Indexa alunos do banco por (turma_id, nome normalizado) para casar com o CSV
+    alunos_por_turma = {}
+    for a in Aluno.query.all():
+        chave = _normalize_name_for_match(a.nome_custom or a.nome or '')
+        if not chave:
+            continue
+        alunos_por_turma.setdefault(a.turma_id, {})[chave] = a
+
     schedules = {}
     student_turma_map = {}
     student_turma_id_map = {}
+    studants_list = []
     
     dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
     
@@ -887,10 +896,17 @@ def get_all_schedules_json():
             # Inicializar alunos desta turma
             alunos_unicos = sorted(df['aluno'].unique())
             for aluno in alunos_unicos:
-                nome_limpo = aluno.replace('_', ' ')
+                nome_limpo = str(aluno).replace('_', ' ').strip()
                 schedules[nome_limpo] = {}
                 student_turma_map[nome_limpo] = t.nome
                 student_turma_id_map[nome_limpo] = t.id
+
+                aluno_db = alunos_por_turma.get(t.id, {}).get(_normalize_name_for_match(nome_limpo))
+                studants_list.append({
+                    "id": aluno_db.id if aluno_db else None,
+                    "nome": nome_limpo,  
+                })
+
                 # Inicializar com free para todos os slots de 30 minutos
                 for dia in ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']:
                     for slot in HORARIOS_GRADE:
@@ -906,7 +922,7 @@ def get_all_schedules_json():
                 if intervalo is None:
                     continue
 
-                nome_limpo = str(row['aluno']).replace('_', ' ')
+                nome_limpo = str(row['aluno']).replace('_', ' ').strip()
                 dia_completo = dias_completos.get(row['dia'], row['dia'])
                 materia_str = str(materia).strip()
                 
@@ -936,20 +952,20 @@ def get_all_schedules_json():
                     aluno_sched[f"{dia_completo}_{slot}"] = status
         except Exception as e:
             print(f"Erro ao processar turma {t.id} na rota consolidada: {e}")
+
+    studants_list.sort(key=lambda a: (a.get('nome') or '').lower())
             
-    lista_alunos = sorted(list(schedules.keys()))
     payload = {
         "schedules": schedules,
         "student_turma_map": student_turma_map,
         "student_turma_id_map": student_turma_id_map,
-        "lista_alunos": lista_alunos
+        "lista_alunos": studants_list
     }
     return json.dumps(payload), 200
 
 @app.route('/aluno/update_schedule/<int:turma_id>', methods=['POST'])
 @login_required
 def update_student_schedule(turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return json.dumps({"error": "Dados não encontrados"}), 404
@@ -1693,7 +1709,6 @@ def view_turma(turma_id):
 @login_required
 @admin_required
 def trocar_aluno(turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         flash('Dados de grupos não encontrados. Por favor, gere os grupos novamente.', 'error')
@@ -1741,11 +1756,258 @@ def trocar_aluno(turma_id):
         
     return redirect(url_for('view_turma', turma_id=turma_id))
 
+
+@app.route('/delete_studant/<int:studant_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_studant(studant_id):
+    aluno = Aluno.query.filter_by(id=studant_id).first()
+    if not aluno:
+        flash('Aluno não encontrado.', 'error')
+        return redirect(url_for('index', tab='academy'))
+
+    turma = Turma.query.filter_by(id=aluno.turma_id).first() if aluno.turma_id else None
+    nome_alvo = _normalize_name_for_match(aluno.nome_custom or aluno.nome or '')
+
+    # Remove todas as linhas do aluno no CSV (base_data)
+    if turma and turma.base_data and nome_alvo:
+        try:
+            df = pd.read_csv(BytesIO(turma.base_data))
+            df = df[df['aluno'].apply(lambda a: _normalize_name_for_match(str(a)) != nome_alvo)]
+            out = BytesIO()
+            df.to_csv(out, index=False, encoding='utf-8')
+            turma.base_data = out.getvalue() if not df.empty else None
+        except Exception as e:
+            print(f"Erro ao remover aluno do CSV: {e}")
+            flash('Erro ao remover aluno dos horários.', 'error')
+            return redirect(url_for('index', tab='academy'))
+
+    # Remove o aluno dos grupos gerados, se existirem
+    if turma and turma.groups_result and nome_alvo:
+        try:
+            result = pickle.loads(turma.groups_result)
+            result = _remover_aluno_de_grupos(result, nome_alvo)
+            turma.groups_result = pickle.dumps(result)
+        except Exception as e:
+            print(f"Erro ao remover aluno dos grupos: {e}")
+
+    db.session.delete(aluno)
+    db.session.commit()
+    flash('Aluno deletado com sucesso.', 'success')
+    return redirect(url_for('index', tab='academy'))
+
+
+def _renomear_aluno_em_grupos(result, nome_antigo_normalizado, nova_chave):
+    """Substitui todas as referências a um aluno (por nome antigo) por sua nova chave"""
+    def _renomear_membro(m):
+        if isinstance(m, dict):
+            if _normalize_name_for_match(m.get('nome', '')) == nome_antigo_normalizado:
+                m = dict(m)
+                m['nome'] = nova_chave
+            return m
+        if _normalize_name_for_match(str(m)) == nome_antigo_normalizado:
+            return nova_chave
+        return m
+
+    for g in result.get('grupos', []):
+        g['Membros'] = [_renomear_membro(m) for m in g.get('Membros', [])]
+
+    slots = result.get('slots_por_aluno') or {}
+    for key in [k for k in list(slots.keys()) if _normalize_name_for_match(str(k)) == nome_antigo_normalizado]:
+        slots[nova_chave] = slots.pop(key)
+    result['slots_por_aluno'] = slots
+
+    if 'alunos_sem_grupo' in result:
+        result['alunos_sem_grupo'] = [
+            nova_chave if _normalize_name_for_match(str(a)) == nome_antigo_normalizado else a
+            for a in result['alunos_sem_grupo']
+        ]
+    return result
+
+
+def _remover_aluno_de_grupos(result, nome_normalizado):
+    """Remove todas as referências a um aluno (por nome) de um dicionário de resultado
+    de grupos já desserializado (in-place)."""
+    for g in result.get('grupos', []):
+        g['Membros'] = [
+            m for m in g.get('Membros', [])
+            if _normalize_name_for_match(_get_nome_membro(m)) != nome_normalizado
+        ]
+    slots = result.get('slots_por_aluno') or {}
+    for key in [k for k in list(slots.keys()) if _normalize_name_for_match(str(k)) == nome_normalizado]:
+        del slots[key]
+    result['slots_por_aluno'] = slots
+    if 'alunos_sem_grupo' in result:
+        result['alunos_sem_grupo'] = [
+            a for a in result['alunos_sem_grupo']
+            if _normalize_name_for_match(str(a)) != nome_normalizado
+        ]
+    return result
+
+
+@app.route('/edit_studant/<int:studant_id>', methods=['POST'])
+@login_required
+@admin_required
+def edit_studant(studant_id):
+    aluno = Aluno.query.filter_by(id=studant_id).first()
+    if not aluno:
+        flash('Aluno não encontrado.', 'error')
+        return redirect(url_for('index', tab='academy'))
+
+    old_turma = Turma.query.filter_by(id=aluno.turma_id).first() if aluno.turma_id else None
+
+    # 1. Renomear o aluno: atualiza a chave usada no CSV ('aluno') e nos grupos já
+    #    formados na turma atual, além do nome de exibição (nome_custom).
+    novo_nome_custom = request.form.get('name', '').strip()
+    if novo_nome_custom:
+        nome_chave_antigo_normalizado = _normalize_name_for_match(aluno.nome or '')
+        nova_chave = novo_nome_custom.replace(' ', '_')
+
+        if nome_chave_antigo_normalizado and _normalize_name_for_match(nova_chave) != nome_chave_antigo_normalizado:
+            if old_turma and old_turma.base_data:
+                try:
+                    df_rename = pd.read_csv(BytesIO(old_turma.base_data))
+                    mask_rename = df_rename['aluno'].apply(
+                        lambda a: _normalize_name_for_match(str(a)) == nome_chave_antigo_normalizado)
+                    df_rename.loc[mask_rename, 'aluno'] = nova_chave
+                    out_rename = BytesIO()
+                    df_rename.to_csv(out_rename, index=False, encoding='utf-8')
+                    old_turma.base_data = out_rename.getvalue()
+                except Exception as e:
+                    print(f"Erro ao renomear aluno no CSV: {e}")
+                    flash('Erro ao renomear o aluno nos horários (CSV).', 'error')
+                    return redirect(url_for('index', tab='academy'))
+
+            if old_turma and old_turma.groups_result:
+                try:
+                    result = pickle.loads(old_turma.groups_result)
+                    result = _renomear_aluno_em_grupos(result, nome_chave_antigo_normalizado, nova_chave)
+                    old_turma.groups_result = pickle.dumps(result)
+                except Exception as e:
+                    print(f"Erro ao renomear aluno nos grupos: {e}")
+
+            aluno.nome = nova_chave
+
+        aluno.nome_custom = novo_nome_custom
+
+    nome_atual_normalizado = _normalize_name_for_match(aluno.nome or '')
+
+    #//Trocar de turma
+    nova_turma_id_raw = request.form.get('turma_id')
+    nova_turma_id = int(nova_turma_id_raw) if nova_turma_id_raw and nova_turma_id_raw.isdigit() else None
+    turma_destino = old_turma
+
+    if nova_turma_id and (not old_turma or nova_turma_id != old_turma.id):
+        nova_turma = Turma.query.filter_by(id=nova_turma_id).first()
+        if not nova_turma:
+            flash('Turma de destino não encontrada.', 'error')
+            return redirect(url_for('index', tab='academy'))
+
+        # Mover as linhas de horário do aluno do CSV da turma antiga para a nova
+        if old_turma and old_turma.base_data and nome_atual_normalizado:
+            try:
+                df_old = pd.read_csv(BytesIO(old_turma.base_data))
+                mask = df_old['aluno'].apply(lambda a: _normalize_name_for_match(str(a)) == nome_atual_normalizado)
+                linhas_aluno = df_old[mask].copy()
+
+                df_old_restante = df_old[~mask]
+                out_old = BytesIO()
+                df_old_restante.to_csv(out_old, index=False, encoding='utf-8')
+                old_turma.base_data = out_old.getvalue() if not df_old_restante.empty else None
+
+                if not linhas_aluno.empty:
+                    if nova_turma.base_data:
+                        df_new = pd.read_csv(BytesIO(nova_turma.base_data))
+                        df_new = pd.concat([df_new, linhas_aluno], ignore_index=True)
+                    else:
+                        df_new = linhas_aluno
+                    out_new = BytesIO()
+                    df_new.to_csv(out_new, index=False, encoding='utf-8')
+                    nova_turma.base_data = out_new.getvalue()
+            except Exception as e:
+                print(f"Erro ao mover aluno entre turmas (CSV): {e}")
+                flash('Erro ao mover os horários do aluno para a nova turma.', 'error')
+                return redirect(url_for('index', tab='academy'))
+
+        # Remover o aluno dos grupos formados na turma antiga 
+        if old_turma and old_turma.groups_result and nome_atual_normalizado:
+            try:
+                result = pickle.loads(old_turma.groups_result)
+                result = _remover_aluno_de_grupos(result, nome_atual_normalizado)
+                old_turma.groups_result = pickle.dumps(result)
+            except Exception as e:
+                print(f"Erro ao remover aluno dos grupos da turma antiga: {e}")
+
+        aluno.turma_id = nova_turma.id
+        aluno.grupo_id = None
+        turma_destino = nova_turma
+
+    db.session.commit()
+
+    # Substituir o horário do aluno a partir de um novo PDF
+    pdf_atualizado = False
+    pdf_file = request.files.get('pdf_file')
+    if pdf_file and pdf_file.filename:
+        if not turma_destino:
+            flash('Não foi possível anexar o PDF: o aluno não está associado a nenhuma turma.', 'error')
+            return redirect(url_for('index', tab='academy'))
+
+        user_data_folder = get_user_data_folder()
+        upload_folder_user = os.path.join(user_data_folder, 'uploads') if user_data_folder else 'uploads'
+        os.makedirs(upload_folder_user, exist_ok=True)
+        filename = secure_filename(pdf_file.filename)
+        filepath = os.path.join(upload_folder_user, f"edit_{aluno.id}_{filename}")
+        pdf_file.save(filepath)
+
+        try:
+            df_novo, _identificador = _processar_single_pdf(filepath)
+        finally:
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            except Exception as e:
+                print(f"AVISO: Falha ao limpar PDF temporário: {e}")
+
+        if df_novo is None or df_novo.empty:
+            flash('Não foi possível extrair os horários do PDF enviado. Os dados de horário anteriores foram mantidos.', 'warning')
+        else:
+            # Mantém a chave atual do aluno (nome), já refletindo qualquer rename feito acima,
+            # independentemente do nome extraído do novo PDF, para não perder o vínculo com o
+            # registro existente.
+            df_novo = df_novo.copy()
+            df_novo['aluno'] = aluno.nome
+
+            try:
+                nome_chave_normalizado = _normalize_name_for_match(aluno.nome)
+                if turma_destino.base_data:
+                    df_atual = pd.read_csv(BytesIO(turma_destino.base_data))
+                    mask_atual = df_atual['aluno'].apply(lambda a: _normalize_name_for_match(str(a)) == nome_chave_normalizado)
+                    df_atual = df_atual[~mask_atual]
+                    df_final = pd.concat([df_atual, df_novo], ignore_index=True)
+                else:
+                    df_final = df_novo
+
+                out_final = BytesIO()
+                df_final.to_csv(out_final, index=False, encoding='utf-8')
+                turma_destino.base_data = out_final.getvalue()
+                db.session.commit()
+                pdf_atualizado = True
+            except Exception as e:
+                print(f"Erro ao atualizar horário do aluno via PDF: {e}")
+                flash('Erro ao atualizar o horário do aluno a partir do PDF.', 'error')
+                return redirect(url_for('index', tab='academy'))
+
+    if pdf_atualizado:
+        flash('Aluno atualizado: horário substituído a partir do PDF com sucesso.', 'success')
+    else:
+        flash('Aluno atualizado com sucesso.', 'success')
+    return redirect(url_for('index', tab='academy'))
+
+
 @app.route('/clear/<int:turma_id>')
 @login_required 
 @admin_required
 def clear_session(turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if turma:
         turma.base_data = None
@@ -1767,7 +2029,6 @@ def clear_session(turma_id):
 @app.route('/download/csv/<int:turma_id>')
 @login_required
 def download_csv(turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma:
         return "Turma não encontrada.", 404
@@ -1792,7 +2053,6 @@ def download_csv(turma_id):
 @app.route('/download/pdf/<int:turma_id>')
 @login_required
 def download_pdf(turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
@@ -1808,7 +2068,6 @@ def download_pdf(turma_id):
 @app.route('/aluno/<nome_aluno>/<int:turma_id>')
 @login_required
 def get_aluno_schedule(nome_aluno, turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return render_template_string("<h3>Erro</h3><p>Dados não encontrados no banco.</p>"), 404
@@ -1851,7 +2110,6 @@ def get_aluno_schedule(nome_aluno, turma_id):
 @app.route('/download/schedule/xlsx/<int:turma_id>')
 @login_required
 def download_schedule_xlsx(turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return "Dados não encontrados.", 404
@@ -2073,7 +2331,6 @@ def download_schedule_xlsx(turma_id):
 @app.route('/download/schedule/csv/<int:turma_id>')
 @login_required
 def download_schedule_csv(turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.base_data:
         return "Dados não encontrados.", 404
@@ -2196,7 +2453,6 @@ def download_schedule_csv(turma_id):
 @app.route('/download/groups/xlsx/<int:turma_id>')
 @login_required
 def download_groups_xlsx(turma_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404
@@ -2313,7 +2569,6 @@ def download_groups_xlsx(turma_id):
 @app.route('/download/grupo/<int:turma_id>/<int:grupo_id>')
 @login_required
 def download_grupo_individual(turma_id, grupo_id):
-    user = get_current_user()
     turma = Turma.query.filter_by(id=turma_id).first()
     if not turma or not turma.groups_result:
         return "Nenhum grupo gerado.", 404

@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Turmas - AcademySync</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
         .landing-container {
             max-width: 1200px;
@@ -292,6 +294,23 @@
         body.dark-mode .header-tab-btn.active .header-tab-icon {
             filter: brightness(0) invert(1);
             opacity: 1;
+        }
+
+        .studant-action-bttm{
+            cursor: pointer;
+            padding: 5px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .studant-action-bttm:hover{
+            background-color: var(--border-color);
+            border-radius: 10px;
+        }
+
+        .edit-icon{
+            color: var(--text-secondary);
         }
     </style>
 </head>
@@ -1023,6 +1042,84 @@
 
     <div class="toast-container" id="toast-messages-container"></div>
 
+    <div class="modal-overlay" id="delete-studant-modal">
+        <div class="glass-panel modal-card" style="padding: 24px; position: relative;">
+
+            <div style="text-align: center; margin-bottom: 12px;">
+                <i class="fa-regular fa-circle-xmark" style="color: var(--color-danger); font-size: 2rem;"></i>
+            </div>
+
+            <div class="modal-body " style="gap: 8px; display: flex; flex-direction: column; justify-content: center; text-align: center;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <h3 id="delete-studant-modal-title"
+                    style="font-weight: 700; color: var(--text-main); margin: auto; display: flex; align-items: center; gap: 8px; font-size: 1.15rem;">
+                        Excluir aluno?
+                    </h3>
+                        <p 
+                        id="delete-studant-modal-description"
+                        style="font-size: 0.95rem; font-weight: 500; color: var(--text-secondary); margin:auto"
+                        >
+                        Tem certeza que quer excluir este aluno? Essa ação não pode ser desfeita!
+                        </p>
+                    </div>
+
+                    <div style="display: flex; margin: auto; gap: 10px; margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="closeDeleteStudantModal()">Cancelar</button>
+                        <button class="btn btn-primary" onclick="deleteStudant()">Sim, Excluir!</button>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="edit-studant-modal">
+        <div class="glass-panel modal-card" style="padding: 24px;">
+            <div class="modal-header"
+                style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-weight: 700;">Editar Aluno</h3>
+                <button class="modal-close" onclick="closeEditStudantModal()"
+                    style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-studant-form" method="POST" enctype="multipart/form-data"
+                    onsubmit="return submitEditStudantForm(event)">
+                    <input type="hidden" id="edit-studant-turma-original" value="">
+                    <div class="form-group">
+                        <label for="edit_studant_name" class="form-label">Nome do aluno</label>
+                        <input type="text" id="edit_studant_name" name="name" class="form-input"
+                            placeholder="Nome aluno" autocomplete="off">
+                    </div>
+
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label for="edit_studant_turma" class="form-label">Turma</label>
+                        <select id="edit_studant_turma" name="turma_id" class="form-input">
+                            <!-- Preenchido via JS -->
+                        </select>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 4px;">
+                            Alterar a turma move os horários do aluno e o remove dos grupos formados na turma
+                            atual.
+                        </span>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label class="form-label">Substituir horário (PDF)</label>
+                        <input type="file" id="edit_studant_pdf" name="pdf_file" accept=".pdf"
+                            style="display: none;" onchange="handleEditStudantPdfSelect()">
+                        <button type="button" class="btn btn-secondary"
+                            style="width: 100%; padding: 10px; font-weight: 600; font-size: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-main); cursor: pointer;"
+                            onclick="document.getElementById('edit_studant_pdf').click()">
+                            Selecionar novo PDF
+                        </button>
+                        <span id="edit_studant_pdf_filename"
+                            style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 4px;"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary"
+                        style="width: 100%; padding: 12px; margin-top: 20px;">Salvar Alterações</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Lógica das Abas do Hub (Prototipação Frontend)
         const LANDING_TABS = ['home', 'imersao', 'academy'];
@@ -1034,7 +1131,7 @@
 
         function filterTurmasGrid() {
             const query = (document.getElementById('search-turma-input').value || '').toLowerCase().trim();
-
+            
             document.querySelectorAll('.turma-card').forEach(card => {
                 const name = (card.querySelector('h3').textContent || '').toLowerCase();
 
@@ -1149,7 +1246,10 @@
             const searchQuery = (document.getElementById('filter-all-student-search').value || '').toLowerCase().trim();
 
             // Filtros de Aluno
-            const filteredAlunos = allStudentsData.listaAlunos.filter(alunoNome => {
+            const filteredAlunos = allStudentsData.listaAlunos.filter(aluno => {
+                let alunoNome = aluno && aluno.nome;
+                if (!alunoNome) return false;
+
                 // 1. Busca por nome
                 if (searchQuery !== '' && !alunoNome.toLowerCase().includes(searchQuery)) {
                     return false;
@@ -1246,8 +1346,9 @@
             const tbody = document.createElement('tbody');
             table.appendChild(tbody);
 
-            filteredAlunos.forEach(alunoNome => {
+            filteredAlunos.forEach(aluno => {
                 const tr = document.createElement('tr');
+                let alunoNome = aluno["nome"];
 
                 // Célula Estudante
                 const tdName = document.createElement('td');
@@ -1255,17 +1356,42 @@
                 const turmaNome = allStudentsData.studentTurmaMap[alunoNome] || 'Sem Turma';
 
                 tdName.innerHTML = `
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div class="user-avatar" style="width:24px; height:24px; font-size:0.75rem; background: var(--color-primary); color:white; flex-shrink: 0;">
-                            ${alunoNome[0].toUpperCase()}
+                <div style="display:flex; justify-content: space-between; align-items: start;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div class="user-avatar" style="width:24px; height:24px; font-size:0.75rem; background: var(--color-primary); color:white; flex-shrink: 0; align">
+                                ${alunoNome[0].toUpperCase()}
+                            </div>
+                            <div>
+                                <h2 style="font-weight: 600; line-height: 1.2; font-size: 0.8rem;">
+                                    ${alunoNome}
+                                </h2>
+                                
+                                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight:500;">
+                                    📂 ${turmaNome}
+                                </span>
+                            </div>
+                        
                         </div>
-                        <div>
-                            <div style="font-weight: 600; line-height: 1.2;">${alunoNome}</div>
-                            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight:500;">
-                                📂 ${turmaNome}
-                            </span>
-                        </div>
-                    </div>
+
+                        <div style="display: flex;">
+                            {%if is_admin %}
+                                ${aluno.id != null ? `<button
+                                    type="button"
+                                    class="studant-action-bttm edit-icon"
+                                    onclick='openEditStudantModal(${JSON.stringify({ id: aluno.id, nome: alunoNome, turmaId: allStudentsData.studentTurmaIdMap[alunoNome] != null ? allStudentsData.studentTurmaIdMap[alunoNome] : null })})'>
+                                    <i class="fa-regular fa-pen-to-square"></i>
+                                </button>` : ''}
+                                ${aluno.id != null ? `<button
+                                    type="button"
+                                    class="studant-action-bttm"
+                                    onclick='openDeleteStudantModal(${JSON.stringify({ id: aluno.id, nome: alunoNome })})'>
+                                    <i class="fa-regular fa-trash-can" style="color: var(--color-danger);"></i>
+                                </button>` : ''}
+                            {% endif %}
+                        </div>   
+
+
+                </div>
                 `;
                 tr.appendChild(tdName);
 
@@ -1375,7 +1501,9 @@
             if (!container) return;
             container.innerHTML = '';
 
-            const listAlunos = allStudentsData.listaAlunos.filter(alunoNome => {
+            const listAlunos = allStudentsData.listaAlunos.filter(aluno => {
+                const alunoNome = aluno && aluno.nome;
+                if (!alunoNome) return false;
                 if (selectedFilterTurmas.size > 0) {
                     const turmaNome = allStudentsData.studentTurmaMap[alunoNome];
                     if (!selectedFilterTurmas.has(turmaNome)) return false;
@@ -1391,7 +1519,8 @@
             const grid = document.createElement('div');
             grid.className = 'compare-students-grid';
 
-            listAlunos.forEach(alunoNome => {
+            listAlunos.forEach(aluno => {
+                const alunoNome = aluno.nome;
                 const item = document.createElement('div');
                 item.className = 'compare-student-item';
                 const isChecked = selectedAllCompareStudents.has(alunoNome) ? 'checked' : '';
@@ -1400,8 +1529,8 @@
                 }
 
                 item.innerHTML = `
-                    <input type="checkbox" id="all-chk-comp-${alunoNome}" value="${alunoNome}" ${isChecked} onchange="handleAllCompareCheckboxChange(this)">
-                    <label for="all-chk-comp-${alunoNome}">${alunoNome} <span style="font-size:0.7rem; color:var(--text-muted);">(${allStudentsData.studentTurmaMap[alunoNome] || ''})</span></label>
+                    <input type="checkbox" id="all-chk-comp-${aluno.id}" value="${alunoNome}" ${isChecked} onchange="handleAllCompareCheckboxChange(this)">
+                    <label for="all-chk-comp-${aluno.id}">${alunoNome} <span style="font-size:0.7rem; color:var(--text-muted);">(${allStudentsData.studentTurmaMap[alunoNome] || ''})</span></label>
                 `;
 
                 item.addEventListener('click', (e) => {
@@ -1986,28 +2115,37 @@
             });
 
             // Ativa o filtro e a exibição das turmas conforme a aba ativa
+            // Se o servidor indicou explicitamente qual aba mostrar (ex.: após editar um aluno),
+            // isso tem prioridade sobre a última aba salva localmente.
+            const requestedTab = {{ (request.args.get('tab') or '') | tojson }};
+            if (requestedTab && LANDING_TABS.includes(requestedTab)) {
+                activeLandingTab = requestedTab;
+                localStorage.setItem('academysync_active_landing_tab', requestedTab);
+            }
             switchLandingTab(activeLandingTab);
 
             // Injetar mensagens do Flask
             {% with messages = get_flashed_messages(with_categories = true) %}
             {% if messages %}
             {% for category, message in messages %}
-            let cat = '{{ category }}';
-            if (cat === 'unprocessed_modal') {
-                try {
-                    let data = JSON.parse({{ message | tojson }});
-        openUnprocessedPDFsModal(data);
-                } catch (e) {
-            console.error("Erro ao abrir modal de PDFs não processados:", e);
-        }
-            } else {
-            let type = cat === 'error' || cat === 'danger' ? 'danger' : (cat === 'warning' ? 'warning' : (cat === 'success' ? 'success' : 'info'));
-            let title = type === 'danger' ? 'Erro' : (type === 'warning' ? 'Aviso' : (type === 'success' ? 'Sucesso' : 'Notificação'));
-            showToast(title, '{{ message }}', type);
-        }
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
+            {
+                let cat = '{{ category }}';
+                if (cat === 'unprocessed_modal') {
+                    try {
+                        let data = JSON.parse({{ message | tojson }});
+                        openUnprocessedPDFsModal(data);
+                    } catch (e) {
+                        console.error("Erro ao abrir modal de PDFs não processados:", e);
+                    }
+                } else {
+                    let type = cat === 'error' || cat === 'danger' ? 'danger' : (cat === 'warning' ? 'warning' : (cat === 'success' ? 'success' : 'info'));
+                    let title = type === 'danger' ? 'Erro' : (type === 'warning' ? 'Aviso' : (type === 'success' ? 'Sucesso' : 'Notificação'));
+                    showToast(title, {{ message | tojson }}, type);
+                }
+            }
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
 
         // Tema claro/escuro
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -2028,6 +2166,114 @@
             });
         }
         });
+
+        let pendingDeleteStudant = null;
+
+        function openDeleteStudantModal(aluno) {
+            pendingDeleteStudant = aluno;
+            const modal = document.getElementById('delete-studant-modal');
+            const description = document.getElementById('delete-studant-modal-description');
+            if (description) {
+                description.textContent = aluno && aluno.nome
+                    ? `Tem certeza que quer excluir o aluno ${aluno.nome}? Essa ação não pode ser desfeita!`
+                    : 'Tem certeza que deseja deletar este aluno? Essa ação não pode ser desfeita!';
+            }
+            if (modal) {
+                modal.classList.add('active');
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closeDeleteStudantModal() {
+            pendingDeleteStudant = null;
+            const modal = document.getElementById('delete-studant-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+        }
+
+        function deleteStudant() {
+            const aluno = pendingDeleteStudant;
+            if (!aluno || aluno.id == null) return;
+
+            const { id, nome } = aluno;
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/delete_studant/' + encodeURIComponent(id);
+            document.body.appendChild(form);
+            form.submit();
+            closeDeleteStudantModal();
+        }
+
+        let pendingEditStudant = null;
+
+        function openEditStudantModal(aluno) {
+            if (!aluno || aluno.id == null) return;
+            pendingEditStudant = aluno;
+
+            const form = document.getElementById('edit-studant-form');
+            form.action = '/edit_studant/' + encodeURIComponent(aluno.id);
+
+            document.getElementById('edit_studant_name').value = aluno.nome || '';
+
+            const turmaOriginalId = aluno.turmaId != null ? String(aluno.turmaId) : '';
+            document.getElementById('edit-studant-turma-original').value = turmaOriginalId;
+
+            const select = document.getElementById('edit_studant_turma');
+            select.innerHTML = '';
+            document.querySelectorAll('.turma-card').forEach(card => {
+                const turmaId = card.getAttribute('data-turma-id');
+                const h3 = card.querySelector('h3');
+                const turmaNome = h3 ? h3.textContent.trim() : `Turma ${turmaId}`;
+                const opt = document.createElement('option');
+                opt.value = turmaId;
+                opt.textContent = turmaNome;
+                if (turmaOriginalId && turmaId === turmaOriginalId) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+
+            const pdfInput = document.getElementById('edit_studant_pdf');
+            if (pdfInput) pdfInput.value = '';
+            const pdfLabel = document.getElementById('edit_studant_pdf_filename');
+            if (pdfLabel) pdfLabel.textContent = '';
+
+            const modal = document.getElementById('edit-studant-modal');
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+        }
+
+        function closeEditStudantModal() {
+            pendingEditStudant = null;
+            const modal = document.getElementById('edit-studant-modal');
+            modal.classList.remove('active');
+            modal.style.display = 'none';
+        }
+
+        function handleEditStudantPdfSelect() {
+            const input = document.getElementById('edit_studant_pdf');
+            const label = document.getElementById('edit_studant_pdf_filename');
+            if (!input || !label) return;
+            label.textContent = (input.files && input.files.length) ? input.files[0].name : '';
+        }
+
+        function submitEditStudantForm(event) {
+            const select = document.getElementById('edit_studant_turma');
+            const originalId = document.getElementById('edit-studant-turma-original').value;
+
+            if (select && originalId && select.value !== originalId) {
+                const novoNome = select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : 'a turma selecionada';
+                const nomeAluno = (pendingEditStudant && pendingEditStudant.nome) ? pendingEditStudant.nome : 'este aluno';
+                const ok = confirm(`Tem certeza que deseja mover ${nomeAluno} para a turma "${novoNome}"? Os horários do aluno serão transferidos e ele sairá dos grupos formados na turma atual.`);
+                if (!ok) {
+                    event.preventDefault();
+                    return false;
+                }
+            }
+            return true;
+        }
     </script>
 </body>
 
