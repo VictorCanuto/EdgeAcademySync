@@ -218,6 +218,26 @@ body {
     color: var(--text-main);
 }
 
+.action-bttn {
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.action-bttn-delete:hover {
+    color: var(--color-danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.action-bttn-edit:hover {
+    color: var(--color-primary);
+    background: rgba(79, 70, 229, 0.1);
+}
+
 /* ==========================================================================
    HEADER / BARRA DE NAVEGAÇÃO
    ========================================================================== */
@@ -800,7 +820,7 @@ body.dark-mode .styled-table th {
 .styled-table td.aluno-name-cell {
     text-align: left;
     font-weight: 600;
-    min-width: 180px;
+    min-width: 220px;
     position: sticky;
     left: 0;
     background: #ffffff; /* Fundo sólido para evitar vazamento horizontal */

@@ -285,16 +285,49 @@ function renderSpreadsheet() {
             return g.Membros.some(m => m.nome.toLowerCase() === alunoNome.toLowerCase());
         });
 
+        const alunoId = (window.flaskData.alunoIdMap || {})[alunoNome];
+
         tdName.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px;">
-                <div class="user-avatar" style="width:24px; height:24px; font-size:0.75rem; background: var(--color-primary); color:white;">
-                    ${alunoNome[0].toUpperCase()}
+            <div style="display:flex; align-items:center; justify-content: space-between; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <div class="user-avatar" style="width:24px; height:24px; font-size:0.75rem; background: var(--color-primary); color:white; flex-shrink: 0; align">
+                        ${alunoNome[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <h2 style="font-weight: 600; line-height: 1.2; font-size: 0.8rem;">
+                            ${alunoNome}
+                        </h2>
+                        <span style="font-size: 0.7rem; color: var(--text-muted); font-weight:500;">
+                            ${grupoInfo ? `Grupo ${grupoInfo.Grupo}` : 'Sem Grupo'}
+                        </span>
+                    </div>
                 </div>
-                <div>
-                    <div>${alunoNome}</div>
-                    <span style="font-size: 0.7rem; color: var(--text-muted); font-weight:500;">
-                        ${grupoInfo ? `Grupo ${grupoInfo.Grupo}` : 'Sem Grupo'}
-                    </span>
+
+                <div style="display: flex;">
+                    ${window.flaskData.isAdmin ? `
+                        ${alunoId != null ? 
+                            `<button class="action-bttn action-bttn-edit" 
+                            onclick='openEditStudantModal(${JSON.stringify({ id: alunoId, nome: alunoNome, turmaId: window.flaskData.turmaId })})'
+                            title="Editar Aluno">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </button>` : ''}
+
+                        ${alunoId!= null ? 
+                        `<button class="action-bttn action-bttn-delete"
+                            onclick='openDeleteStudantModal(${JSON.stringify({ id: alunoId, nome: alunoNome })})'
+                            title="Excluir Aluno">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                </path>
+                            </svg>
+                        </button>` : ''}
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -1698,4 +1731,119 @@ function toggleDayCollapse(dia) {
     }
     localStorage.setItem('academysync_collapsed_days', JSON.stringify(collapsedDays));
     renderSpreadsheet();
+}
+
+// ==========================================================================
+// EDITAR / EXCLUIR ALUNO (mesma lógica da aba "Alunos", adaptada para a
+// planilha desta turma)
+// ==========================================================================
+let pendingDeleteStudant = null;
+
+function openDeleteStudantModal(aluno) {
+    pendingDeleteStudant = aluno;
+    const modal = document.getElementById('delete-studant-modal');
+    const description = document.getElementById('delete-studant-modal-description');
+    if (description) {
+        description.textContent = aluno && aluno.nome
+            ? `Tem certeza que quer excluir o aluno ${aluno.nome}? Essa ação não pode ser desfeita!`
+            : 'Tem certeza que deseja deletar este aluno? Essa ação não pode ser desfeita!';
+    }
+    if (modal) {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+}
+
+function closeDeleteStudantModal() {
+    pendingDeleteStudant = null;
+    const modal = document.getElementById('delete-studant-modal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+}
+
+function deleteStudant() {
+    const aluno = pendingDeleteStudant;
+    if (!aluno || aluno.id == null) return;
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/delete_studant/' + encodeURIComponent(aluno.id);
+
+    const returnToInput = document.createElement('input');
+    returnToInput.type = 'hidden';
+    returnToInput.name = 'return_to_turma_id';
+    returnToInput.value = window.flaskData.turmaId;
+    form.appendChild(returnToInput);
+
+    document.body.appendChild(form);
+    form.submit();
+    closeDeleteStudantModal();
+}
+
+let pendingEditStudant = null;
+
+function openEditStudantModal(aluno) {
+    if (!aluno || aluno.id == null) return;
+    pendingEditStudant = aluno;
+
+    const form = document.getElementById('edit-studant-form');
+    form.action = '/edit_studant/' + encodeURIComponent(aluno.id);
+
+    document.getElementById('edit_studant_name').value = aluno.nome || '';
+
+    const turmaOriginalId = aluno.turmaId != null ? String(aluno.turmaId) : '';
+    document.getElementById('edit-studant-turma-original').value = turmaOriginalId;
+
+    const select = document.getElementById('edit_studant_turma');
+    select.innerHTML = '';
+    (window.flaskData.todasTurmas || []).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = String(t.id);
+        opt.textContent = t.nome;
+        if (turmaOriginalId && String(t.id) === turmaOriginalId) {
+            opt.selected = true;
+        }
+        select.appendChild(opt);
+    });
+
+    const pdfInput = document.getElementById('edit_studant_pdf');
+    if (pdfInput) pdfInput.value = '';
+    const pdfLabel = document.getElementById('edit_studant_pdf_filename');
+    if (pdfLabel) pdfLabel.textContent = '';
+
+    const modal = document.getElementById('edit-studant-modal');
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
+
+function closeEditStudantModal() {
+    pendingEditStudant = null;
+    const modal = document.getElementById('edit-studant-modal');
+    modal.classList.remove('active');
+    modal.style.display = 'none';
+}
+
+function handleEditStudantPdfSelect() {
+    const input = document.getElementById('edit_studant_pdf');
+    const label = document.getElementById('edit_studant_pdf_filename');
+    if (!input || !label) return;
+    label.textContent = (input.files && input.files.length) ? input.files[0].name : '';
+}
+
+function submitEditStudantForm(event) {
+    const select = document.getElementById('edit_studant_turma');
+    const originalId = document.getElementById('edit-studant-turma-original').value;
+
+    if (select && originalId && select.value !== originalId) {
+        const novoNome = select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : 'a turma selecionada';
+        const nomeAluno = (pendingEditStudant && pendingEditStudant.nome) ? pendingEditStudant.nome : 'este aluno';
+        const ok = confirm(`Tem certeza que deseja mover ${nomeAluno} para a turma "${novoNome}"? Os horários do aluno serão transferidos e ele sairá dos grupos formados na turma atual.`);
+        if (!ok) {
+            event.preventDefault();
+            return false;
+        }
+    }
+    return true;
 }
