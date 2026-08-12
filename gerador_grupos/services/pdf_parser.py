@@ -83,19 +83,41 @@ def extrair_grade_de_df(df: pd.DataFrame, aluno: str, matricula: Optional[str] =
             resultados.append({"aluno": aluno, "matricula": matricula, "dia": dia, "horario": horario, "materia": materia})
     return pd.DataFrame(resultados) if resultados else None
 
+def _eh_tcc_matriculado(text: str) -> bool:
+    if not text:
+        return False
+    upper = text.upper()
+    return "TCC" in upper and "MATRICULADO" in upper
+
+#placeholder para permitir alunos sem grade no banco de dados
+def _df_aluno_sem_grade(aluno_key: str, matricula_val: Optional[str]) -> pd.DataFrame:
+    return pd.DataFrame([{
+        "aluno": aluno_key,
+        "matricula": matricula_val,
+        "dia": "Seg",
+        "horario": "00:00 - 00:00",
+        "materia": "---",
+    }])
+
 def _processar_single_pdf(caminho_pdf: str):
     """
     Tenta processar um único PDF primeiro via pypdf e depois via tabula (fallback).
+    Se não houver grade mas o PDF tiver TCC + MATRICULADO, cadastra o aluno sem horários.
     Retorna (df_resultado, aluno_key) se obtiver dados, ou (None, aluno_key/filename).
     """
     filename = os.path.basename(caminho_pdf)
     clean_filename = re.sub(r'^\d+_', '', filename)
     aluno_key = _limpar_nome_aluno(clean_filename).replace(" ", "_")
+    text = ""
+    matricula_val = None
+
+    print(clean_filename)
 
     # 1. Tentar processar via pypdf (rápido e puro Python)
     try:
         import pypdf
         reader = pypdf.PdfReader(caminho_pdf)
+
         text = ""
         for page in reader.pages:
             text += page.extract_text() + "\n"
@@ -109,11 +131,9 @@ def _processar_single_pdf(caminho_pdf: str):
             nome_extraido = _limpar_nome_aluno(raw_name)
             if nome_extraido:
                 aluno_key = nome_extraido.replace(" ", "_")
-                print(f"   👤 [PDF Text] Nome do Aluno extraído: {nome_extraido}")
         else:
             nome_extraido = _limpar_nome_aluno(clean_filename)
             aluno_key = nome_extraido.replace(" ", "_")
-            print(f"   ⚠️ [PDF Text] Campo 'Nome:' não encontrado via regex. Usando nome do arquivo limpo: {nome_extraido}")
 
         match_matricula = re.search(r"Matr[ií]cula:\s*(\d+)", text, re.IGNORECASE)
         matricula_val = match_matricula.group(1) if match_matricula else None
@@ -182,18 +202,17 @@ def _processar_single_pdf(caminho_pdf: str):
 
     # 2. Fallback para tabula caso pypdf não consiga extrair a grade
     try:
-        matricula_val = None
-        try:
-            import pypdf
-            reader = pypdf.PdfReader(caminho_pdf)
-            text = ""
-            for page in reader.pages:
-                text += page.extract_text() + "\n"
-            match_matricula = re.search(r"Matr[ií]cula:\s*(\d+)", text, re.IGNORECASE)
-            if match_matricula:
-                matricula_val = match_matricula.group(1)
-        except Exception:
-            pass
+        if not text:
+            try:
+                import pypdf
+                reader = pypdf.PdfReader(caminho_pdf)
+                for page in reader.pages:
+                    text += page.extract_text() + "\n"
+                match_matricula = re.search(r"Matr[ií]cula:\s*(\d+)", text, re.IGNORECASE)
+                if match_matricula:
+                    matricula_val = match_matricula.group(1)
+            except Exception:
+                pass
 
         tabelas_brutas = tabula.read_pdf(caminho_pdf, pages="all", multiple_tables=True, lattice=True)
         if tabelas_brutas:
@@ -211,7 +230,11 @@ def _processar_single_pdf(caminho_pdf: str):
     except Exception as e:
         print(f"Erro tabula fallback para {filename}: {e}")
 
-    return None, filename
+    #Matriculado no tcc (Não tem grade)
+    if _eh_tcc_matriculado(text):
+        return _df_aluno_sem_grade(aluno_key, matricula_val), aluno_key
+
+    return None, aluno_key
 
 def processar_pdfs_para_dataframe(pdf_paths: List[str]):
     if not pdf_paths:
@@ -227,14 +250,9 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]):
     falha_arquivos = []
     seen_students = set()
 
-    print(f"\n==========================================")
-    print(f"🚀 INICIANDO PROCESSAMENTO DE {len(pdf_paths)} ARQUIVOS PDF")
-    print(f"==========================================")
-
     for idx, caminho_pdf in enumerate(pdf_paths, start=1):
         raw_filename = os.path.basename(caminho_pdf)
         clean_filename = re.sub(r'^\d+_', '', raw_filename)
-        print(f"\n[{idx}/{len(pdf_paths)}] 📄 Arquivo: {clean_filename}")
 
         df_single, identificador = _processar_single_pdf(caminho_pdf)
         if df_single is not None and not df_single.empty:
@@ -243,7 +261,6 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]):
             nome_lower = nome_limpo.lower()
 
             if nome_lower in seen_students:
-                print(f"   ℹ️ ALUNO DUPLICADO: '{nome_limpo}' já foi processado neste lote.")
                 falha_arquivos.append({
                     "file": clean_filename,
                     "type": "duplicado",
@@ -252,21 +269,12 @@ def processar_pdfs_para_dataframe(pdf_paths: List[str]):
             else:
                 seen_students.add(nome_lower)
                 sucesso_alunos.append(nome_limpo)
-                print(f"   ✅ ALUNO CADASTRADO COM SUCESSO: '{nome_limpo}'")
         else:
-            print(f"   🔴 FALHA DE LEITURA: Não foi possível extrair horários de '{clean_filename}'")
             falha_arquivos.append({
                 "file": clean_filename,
                 "type": "leitura",
                 "aluno": None
             })
-
-    print(f"\n==========================================")
-    print(f"📊 RESUMO DO PROCESSAMENTO NO TERMINAL:")
-    print(f" - Total de PDFs enviados: {len(pdf_paths)}")
-    print(f" - Alunos únicos cadastrados: {len(sucesso_alunos)}")
-    print(f" - PDFs não processados: {len(falha_arquivos)}")
-    print(f"==========================================\n")
 
     process_info = {
         "sucesso_alunos": sucesso_alunos,
