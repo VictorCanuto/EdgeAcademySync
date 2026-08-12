@@ -239,7 +239,18 @@
                                             </button>
                                         </form>
                                         {% endif %}
-                
+
+                                        {% if is_superadmin and u.is_admin and not u.is_superadmin %}
+                                        <form action="{{ url_for('manage_users') }}" method="POST">
+                                            <input type="hidden" name="action" value="demote_admin">
+                                            <input type="hidden" name="user_id" value="{{ u.id }}">
+                                            <button type="submit" class="user-actions-item"
+                                                onclick="return confirm('Remover privilégios de administrador de {{ u.username }}?');">
+                                                Remover admin
+                                            </button>
+                                        </form>
+                                        {% endif %}
+
                                         {% if is_superadmin %}
                                         <form action="{{ url_for('manage_users') }}" method="POST">
                                             <input type="hidden" name="action" value="delete_user">

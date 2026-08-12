@@ -1415,6 +1415,37 @@ def manage_users():
             flash(f'"{target.username}" agora é administrador.', 'success')
             return redirect(url_for('manage_users'))
 
+        if action == 'demote_admin':
+            if not user.is_superadmin:
+                return negar_acesso_admin()
+
+            target_id = request.form.get('user_id')
+            if not target_id:
+                flash('Usuário inválido.', 'error')
+                return redirect(url_for('manage_users'))
+
+            target = User.query.filter_by(id=int(target_id)).first()
+            if not target:
+                flash('Usuário não encontrado.', 'error')
+                return redirect(url_for('manage_users'))
+
+            if target.id == user.id:
+                flash('Você não pode remover sua própria permissão de administrador.', 'error')
+                return redirect(url_for('manage_users'))
+
+            if target.is_superadmin:
+                flash('Não é possível remover o papel de um superadmin por aqui.', 'error')
+                return redirect(url_for('manage_users'))
+
+            if not target.is_admin:
+                flash(f'"{target.username}" não é administrador.', 'error')
+                return redirect(url_for('manage_users'))
+
+            target.role = 'USER'
+            db.session.commit()
+            flash(f'"{target.username}" não é mais administrador.', 'success')
+            return redirect(url_for('manage_users'))
+
         if action == 'delete_user':
             # Somente superadmins podem deletar usuários (admins comuns não podem)
             if not user.is_superadmin:
