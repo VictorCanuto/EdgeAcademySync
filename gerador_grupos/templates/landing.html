@@ -115,46 +115,42 @@
             color: var(--text-muted);
         }
 
-        .turma-delete-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: transparent;
+        .action-bttn{
             border: none;
+            background: none;
             color: var(--text-muted);
             cursor: pointer;
             padding: 5px;
             border-radius: 8px;
             transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
-        .turma-delete-btn:hover {
+        .action-bttn-delete:hover{
             color: var(--color-danger);
             background: rgba(239, 68, 68, 0.1);
         }
 
-        .turma-edit-btn {
-            position: absolute;
-            top: 20px;
-            right: 52px;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 8px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .turma-edit-btn:hover {
+        .action-bttn-edit:hover{
             color: var(--color-primary);
             background: rgba(79, 70, 229, 0.1);
+        }
+
+        
+        .studant-action-bttm{
+            cursor: pointer;
+            padding: 5px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .studant-action-bttm:hover{
+            background-color: var(--border-color);
+            border-radius: 10px;
+        }
+
+        .edit-icon{
+            color: var(--text-secondary);
         }
 
         .add-turma-card {
@@ -296,22 +292,6 @@
             opacity: 1;
         }
 
-        .studant-action-bttm{
-            cursor: pointer;
-            padding: 5px;
-            background: none;
-            border: none;
-            font-size: 1rem;
-        }
-
-        .studant-action-bttm:hover{
-            background-color: var(--border-color);
-            border-radius: 10px;
-        }
-
-        .edit-icon{
-            color: var(--text-secondary);
-        }
     </style>
 </head>
 
@@ -519,35 +499,40 @@
                 {% for t in turmas %}
                 <a href="{{ url_for('view_turma', turma_id=t.id) }}" class="glass-panel turma-card"
                     data-turma-id="{{ t.id }}" data-em-imersao="{{ 'true' if t.em_imersao else 'false' }}">
-                    <div class="turma-card-header">
-                        <h3>{{ t.nome }}</h3>
-                        {% if t.em_imersao %}
-                        <span class="imersao-badge">Em imersão</span>
+                    <div style="display: flex; justify-content: space-between;">
+                        <div class="turma-card-header">
+                            <h3>{{ t.nome }}</h3>
+                            {% if t.em_imersao %}
+                            <span class="imersao-badge">Em imersão</span>
+                            {% endif %}
+                        </div>
+
+
+                        {% if is_admin %}
+                        <div class="action-container" style="display: flex;">
+                            <button class="action-bttn action-bttn-edit" onclick="openEditModal(event, {{ t.id }}, '{{ t.nome|escape }}')"
+                                title="Editar Nome da Turma">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+
+                            <button class="action-bttn action-bttn-delete" onclick="confirmDelete(event, {{ t.id }}, '{{ t.nome }}')"
+                                title="Excluir Turma">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
                         {% endif %}
                     </div>
 
-                    {% if is_admin %}
-                    <button class="turma-edit-btn" onclick="openEditModal(event, {{ t.id }}, '{{ t.nome|escape }}')"
-                        title="Editar Nome da Turma">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                        </svg>
-                    </button>
-                    {% endif %}
 
-                    {% if is_admin %}
-                    <button class="turma-delete-btn" onclick="confirmDelete(event, {{ t.id }}, '{{ t.nome }}')"
-                        title="Excluir Turma">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                            </path>
-                        </svg>
-                    </button>
-                    {% endif %}
 
                     <div class="turma-card-meta">
                         {% if t.alunos_count > 0 %}
@@ -1375,22 +1360,29 @@
 
                         <div style="display: flex;">
                             {%if is_admin %}
-                                ${aluno.id != null ? `<button
-                                    type="button"
-                                    class="studant-action-bttm edit-icon"
-                                    onclick='openEditStudantModal(${JSON.stringify({ id: aluno.id, nome: alunoNome, turmaId: allStudentsData.studentTurmaIdMap[alunoNome] != null ? allStudentsData.studentTurmaIdMap[alunoNome] : null })})'>
-                                    <i class="fa-regular fa-pen-to-square"></i>
+                                ${aluno.id != null ? 
+                                 `<button class="action-bttn action-bttn-edit" onclick='openEditStudantModal(${JSON.stringify({ id: aluno.id, nome: alunoNome, turmaId: allStudentsData.studentTurmaIdMap[alunoNome] != null ? allStudentsData.studentTurmaIdMap[alunoNome] : null })})'
+                                    title="Editar Aluno">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
                                 </button>` : ''}
-                                ${aluno.id != null ? `<button
-                                    type="button"
-                                    class="studant-action-bttm"
-                                    onclick='openDeleteStudantModal(${JSON.stringify({ id: aluno.id, nome: alunoNome })})'>
-                                    <i class="fa-regular fa-trash-can" style="color: var(--color-danger);"></i>
+
+                                ${aluno.id != null ? 
+                                `<button class="action-bttn action-bttn-delete"
+                                    onclick='openDeleteStudantModal(${JSON.stringify({ id: aluno.id, nome: alunoNome })})'
+                                    title="Excluir Aluno">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                        </path>
+                                    </svg>
                                 </button>` : ''}
                             {% endif %}
                         </div>   
-
-
                 </div>
                 `;
                 tr.appendChild(tdName);
