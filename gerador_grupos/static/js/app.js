@@ -1396,6 +1396,228 @@ function closeUnprocessedPDFsModal() {
         modal.classList.remove('active');
         modal.style.display = 'none';
     }
+    if (typeof window.onUnprocessedModalClose === 'function') {
+        const cb = window.onUnprocessedModalClose;
+        window.onUnprocessedModalClose = null;
+        cb();
+    }
+}
+
+// ==========================================================================
+// GESTÃO DO MODAL "ADD ALUNO" NA PÁGINA DA TURMA ESPECÍFICA (WORKSPACE)
+// ==========================================================================
+let turmaAddAlunoFilesList = [];
+let pendingTurmaAddAlunoFormData = null;
+
+/**
+ * Abre o modal "Adicionar Alunos" para a turma aberta no momento.
+ */
+function openTurmaAddAlunoModal() {
+    turmaAddAlunoFilesList = [];
+    renderTurmaAddAlunoFilesList();
+    const modal = document.getElementById('turma-add-aluno-modal-overlay');
+    if (modal) {
+        modal.classList.add('active');
+        modal.style.display = 'flex';
+    }
+}
+
+/**
+ * Fecha o modal "Adicionar Alunos" da turma e reseta os arquivos selecionados.
+ */
+function closeTurmaAddAlunoModal() {
+    const modal = document.getElementById('turma-add-aluno-modal-overlay');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+    turmaAddAlunoFilesList = [];
+    const input = document.getElementById('turma-pdf-files-input');
+    if (input) input.value = '';
+}
+
+/**
+ * Trata a seleção de múltiplos PDFs pelo input de arquivo.
+ * @param {Event} event Evento change do input file.
+ */
+function handleTurmaAddAlunoFilesSelect(event) {
+    const files = Array.from(event.target.files);
+    if (!files || files.length === 0) return;
+
+    files.forEach(f => {
+        if (f.name.endsWith('.pdf')) {
+            turmaAddAlunoFilesList.push(f);
+        }
+    });
+
+    event.target.value = '';
+    renderTurmaAddAlunoFilesList();
+}
+
+/**
+ * Remove um arquivo anexado da lista pelo seu índice.
+ * @param {number} index Índice do arquivo no array turmaAddAlunoFilesList.
+ */
+function removeTurmaAddAlunoFile(index) {
+    turmaAddAlunoFilesList.splice(index, 1);
+    renderTurmaAddAlunoFilesList();
+}
+
+/**
+ * Renderiza dinamicamente a lista de arquivos selecionados no modal da turma.
+ */
+function renderTurmaAddAlunoFilesList() {
+    const container = document.getElementById('turma-pdf-files-list');
+    const badge = document.getElementById('turma-pdf-count-badge');
+    if (!container) return;
+
+    if (badge) {
+        badge.innerText = `${turmaAddAlunoFilesList.length} arquivo(s)`;
+        badge.style.background = turmaAddAlunoFilesList.length > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(0,0,0,0.04)';
+        badge.style.color = turmaAddAlunoFilesList.length > 0 ? 'var(--color-success)' : 'var(--text-muted)';
+    }
+
+    if (turmaAddAlunoFilesList.length === 0) {
+        container.innerHTML = `
+            <div style="font-size: 0.84rem; color: var(--text-muted); font-style: italic; text-align: center; padding: 16px 0; background: rgba(0,0,0,0.02); border: 1px dashed var(--border-color); border-radius: 8px;">
+                Nenhum arquivo PDF selecionado. Clique no botão acima para adicionar.
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    turmaAddAlunoFilesList.forEach((file, idx) => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem;';
+        item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 85%;">
+                <span style="color: #EF4444;">📄</span>
+                <span style="font-weight: 600; color: var(--text-main);">${file.name}</span>
+                <span style="color: var(--text-muted); font-size: 0.75rem;">(${(file.size / 1024).toFixed(1)} KB)</span>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="removeTurmaAddAlunoFile(${idx})" style="padding: 4px 8px; color: #EF4444; border-color: rgba(239,68,68,0.3); font-size: 0.8rem;" title="Remover PDF">&times;</button>
+        `;
+        container.appendChild(item);
+    });
+}
+
+/**
+ * Submete os PDFs da turma via AJAX POST /turma/<turma_id>/add_alunos.
+ * @param {Event|null} event Evento de envio do formulário.
+ * @param {boolean} forceConfirm Se true, envia confirm_update=true.
+ */
+async function submitTurmaAddAlunos(event, forceConfirm = false) {
+    if (event) event.preventDefault();
+
+    const turmaId = window.flaskData ? window.flaskData.turmaId : null;
+    if (!turmaId) {
+        showToast('Erro', 'Identificador da turma não encontrado.', 'danger');
+        return;
+    }
+
+    let formData;
+    if (forceConfirm && pendingTurmaAddAlunoFormData) {
+        formData = pendingTurmaAddAlunoFormData;
+        formData.set('confirm_update', 'true');
+    } else {
+        if (turmaAddAlunoFilesList.length === 0) {
+            showToast('Aviso', 'Selecione ao menos um arquivo PDF antes de enviar.', 'warning');
+            return;
+        }
+
+        formData = new FormData();
+        turmaAddAlunoFilesList.forEach(file => {
+            formData.append('pdf_files', file);
+        });
+    }
+
+    const btnSave = document.getElementById('btn-save-turma-add-aluno');
+    if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.innerText = 'Processando...';
+    }
+
+    try {
+        const response = await fetch(`/turma/${turmaId}/add_alunos`, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        const data = await response.json();
+
+        if (data.requires_confirmation) {
+            pendingTurmaAddAlunoFormData = formData;
+            openTurmaConfirmStudentUpdateModal(data);
+        } else if (data.success) {
+            closeTurmaAddAlunoModal();
+            closeTurmaConfirmStudentUpdateModal();
+
+            if (data.unprocessed_data && data.unprocessed_data.nao_processados_count > 0) {
+                showToast('Aviso', 'Alguns PDFs não foram processados. Veja os detalhes.', 'warning');
+                openUnprocessedPDFsModal(data.unprocessed_data);
+                window.onUnprocessedModalClose = () => window.location.reload();
+            } else {
+                showToast('Sucesso', data.message || 'Aluno(s) adicionado(s) com sucesso!', 'success');
+                setTimeout(() => window.location.reload(), 1200);
+            }
+        } else {
+            showToast('Erro', data.error || 'Falha ao cadastrar alunos.', 'danger');
+        }
+    } catch (err) {
+        console.error("Erro ao enviar PDFs para a turma:", err);
+        showToast('Erro', 'Falha na comunicação com o servidor.', 'danger');
+    } finally {
+        if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.innerText = 'Confirmar e Enviar PDFs';
+        }
+    }
+}
+
+/**
+ * Abre o modal de confirmação de alunos pré-existentes na turma.
+ * @param {Object} data Resposta JSON do servidor contendo existing_students.
+ */
+function openTurmaConfirmStudentUpdateModal(data) {
+    const modal = document.getElementById('turma-confirm-student-update-modal-overlay');
+    const msg = document.getElementById('turma-confirm-student-update-message');
+    const list = document.getElementById('turma-confirm-student-update-list');
+    if (!modal || !msg || !list) return;
+
+    const existing = data.existing_students || [];
+    msg.innerHTML = `Identificamos que <strong>${existing.length} aluno(s)</strong> já estão cadastrado(s) nesta turma:`;
+    
+    list.innerHTML = '';
+    existing.forEach(student => {
+        const item = document.createElement('div');
+        item.style.cssText = "display: flex; align-items: center; gap: 8px; color: #D97706; font-weight: 600; font-size: 0.85rem;";
+        item.innerHTML = `<span>👤</span> <span>${student}</span>`;
+        list.appendChild(item);
+    });
+
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
+
+/**
+ * Fecha o modal de confirmação de aluno existente.
+ */
+function closeTurmaConfirmStudentUpdateModal() {
+    const modal = document.getElementById('turma-confirm-student-update-modal-overlay');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+    pendingTurmaAddAlunoFormData = null;
+}
+
+/**
+ * Prossegue com o envio após confirmação explícita do usuário de atualizar os horários do aluno.
+ */
+function proceedTurmaStudentUpdateConfirmation() {
+    submitTurmaAddAlunos(null, true);
 }
 
 function displayFlaskFlashMessages() {
