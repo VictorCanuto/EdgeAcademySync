@@ -648,6 +648,17 @@
                                 ⬇️ Exportar Dados
                             </button>
                         </div>
+
+                        <!-- Botão Add Aluno (Admin/Superadmin) -->
+                        {% if is_admin %}
+                        <div>
+                            <button class="btn btn-primary" id="btn-add-aluno"
+                                style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box; background: var(--color-primary);"
+                                onclick="openAddAlunoModal()">
+                                ➕ Add Aluno
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
 
                     <!-- Status do Filtro -->
@@ -941,6 +952,117 @@
                         CSV
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add Aluno (Multi-Turmas) -->
+    <div class="modal-overlay" id="add-aluno-modal-overlay">
+        <!-- BLOCO 1: Contêiner do Modal Card com altura máxima (90vh) e layout flex flex-col para manter o rodapé fixo -->
+        <div class="glass-panel modal-card" style="max-width: 650px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; padding: 24px; position: relative;">
+            <!-- Cabeçalho -->
+            <div class="modal-header" style="margin-bottom: 6px; display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0;">
+                <div>
+                    <h3 style="font-weight: 700; color: var(--text-main); margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px; font-size: 1.25rem;">
+                        ➕ Adicionar Alunos
+                    </h3>
+                    <p style="margin: 0; font-size: 0.88rem; color: var(--text-muted); font-weight: 500;">
+                        Selecione a turma que deseja adicionar um ou mais alunos
+                    </p>
+                </div>
+                <button onclick="closeAddAlunoModal()" style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+            </div>
+
+            <!-- Botão de Ação: Nova Turma -->
+            <div style="margin-bottom: 12px; display: flex; justify-content: flex-end; flex-shrink: 0;">
+                <button type="button" class="btn btn-secondary" onclick="openCreateBlankTurmaModal()" style="padding: 8px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; border: 1px dashed var(--color-primary); color: var(--color-primary); background: transparent;">
+                    ➕ Nova Turma
+                </button>
+            </div>
+            
+            <form id="add-aluno-form" onsubmit="submitMultiTurmaAddAlunos(event)" enctype="multipart/form-data" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <!-- BLOCO 2: Corpo rolável do formulário -->
+                <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px; flex: 1; overflow: hidden;">
+                    <!-- Lista de Turmas Disponíveis (Cards Expansíveis com barra de rolagem geral se necessário) -->
+                    <div id="add-aluno-turmas-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 52vh; overflow-y: auto; padding-right: 6px;">
+                        <!-- Injetado via JS dinamicamente com todas as turmas -->
+                    </div>
+                </div>
+
+                <!-- BLOCO 3: Rodapé fixo na parte inferior do modal -->
+                <div class="modal-footer" style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0; padding-top: 10px; border-top: 1px solid var(--border-color);">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddAlunoModal()" style="padding: 10px 18px; font-weight: 600; font-size: 0.9rem;">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-add-aluno" style="padding: 10px 22px; font-weight: 700; font-size: 0.9rem;">
+                        Confirmar e Enviar Todos os PDFs
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Sub-Criar Nova Turma -->
+    <div class="modal-overlay" id="create-blank-turma-modal-overlay">
+        <div class="glass-panel modal-card" style="max-width: 440px; width: 100%; padding: 24px; position: relative;">
+            <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-weight: 700; color: var(--text-main); margin: 0; font-size: 1.1rem;">
+                    ➕ Cadastrar Nova Turma
+                </h3>
+                <button onclick="closeCreateBlankTurmaModal()" style="background: none; border: none; font-size: 1.8rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+            </div>
+            <form id="create-blank-turma-form" onsubmit="handleCreateBlankTurmaSubmit(event)">
+                <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label for="blank-turma-nome" class="form-label" style="font-size: 0.88rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px; display: block;">
+                            Nome da Turma
+                        </label>
+                        <input type="text" id="blank-turma-nome" name="turma_nome" class="form-input" placeholder="Ex: Turma Engenharia 2026-B" required autocomplete="off" style="width: 100%; box-sizing: border-box; padding: 10px 14px; font-size: 0.9rem;">
+                    </div>
+
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" name="em_imersao" id="blank-em-imersao" value="true" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-primary);">
+                        <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-main);">Em imersão</span>
+                    </label>
+                </div>
+                <div class="modal-footer" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateBlankTurmaModal()" style="padding: 8px 16px; font-size: 0.85rem; font-weight: 600;">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-blank-turma" style="padding: 8px 20px; font-size: 0.85rem; font-weight: 700;">
+                        Criar Turma
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação de Atualização de Aluno Existente -->
+    <div class="modal-overlay" id="confirm-student-update-modal-overlay">
+        <div class="glass-panel modal-card" style="max-width: 500px; width: 100%; padding: 24px; position: relative;">
+            <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-weight: 700; color: #D97706; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.15rem;">
+                    ⚠️ Aluno(s) Já Existente(s)
+                </h3>
+                <button onclick="closeConfirmStudentUpdateModal()" style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="color: var(--text-main); font-size: 0.9rem; line-height: 1.5;">
+                <p id="confirm-student-update-message" style="margin-bottom: 14px; font-weight: 500;"></p>
+                <div id="confirm-student-update-list" style="max-height: 150px; overflow-y: auto; background: rgba(0, 0, 0, 0.04); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                    Deseja atualizar a grade de horários deste(s) aluno(s) com as informações do novo PDF? (Nenhum aluno duplicado será criado).
+                </p>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeConfirmStudentUpdateModal()" style="padding: 10px 16px; font-weight: 600; font-size: 0.88rem;">
+                    Cancelar
+                </button>
+                <button class="btn btn-primary" onclick="proceedStudentUpdateConfirmation()" style="padding: 10px 20px; font-weight: 700; font-size: 0.88rem; background: #D97706; border-color: #D97706;">
+                    Sim, Atualizar Horário
+                </button>
             </div>
         </div>
     </div>
@@ -1944,6 +2066,347 @@
             document.getElementById('edit-turma-modal').classList.remove('active');
         }
 
+        // --- GESTÃO MULTI-TURMAS DO MODAL "ADICIONAR ALUNOS" ---
+        let globalTurmasData = {{ turmas | tojson | safe }}; // Cache local de turmas
+        let multiTurmaFilesMap = {};                         // Mapeamento em memória: turmaId -> Array<File>
+        let pendingMultiTurmaFormData = null;                // Guarda FormData durante confirmação de duplicatas
+
+        /**
+         * Abre o modal principal "Adicionar Alunos" e inicializa a lista de cards de turmas.
+         */
+        function openAddAlunoModal() {
+            renderMultiTurmasList();
+            const modal = document.getElementById('add-aluno-modal-overlay');
+            if (modal) {
+                modal.classList.add('active');
+                modal.style.display = 'flex';
+            }
+        }
+
+        /**
+         * Fecha o modal principal e reseta o mapa de arquivos anexados.
+         */
+        function closeAddAlunoModal() {
+            const modal = document.getElementById('add-aluno-modal-overlay');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+            multiTurmaFilesMap = {};
+        }
+
+        /**
+         * Abre o sub-modal para criação de uma Nova Turma.
+         */
+        function openCreateBlankTurmaModal() {
+            document.getElementById('create-blank-turma-form').reset();
+            const modal = document.getElementById('create-blank-turma-modal-overlay');
+            if (modal) {
+                modal.classList.add('active');
+                modal.style.display = 'flex';
+                document.getElementById('blank-turma-nome').focus();
+            }
+        }
+
+        /**
+         * Fecha o sub-modal de criação de Nova Turma.
+         */
+        function closeCreateBlankTurmaModal() {
+            const modal = document.getElementById('create-blank-turma-modal-overlay');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+        }
+
+        /**
+         * Trata o envio do formulário de criação de Nova Turma via AJAX.
+         * Ao obter sucesso, injeta a turma no array global e atualiza a interface sem reload.
+         */
+        async function handleCreateBlankTurmaSubmit(event) {
+            event.preventDefault();
+            const form = document.getElementById('create-blank-turma-form');
+            const btnSave = document.getElementById('btn-save-blank-turma');
+            if (!form || !btnSave) return;
+
+            btnSave.disabled = true;
+            btnSave.innerText = 'Criando...';
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/create_blank_turma', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const data = await response.json();
+                if (data.success && data.turma) {
+                    if (!globalTurmasData.some(t => t.id === data.turma.id)) {
+                        globalTurmasData.push(data.turma);
+                    }
+                    closeCreateBlankTurmaModal();
+                    renderMultiTurmasList(data.turma.id); // Re-renderiza e abre o card da nova turma
+                    showToast('Sucesso', `Turma "${data.turma.nome}" criada com sucesso!`, 'success');
+                } else {
+                    showToast('Erro', data.error || 'Falha ao criar nova turma.', 'danger');
+                }
+            } catch (err) {
+                console.error("Erro ao criar nova turma:", err);
+                showToast('Erro', 'Falha na comunicação com o servidor.', 'danger');
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerText = 'Criar Turma';
+            }
+        }
+
+        /**
+         * Renderiza a lista de cards interativos expansíveis para cada turma cadastrada.
+         * @param {number|null} autoExpandTurmaId ID da turma que deve vir expandida por padrão.
+         */
+        function renderMultiTurmasList(autoExpandTurmaId = null) {
+            const container = document.getElementById('add-aluno-turmas-list');
+            if (!container) return;
+
+            if (!globalTurmasData || globalTurmasData.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+                        Nenhuma turma cadastrada. Clique no botão "➕ Nova Turma" acima para começar!
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            globalTurmasData.forEach(turma => {
+                const attachedFiles = multiTurmaFilesMap[turma.id] || [];
+                const isExpanded = autoExpandTurmaId && (turma.id === autoExpandTurmaId);
+
+                const card = document.createElement('div');
+                card.className = 'multi-turma-card';
+                card.id = `turma-card-${turma.id}`;
+                card.style.cssText = 'background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; transition: all 0.2s ease;';
+
+                const badgeColor = attachedFiles.length > 0 ? 'var(--color-success)' : 'var(--text-muted)';
+                const badgeBg = attachedFiles.length > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(0,0,0,0.04)';
+
+                card.innerHTML = `
+                    <div class="multi-turma-header" onclick="toggleTurmaCardAccordion(${turma.id})" style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; background: rgba(0,0,0,0.01);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.1rem;">📁</span>
+                            <span style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">${turma.nome}</span>
+                            ${turma.em_imersao ? '<span class="meta-badge" style="font-size: 0.72rem; padding: 2px 8px; background: rgba(139,92,246,0.12); color: #8B5CF6;">Imersão</span>' : ''}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span id="turma-files-count-${turma.id}" style="font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: ${badgeBg}; color: ${badgeColor};">
+                                ${attachedFiles.length} arquivo(s)
+                            </span>
+                            <span id="turma-card-icon-${turma.id}" style="font-size: 0.8rem; color: var(--text-muted); transition: transform 0.2s ease;">
+                                ${isExpanded ? '▲' : '▼'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="turma-card-body-${turma.id}" style="display: ${isExpanded ? 'block' : 'none'}; padding: 14px 16px; border-top: 1px solid var(--border-color); background: var(--bg-card, #ffffff);">
+                        <!-- Lista de PDFs da turma com barra de rolagem dedicada se houver muitos arquivos -->
+                        <div id="turma-files-list-${turma.id}" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; max-height: 220px; overflow-y: auto; padding-right: 6px;">
+                            <!-- Lista de PDFs da turma -->
+                        </div>
+
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <label class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.82rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: 1px dashed var(--color-primary); color: var(--color-primary); margin: 0;">
+                                📄 Inserir PDF(s) para ${turma.nome}
+                                <input type="file" accept=".pdf" multiple onchange="handleTurmaFilesSelect(event, ${turma.id})" style="display: none;">
+                            </label>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+                renderTurmaFilesList(turma.id);
+            });
+        }
+
+        function toggleTurmaCardAccordion(turmaId) {
+            const body = document.getElementById(`turma-card-body-${turmaId}`);
+            const icon = document.getElementById(`turma-card-icon-${turmaId}`);
+            if (!body || !icon) return;
+
+            const isHidden = body.style.display === 'none';
+            body.style.display = isHidden ? 'block' : 'none';
+            icon.innerText = isHidden ? '▲' : '▼';
+        }
+
+        function handleTurmaFilesSelect(event, turmaId) {
+            const files = Array.from(event.target.files);
+            if (!files || files.length === 0) return;
+
+            if (!multiTurmaFilesMap[turmaId]) {
+                multiTurmaFilesMap[turmaId] = [];
+            }
+
+            files.forEach(file => {
+                if (file.name.endsWith('.pdf')) {
+                    multiTurmaFilesMap[turmaId].push(file);
+                }
+            });
+
+            event.target.value = '';
+            updateTurmaCardUI(turmaId);
+        }
+
+        function removeTurmaFile(turmaId, index) {
+            if (multiTurmaFilesMap[turmaId]) {
+                multiTurmaFilesMap[turmaId].splice(index, 1);
+                updateTurmaCardUI(turmaId);
+            }
+        }
+
+        function updateTurmaCardUI(turmaId) {
+            const files = multiTurmaFilesMap[turmaId] || [];
+            const countBadge = document.getElementById(`turma-files-count-${turmaId}`);
+            if (countBadge) {
+                countBadge.innerText = `${files.length} arquivo(s)`;
+                countBadge.style.background = files.length > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(0,0,0,0.04)';
+                countBadge.style.color = files.length > 0 ? 'var(--color-success)' : 'var(--text-muted)';
+            }
+            renderTurmaFilesList(turmaId);
+        }
+
+        function renderTurmaFilesList(turmaId) {
+            const container = document.getElementById(`turma-files-list-${turmaId}`);
+            if (!container) return;
+
+            const files = multiTurmaFilesMap[turmaId] || [];
+            if (files.length === 0) {
+                container.innerHTML = `
+                    <div style="font-size: 0.82rem; color: var(--text-muted); font-style: italic; padding: 6px 0;">
+                        Nenhum arquivo PDF anexado para esta turma.
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            files.forEach((file, idx) => {
+                const item = document.createElement('div');
+                item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem;';
+                item.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 85%;">
+                        <span style="color: #EF4444;">📄</span>
+                        <span style="font-weight: 600; color: var(--text-main);">${file.name}</span>
+                        <span style="color: var(--text-muted); font-size: 0.75rem;">(${(file.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="removeTurmaFile(${turmaId}, ${idx})" style="padding: 4px 8px; color: #EF4444; border-color: rgba(239,68,68,0.3); font-size: 0.8rem;" title="Remover PDF">&times;</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function submitMultiTurmaAddAlunos(event, forceConfirm = false) {
+            if (event) event.preventDefault();
+
+            let totalFiles = 0;
+            const formData = new FormData();
+
+            if (forceConfirm && pendingMultiTurmaFormData) {
+                formData.set('confirm_update', 'true');
+            } else {
+                Object.keys(multiTurmaFilesMap).forEach(turmaId => {
+                    const files = multiTurmaFilesMap[turmaId] || [];
+                    files.forEach(file => {
+                        formData.append(`pdf_files_${turmaId}`, file);
+                        totalFiles++;
+                    });
+                });
+
+                if (totalFiles === 0) {
+                    showToast('Aviso', 'Anexe ao menos um arquivo PDF em uma das turmas antes de enviar.', 'warning');
+                    return;
+                }
+            }
+
+            const btnSave = document.getElementById('btn-save-add-aluno');
+            if (btnSave) {
+                btnSave.disabled = true;
+                btnSave.innerText = 'Processando...';
+            }
+
+            try {
+                const response = await fetch('/add_alunos_multi_turma_batch', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const data = await response.json();
+
+                if (data.requires_confirmation) {
+                    pendingMultiTurmaFormData = formData;
+                    openConfirmStudentUpdateModal(data);
+                } else if (data.success) {
+                    closeAddAlunoModal();
+                    closeConfirmStudentUpdateModal();
+
+                    if (data.unprocessed_data && data.unprocessed_data.nao_processados_count > 0) {
+                        showToast('Aviso', 'Alguns PDFs não foram processados. Veja os detalhes.', 'warning');
+                        openUnprocessedPDFsModal(data.unprocessed_data);
+                        window.onUnprocessedModalClose = () => window.location.reload();
+                    } else {
+                        showToast('Sucesso', data.message || 'Aluno(s) adicionado(s) com sucesso!', 'success');
+                        setTimeout(() => window.location.reload(), 1200);
+                    }
+                } else {
+                    showToast('Erro', data.error || 'Falha ao cadastrar alunos.', 'danger');
+                }
+            } catch (err) {
+                console.error("Erro no envio multi-turmas:", err);
+                showToast('Erro', 'Falha na comunicação com o servidor.', 'danger');
+            } finally {
+                if (btnSave) {
+                    btnSave.disabled = false;
+                    btnSave.innerText = 'Confirmar e Enviar Todos os PDFs';
+                }
+            }
+        }
+
+        function openConfirmStudentUpdateModal(data) {
+            const modal = document.getElementById('confirm-student-update-modal-overlay');
+            const msg = document.getElementById('confirm-student-update-message');
+            const list = document.getElementById('confirm-student-update-list');
+            if (!modal || !msg || !list) return;
+
+            const existing = data.existing_students || [];
+            msg.innerHTML = `Identificamos que <strong>${existing.length} aluno(s)</strong> já estão cadastrado(s) na(s) turma(s) selecionada(s):`;
+            
+            list.innerHTML = '';
+            existing.forEach(itemInfo => {
+                const item = document.createElement('div');
+                item.style.cssText = "display: flex; align-items: center; justify-content: space-between; color: #D97706; font-weight: 600; font-size: 0.85rem;";
+                const nomeAl = typeof itemInfo === 'object' ? itemInfo.aluno : itemInfo;
+                const turmaNm = typeof itemInfo === 'object' ? itemInfo.turma : '';
+                item.innerHTML = `<span>👤 ${nomeAl}</span> <span style="font-size: 0.75rem; color: var(--text-muted);">(${turmaNm})</span>`;
+                list.appendChild(item);
+            });
+
+            modal.classList.add('active');
+            modal.style.display = 'flex';
+        }
+
+        function closeConfirmStudentUpdateModal() {
+            const modal = document.getElementById('confirm-student-update-modal-overlay');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
+            pendingMultiTurmaFormData = null;
+        }
+
+        function proceedStudentUpdateConfirmation() {
+            submitMultiTurmaAddAlunos(null, true);
+        }
+
         function confirmDelete(event, id, nome) {
             event.preventDefault();
             event.stopPropagation();
@@ -2039,58 +2502,112 @@
             closeAllExportModal();
         }
 
+        /**
+         * Abre o modal de PDFs não processados, exibindo a contagem acumulada e a lista
+         * dos arquivos divididos e agrupados por Turma com badges indicando os motivos das falhas.
+         * @param {Object} data Objeto contendo { total_pdfs, num_alunos, nao_processados_count, falha_arquivos }.
+         */
         function openUnprocessedPDFsModal(data) {
             const modal = document.getElementById('unprocessed-pdfs-modal-overlay');
             const summary = document.getElementById('unprocessed-modal-summary');
             const list = document.getElementById('unprocessed-modal-files-list');
             if (!modal || !summary || !list) return;
 
+            // BLOCO 1: Extrair e calcular dados consolidados
             const falhas = data.falha_arquivos || [];
             const numAlunos = data.num_alunos || 0;
             const totalPDFs = data.total_pdfs || (numAlunos + falhas.length);
             const naoProcessadosCount = data.nao_processados_count || falhas.length;
-            const turmaNome = data.turma_nome || '';
+            const turmaNomeGeral = data.turma_nome || '';
 
+            // Formatação da frase do resumo
             if (numAlunos > 0) {
-                summary.innerHTML = `Dos <strong>${totalPDFs} arquivo(s) PDF</strong> enviados para a turma <strong>"${turmaNome}"</strong>, <strong>${numAlunos} aluno(s)</strong> foram cadastrados com sucesso. No entanto, <strong>${naoProcessadosCount} arquivo(s) PDF não foram processados</strong>:`;
+                const targetText = turmaNomeGeral ? ` para a turma <strong>"${turmaNomeGeral}"</strong>` : '';
+                summary.innerHTML = `Dos <strong>${totalPDFs} arquivo(s) PDF</strong> enviados${targetText}, <strong>${numAlunos} aluno(s)</strong> foram cadastrados com sucesso. No entanto, <strong>${naoProcessadosCount} arquivo(s) PDF não foram processados</strong>:`;
             } else {
-                summary.innerHTML = `Não foi possível processar <strong>${naoProcessadosCount} de ${totalPDFs} arquivo(s) PDF</strong> enviados para a turma <strong>"${turmaNome}"</strong>:`;
+                const targetText = turmaNomeGeral ? ` para a turma <strong>"${turmaNomeGeral}"</strong>` : '';
+                summary.innerHTML = `Não foi possível processar <strong>${naoProcessadosCount} de ${totalPDFs} arquivo(s) PDF</strong> enviados${targetText}:`;
             }
 
-            list.innerHTML = '';
+            // BLOCO 2: Agrupar arquivos com falhas pelo nome da Turma
+            const falhasPorTurma = {};
             falhas.forEach(item => {
-                const itemEl = document.createElement('div');
-                itemEl.style.cssText = "display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--border-color); font-size: 0.85rem;";
+                const turmaNome = (typeof item === 'object' && item.turma) ? item.turma : (turmaNomeGeral || 'Geral');
+                if (!falhasPorTurma[turmaNome]) {
+                    falhasPorTurma[turmaNome] = [];
+                }
+                falhasPorTurma[turmaNome].push(item);
+            });
 
-                let fileName = typeof item === 'string' ? item : item.file;
-                let type = typeof item === 'object' ? item.type : 'leitura';
-                let alunoNome = typeof item === 'object' ? item.aluno : null;
+            // BLOCO 3: Renderizar elementos visuais divididos por cada Turma
+            list.innerHTML = '';
+            Object.keys(falhasPorTurma).forEach(turmaNome => {
+                const turmaFalhas = falhasPorTurma[turmaNome];
+                
+                // Card de contêiner do grupo por turma
+                const turmaGroup = document.createElement('div');
+                turmaGroup.style.cssText = "margin-bottom: 14px; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px;";
 
-                let icon = type === 'duplicado' ? 'ℹ️' : '📄';
-                let color = type === 'duplicado' ? 'var(--text-main)' : '#DC2626';
-                let reasonBadge = type === 'duplicado'
-                    ? `<span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #2563EB; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Aluno Duplicado${alunoNome ? ': ' + alunoNome : ''}</span>`
-                    : `<span style="font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); color: #DC2626; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Erro de Leitura</span>`;
-
-                itemEl.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 8px; color: ${color}; font-weight: 600; word-break: break-all;">
-                        <span>${icon}</span>
-                        <span>${fileName}</span>
-                    </div>
-                    <div style="flex-shrink: 0;">${reasonBadge}</div>
+                // Cabeçalho da turma com badge de contagem de falhas
+                const turmaHeader = document.createElement('div');
+                turmaHeader.style.cssText = "font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;";
+                turmaHeader.innerHTML = `
+                    <span style="display: flex; align-items: center; gap: 6px;">📁 <span>${turmaNome}</span></span>
+                    <span style="font-size: 0.75rem; background: rgba(239,68,68,0.1); color: #DC2626; padding: 2px 8px; border-radius: 10px; font-weight: 600;">
+                        ${turmaFalhas.length} não processado(s)
+                    </span>
                 `;
-                list.appendChild(itemEl);
+                turmaGroup.appendChild(turmaHeader);
+
+                // Lista de arquivos com falha da turma
+                const filesContainer = document.createElement('div');
+                filesContainer.style.cssText = "display: flex; flex-direction: column; gap: 6px;";
+
+                turmaFalhas.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.style.cssText = "display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 4px 0; font-size: 0.84rem;";
+
+                    let fileName = typeof item === 'string' ? item : (item.file || item.arquivo);
+                    let type = typeof item === 'object' ? (item.type || item.tipo) : 'leitura';
+                    let alunoNome = typeof item === 'object' ? (item.aluno || item.detalhes) : null;
+
+                    let icon = type === 'duplicado' || type === 'duplicate' ? 'ℹ️' : '📄';
+                    let color = type === 'duplicado' || type === 'duplicate' ? 'var(--text-main)' : '#DC2626';
+                    let reasonBadge = (type === 'duplicado' || type === 'duplicate')
+                        ? `<span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #2563EB; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Aluno Duplicado${alunoNome ? ': ' + alunoNome : ''}</span>`
+                        : `<span style="font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); color: #DC2626; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Erro de Leitura</span>`;
+
+                    itemEl.innerHTML = `
+                        <div style="display: flex; align-items: center; gap: 8px; color: ${color}; font-weight: 600; word-break: break-all;">
+                            <span>${icon}</span>
+                            <span>${fileName}</span>
+                        </div>
+                        <div style="flex-shrink: 0;">${reasonBadge}</div>
+                    `;
+                    filesContainer.appendChild(itemEl);
+                });
+
+                turmaGroup.appendChild(filesContainer);
+                list.appendChild(turmaGroup);
             });
 
             modal.classList.add('active');
             modal.style.display = 'flex';
         }
 
+        /**
+         * Fecha o modal de PDFs não processados e dispara o callback de reload da página se configurado.
+         */
         function closeUnprocessedPDFsModal() {
             const modal = document.getElementById('unprocessed-pdfs-modal-overlay');
             if (modal) {
                 modal.classList.remove('active');
                 modal.style.display = 'none';
+            }
+            if (typeof window.onUnprocessedModalClose === 'function') {
+                const cb = window.onUnprocessedModalClose;
+                window.onUnprocessedModalClose = null;
+                cb();
             }
         }
 

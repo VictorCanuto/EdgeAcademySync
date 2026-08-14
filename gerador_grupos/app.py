@@ -1384,6 +1384,331 @@ def index():
                            turmas=turmas_info,
                            has_security_question=has_security_question)
 
+@app.route('/create_blank_turma', methods=['POST'])
+@login_required
+@admin_required
+def create_blank_turma():
+    """
+    ROTA: /create_blank_turma (POST)
+    OBJETIVO: Cria uma nova turma em branco (sem arquivos PDF iniciais) no banco de dados.
+    ACESSO: Restrito a Administradores e Superadministradores (@admin_required).
+    
+    FLUXO DE EXECUÇÃO:
+    1. Valida autenticação e permissões do usuário ativo.
+    2. Extrai o nome da turma e a opção 'em_imersao' do formulário enviado.
+    3. Persiste a nova Turma no banco de dados.
+    4. Retorna a representação em JSON da turma criada para injeção dinâmica no modal do frontend.
+    """
+    user = get_current_user()
+    if not user or not user.is_admin:
+        return jsonify({"success": False, "error": "Acesso não autorizado."}), 403
+
+    # Extração e higienização dos campos
+    turma_nome = request.form.get('turma_nome', '').strip()
+    if not turma_nome:
+        return jsonify({"success": False, "error": "O nome da turma é obrigatório."}), 400
+
+    em_imersao = request.form.get('em_imersao') == 'true'
+
+    # Inserção no banco de dados
+    try:
+        new_turma = Turma(
+            nome=turma_nome,
+            user_id=user.id,
+            em_imersao=em_imersao
+        )
+        db.session.add(new_turma)
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "turma": {
+                "id": new_turma.id,
+                "nome": new_turma.nome,
+                "alunos_count": 0,
+                "grupos_count": 0,
+                "em_imersao": new_turma.em_imersao
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao criar nova turma em branco: {e}")
+        return jsonify({"success": False, "error": f"Erro interno ao criar turma: {e}"}), 500
+
+@app.route('/add_alunos_multi_turma_batch', methods=['POST'])
+@login_required
+@admin_required
+def add_alunos_multi_turma_batch():
+    """
+    ROTA: /add_alunos_multi_turma_batch (POST)
+    OBJETIVO: Recebe arquivos PDF agrupados por turma ID e realiza a inserção/atualização
+              acumulada dos horários dos alunos para múltiplas turmas em um único lote.
+    ACESSO: Restrito a Administradores e Superadministradores (@admin_required).
+
+    FLUXO DE EXECUÇÃO:
+    1. Agrupa os arquivos enviados por ID da turma target (`pdf_files_<turma_id>`).
+    2. Salva temporariamente os PDFs no disco e executa o `processar_pdfs_para_dataframe`.
+    3. Verifica se algum aluno extraído já possui cadastro prévio na turma.
+    4. Se houver alunos repetidos e a confirmação `confirm_update` for Falsa, interrompe
+       o salvamento e solicita a confirmação explícita do usuário no modal.
+    5. Quando confirmado ou sem duplicatas, mescla a nova grade ao `base_data` CSV da turma,
+       garantindo a atualização de horários sem criar registros de alunos duplicados.
+    6. Sincroniza o modelo relacional `Aluno` via `sincronizar_tabelas_dos_alunos`.
+    """
+    user = get_current_user()
+    if not user or not user.is_admin:
+        return jsonify({"success": False, "error": "Acesso não autorizado."}), 403
+
+    confirm_update = request.form.get('confirm_update') == 'true'
+    user_data_folder = get_user_data_folder()
+    upload_folder_user = os.path.join(user_data_folder, 'uploads') if user_data_folder else 'uploads'
+    os.makedirs(upload_folder_user, exist_ok=True)
+
+    # BLOCO 1: Agrupar arquivos por ID da turma
+    turma_files_map = {}
+    for key in request.files.keys():
+        if key.startswith('pdf_files_'):
+            parts = key.split('pdf_files_')
+            if len(parts) == 2 and parts[1].isdigit():
+                turma_id = int(parts[1])
+                files = [f for f in request.files.getlist(key) if f and f.filename != '']
+                if files:
+                    turma_files_map[turma_id] = files
+
+    if not turma_files_map:
+        return jsonify({"success": False, "error": "Nenhum arquivo PDF enviado para as turmas."}), 400
+
+    turmas_parsed = {}
+    todos_existentes = []
+    todos_falha_arquivos = []
+
+    # BLOCO 2: Processar PDFs e verificar duplicidades por turma
+    for turma_id, files in turma_files_map.items():
+        turma = db.session.get(Turma, turma_id)
+        if not turma:
+            continue
+
+        filepaths = []
+        for idx, file in enumerate(files):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(upload_folder_user, f"{idx}_{turma_id}_{filename}")
+            file.save(filepath)
+            filepaths.append(filepath)
+
+        # Leitura e parsing de tabelas PDF
+        base_df, process_info = processar_pdfs_para_dataframe(filepaths)
+
+        # BLOCO 2.1: Coletar falhas de leitura / duplicados desta turma com identificação da turma target
+        falhas_turma = process_info.get("falha_arquivos", [])
+        for f_item in falhas_turma:
+            f_copy = f_item.copy() if isinstance(f_item, dict) else {"file": str(f_item), "type": "leitura"}
+            f_copy["turma"] = turma.nome
+            f_copy["turma_id"] = turma.id
+            todos_falha_arquivos.append(f_copy)
+
+        # Limpeza preventiva de arquivos temporários no disco
+        try:
+            for fpath in filepaths:
+                if os.path.exists(fpath):
+                    os.remove(fpath)
+        except Exception as e:
+            print(f"AVISO: Falha ao limpar PDFs temporários: {e}")
+
+        if base_df is None or base_df.empty:
+            continue
+
+        # Sanitização e normalização do nome dos alunos
+        base_df['aluno'] = base_df['aluno'].apply(lambda x: _limpar_nome_aluno(str(x)).replace(' ', '_'))
+        alunos_enviados = list(base_df['aluno'].unique())
+
+        # Mapear alunos existentes no banco para a turma ativa
+        alunos_turma_db = Aluno.query.filter_by(turma_id=turma.id).all()
+        nomes_existentes_set = set()
+        for a in alunos_turma_db:
+            if a.nome:
+                nomes_existentes_set.add(_limpar_nome_aluno(a.nome).lower())
+            if a.nome_custom:
+                nomes_existentes_set.add(_limpar_nome_aluno(a.nome_custom).lower())
+
+        if turma.base_data:
+            try:
+                df_existente = pd.read_csv(BytesIO(turma.base_data))
+                if 'aluno' in df_existente.columns:
+                    for al in df_existente['aluno'].unique():
+                        nomes_existentes_set.add(_limpar_nome_aluno(str(al)).lower())
+            except Exception:
+                pass
+
+        # Identificar alunos repetidos
+        for al in alunos_enviados:
+            al_limpo = _limpar_nome_aluno(al)
+            if al_limpo.lower() in nomes_existentes_set:
+                todos_existentes.append({"aluno": al_limpo, "turma": turma.nome})
+
+        turmas_parsed[turma_id] = (base_df, process_info, turma, alunos_enviados)
+
+    if not turmas_parsed and not todos_falha_arquivos:
+        return jsonify({"success": False, "error": "Não foi possível extrair dados válidos dos PDFs fornecidos."}), 400
+
+    # BLOCO 3: Interrupção para confirmação do usuário se houver duplicatas
+    if todos_existentes and not confirm_update:
+        return jsonify({
+            "requires_confirmation": True,
+            "existing_students": todos_existentes
+        })
+
+    # BLOCO 4: Persistência acumulada do CSV e atualização dos Alunos
+    for turma_id, (base_df, process_info, turma, alunos_enviados) in turmas_parsed.items():
+        if turma.base_data:
+            try:
+                existing_df = pd.read_csv(BytesIO(turma.base_data))
+                if 'aluno' in existing_df.columns:
+                    existing_df['aluno'] = existing_df['aluno'].apply(lambda x: _limpar_nome_aluno(str(x)).replace(' ', '_'))
+                    # Remove horários antigos dos alunos confirmados para substituição limpa
+                    existing_df = existing_df[~existing_df['aluno'].isin(alunos_enviados)]
+                    base_df = pd.concat([existing_df, base_df], ignore_index=True)
+            except Exception as e:
+                print(f"Aviso ao mesclar base_data da turma {turma.nome}: {e}")
+
+        # Gravação do CSV binário na Turma
+        csv_buffer = BytesIO()
+        base_df.to_csv(csv_buffer, index=False, encoding='utf-8')
+        turma.base_data = csv_buffer.getvalue()
+        db.session.commit()
+
+        # Sincronizar registros no banco relacional
+        sincronizar_tabelas_dos_alunos(turma.id, base_df)
+
+    # BLOCO 5: Montar o objeto 'unprocessed_data' consolidado contendo as falhas divididas por turma
+    total_pdfs_enviados = sum(len(f_list) for f_list in turma_files_map.values())
+    total_sucesso_count = sum(len(tp[3]) for tp in turmas_parsed.values())
+
+    unprocessed_payload = None
+    if todos_falha_arquivos:
+        unprocessed_payload = {
+            "total_pdfs": total_pdfs_enviados,
+            "num_alunos": total_sucesso_count,
+            "nao_processados_count": len(todos_falha_arquivos),
+            "falha_arquivos": todos_falha_arquivos
+        }
+
+    msg = f"Processamento concluído com sucesso! PDFs adicionados em {len(turmas_parsed)} turma(s)."
+    return jsonify({
+        "success": True, 
+        "message": msg,
+        "unprocessed_data": unprocessed_payload
+    })
+
+@app.route('/add_alunos_batch', methods=['POST'])
+@login_required
+@admin_required
+def add_alunos_batch():
+    user = get_current_user()
+    if not user or not user.is_admin:
+        return jsonify({"success": False, "error": "Acesso não autorizado."}), 403
+
+    turma_id = request.form.get('turma_id')
+    confirm_update = request.form.get('confirm_update') == 'true'
+
+    if not turma_id:
+        return jsonify({"success": False, "error": "Selecione uma turma válida."}), 400
+
+    turma = db.session.get(Turma, int(turma_id)) if str(turma_id).isdigit() else None
+    if not turma:
+        return jsonify({"success": False, "error": "Turma não encontrada."}), 404
+
+    files = request.files.getlist('pdf_files')
+    files = [f for f in files if f and f.filename != '']
+    if not files:
+        return jsonify({"success": False, "error": "Nenhum arquivo PDF enviado."}), 400
+
+    user_data_folder = get_user_data_folder()
+    upload_folder_user = os.path.join(user_data_folder, 'uploads') if user_data_folder else 'uploads'
+    os.makedirs(upload_folder_user, exist_ok=True)
+
+    filepaths = []
+    for idx, file in enumerate(files):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(upload_folder_user, f"{idx}_{filename}")
+        file.save(filepath)
+        filepaths.append(filepath)
+
+    base_df, process_info = processar_pdfs_para_dataframe(filepaths)
+
+    # Limpar PDFs temporários
+    try:
+        for fpath in filepaths:
+            if os.path.exists(fpath):
+                os.remove(fpath)
+    except Exception as e:
+        print(f"AVISO: Falha ao limpar PDFs temporários: {e}")
+
+    if base_df is None or base_df.empty:
+        return jsonify({"success": False, "error": "Não foi possível extrair dados válidos dos PDFs enviados."}), 400
+
+    # Normalizar nomes dos alunos extraídos dos PDFs
+    base_df['aluno'] = base_df['aluno'].apply(lambda x: _limpar_nome_aluno(str(x)).replace(' ', '_'))
+    alunos_enviados = list(base_df['aluno'].unique())
+
+    # Obter lista de alunos que já existem no Banco para esta turma
+    alunos_turma_db = Aluno.query.filter_by(turma_id=turma.id).all()
+    nomes_existentes_set = set()
+    for a in alunos_turma_db:
+        if a.nome:
+            nomes_existentes_set.add(_limpar_nome_aluno(a.nome).lower())
+        if a.nome_custom:
+            nomes_existentes_set.add(_limpar_nome_aluno(a.nome_custom).lower())
+
+    if turma.base_data:
+        try:
+            df_existente = pd.read_csv(BytesIO(turma.base_data))
+            if 'aluno' in df_existente.columns:
+                for al in df_existente['aluno'].unique():
+                    nomes_existentes_set.add(_limpar_nome_aluno(str(al)).lower())
+        except Exception:
+            pass
+
+    existentes = []
+    for al in alunos_enviados:
+        al_limpo = _limpar_nome_aluno(al)
+        if al_limpo.lower() in nomes_existentes_set:
+            existentes.append(al_limpo)
+
+    if existentes and not confirm_update:
+        return jsonify({
+            "requires_confirmation": True,
+            "existing_students": existentes,
+            "turma_id": turma.id,
+            "turma_nome": turma.nome
+        })
+
+    # Atualizar ou mesclar no base_data da turma
+    if turma.base_data:
+        try:
+            existing_df = pd.read_csv(BytesIO(turma.base_data))
+            if 'aluno' in existing_df.columns:
+                existing_df['aluno'] = existing_df['aluno'].apply(lambda x: _limpar_nome_aluno(str(x)).replace(' ', '_'))
+                # Se confirmou atualização para existentes, remove horários antigos desses alunos específicos
+                existing_df = existing_df[~existing_df['aluno'].isin(alunos_enviados)]
+                base_df = pd.concat([existing_df, base_df], ignore_index=True)
+        except Exception as e:
+            print(f"Aviso ao mesclar base_data: {e}")
+
+    # Salvar base_data
+    csv_buffer = BytesIO()
+    base_df.to_csv(csv_buffer, index=False, encoding='utf-8')
+    turma.base_data = csv_buffer.getvalue()
+    db.session.commit()
+
+    # Sincronizar alunos na tabela Aluno
+    sincronizar_tabelas_dos_alunos(turma.id, base_df)
+
+    total_alunos = len(base_df['aluno'].unique())
+    return jsonify({
+        "success": True,
+        "message": f"Aluno(s) processado(s) com sucesso! Total de {total_alunos} aluno(s) na turma '{turma.nome}'."
+    })
+
 @app.route('/users', methods=['GET', 'POST'])
 @login_required
 @admin_required
