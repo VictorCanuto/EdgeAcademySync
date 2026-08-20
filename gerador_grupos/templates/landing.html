@@ -696,7 +696,7 @@
 
             <div class="modal-body">
                 <form action="{{ url_for('index') }}" method="POST" id="create-turma-form"
-                    enctype="multipart/form-data">
+                    enctype="multipart/form-data" onsubmit="handleCreateTurmaModalSubmit(event)">
                     <input type="hidden" name="action" value="create_turma">
 
                     <div style="display: flex; flex-direction: column; gap: 20px; padding-bottom: 20px;">
@@ -1102,6 +1102,19 @@
         <input type="hidden" name="action" value="delete_turma">
         <input type="hidden" name="turma_id" id="delete-turma-id">
     </form>
+
+    <!-- Overlay de Progresso Global de Upload (2 Estágios: Transmissão + Processamento) -->
+    <div class="progress-overlay" id="upload-progress-overlay">
+        <div class="glass-panel progress-card">
+            <div class="progress-spinner"></div>
+            <h4 id="progress-title">Enviando Arquivos PDF</h4>
+            <p id="progress-status">Preparando arquivos para envio...</p>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progress-bar-fill"></div>
+            </div>
+            <div class="progress-percentage" id="progress-percentage">0%</div>
+        </div>
+    </div>
 
     <!-- Modal de PDFs Não Processados -->
     <div class="modal-overlay" id="unprocessed-pdfs-modal-overlay">
@@ -2054,6 +2067,43 @@
             }
         }
 
+        /**
+         * Trata a submissão do modal "Adicionar turma" acionando o sistema de progresso global em 2 estágios.
+         */
+        function handleCreateTurmaModalSubmit(event) {
+            event.preventDefault();
+            const form = document.getElementById('create-turma-form');
+            const fileInput = document.getElementById('home_pdf_files');
+            if (!form) return;
+
+            const totalFiles = (fileInput && fileInput.files) ? fileInput.files.length : 0;
+
+            // Extrai os dados do formulário PRIMEIRO antes de limpar os campos no modal
+            const formData = new FormData(form);
+
+            // Fecha o modal de cadastro e dispara o overlay de progresso unificado
+            closeCreateModal();
+
+            window.triggerGlobalUploadProgress({
+                url: form.getAttribute('action') || '/index',
+                formData: formData,
+                totalFiles: totalFiles || 1,
+                onSuccess: function (data, xhr) {
+                    if (data && data.success && data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else if (xhr.responseURL) {
+                        window.location.href = xhr.responseURL;
+                    } else {
+                        window.location.reload();
+                    }
+                },
+                onError: function (err) {
+                    console.error("Erro ao criar turma:", err);
+                    showToast('Erro', 'Falha ao salvar a turma e processar os PDFs.', 'danger');
+                }
+            });
+        }
+
         function openEditModal(event, id, nome) {
             event.preventDefault();
             event.stopPropagation();
@@ -2308,9 +2358,10 @@
             if (event) event.preventDefault();
 
             let totalFiles = 0;
-            const formData = new FormData();
+            let formData = new FormData();
 
             if (forceConfirm && pendingMultiTurmaFormData) {
+                formData = pendingMultiTurmaFormData;
                 formData.set('confirm_update', 'true');
             } else {
                 Object.keys(multiTurmaFilesMap).forEach(turmaId => {
@@ -2327,55 +2378,48 @@
                 }
             }
 
-            const btnSave = document.getElementById('btn-save-add-aluno');
-            if (btnSave) {
-                btnSave.disabled = true;
-                btnSave.innerText = 'Processando...';
-            }
+            // Fecha o modal de seleção e ativa o overlay de progresso unificado em 2 estágios
+            closeAddAlunoModal();
 
-            try {
-                const response = await fetch('/add_alunos_multi_turma_batch', {
-                    method: 'POST',
-                    body: formData,
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
+            window.triggerGlobalUploadProgress({
+                url: '/add_alunos_multi_turma_batch',
+                formData: formData,
+                totalFiles: totalFiles || 1,
+                onSuccess: function (data) {
+                    if (data.requires_confirmation) {
+                        pendingMultiTurmaFormData = formData;
+                        openConfirmStudentUpdateModal(data);
+                    } else if (data.success) {
+                        closeConfirmStudentUpdateModal();
 
-                const data = await response.json();
-
-                if (data.requires_confirmation) {
-                    pendingMultiTurmaFormData = formData;
-                    openConfirmStudentUpdateModal(data);
-                } else if (data.success) {
-                    closeAddAlunoModal();
-                    closeConfirmStudentUpdateModal();
-
-                    if (data.unprocessed_data && data.unprocessed_data.nao_processados_count > 0) {
-                        showToast('Aviso', 'Alguns PDFs não foram processados. Veja os detalhes.', 'warning');
-                        openUnprocessedPDFsModal(data.unprocessed_data);
-                        window.onUnprocessedModalClose = () => window.location.reload();
+                        if (data.unprocessed_data && data.unprocessed_data.nao_processados_count > 0) {
+                            showToast('Aviso', 'Alguns PDFs não foram processados. Veja os detalhes.', 'warning');
+                            openUnprocessedPDFsModal(data.unprocessed_data);
+                            window.onUnprocessedModalClose = () => window.location.reload();
+                        } else {
+                            showToast('Sucesso', data.message || 'Aluno(s) adicionado(s) com sucesso!', 'success');
+                            setTimeout(() => window.location.reload(), 1200);
+                        }
                     } else {
-                        showToast('Sucesso', data.message || 'Aluno(s) adicionado(s) com sucesso!', 'success');
-                        setTimeout(() => window.location.reload(), 1200);
+                        showToast('Erro', data.error || 'Falha ao cadastrar alunos.', 'danger');
                     }
-                } else {
-                    showToast('Erro', data.error || 'Falha ao cadastrar alunos.', 'danger');
+                },
+                onError: function (err) {
+                    console.error("Erro no envio multi-turmas:", err);
+                    showToast('Erro', 'Falha na comunicação com o servidor.', 'danger');
                 }
-            } catch (err) {
-                console.error("Erro no envio multi-turmas:", err);
-                showToast('Erro', 'Falha na comunicação com o servidor.', 'danger');
-            } finally {
-                if (btnSave) {
-                    btnSave.disabled = false;
-                    btnSave.innerText = 'Confirmar e Enviar Todos os PDFs';
-                }
-            }
+            });
         }
+
+        let pendingUnprocessedDataMultiTurma = null;
 
         function openConfirmStudentUpdateModal(data) {
             const modal = document.getElementById('confirm-student-update-modal-overlay');
             const msg = document.getElementById('confirm-student-update-message');
             const list = document.getElementById('confirm-student-update-list');
             if (!modal || !msg || !list) return;
+
+            pendingUnprocessedDataMultiTurma = data.unprocessed_data || null;
 
             const existing = data.existing_students || [];
             msg.innerHTML = `Identificamos que <strong>${existing.length} aluno(s)</strong> já estão cadastrado(s) na(s) turma(s) selecionada(s):`;
@@ -2390,6 +2434,14 @@
                 list.appendChild(item);
             });
 
+            // Se houver arquivos com erro de leitura no mesmo lote, exibe aviso visual
+            if (pendingUnprocessedDataMultiTurma && pendingUnprocessedDataMultiTurma.nao_processados_count > 0) {
+                const warnDiv = document.createElement('div');
+                warnDiv.style.cssText = "margin-top: 12px; padding: 8px 12px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #EF4444; border-radius: 6px; font-size: 0.8rem; color: #EF4444;";
+                warnDiv.innerHTML = `⚠️ <strong>${pendingUnprocessedDataMultiTurma.nao_processados_count} arquivo(s)</strong> não puderam ser lidos (erro de leitura) e serão detalhados.`;
+                list.appendChild(warnDiv);
+            }
+
             modal.classList.add('active');
             modal.style.display = 'flex';
         }
@@ -2401,6 +2453,12 @@
                 modal.style.display = 'none';
             }
             pendingMultiTurmaFormData = null;
+
+            if (pendingUnprocessedDataMultiTurma && pendingUnprocessedDataMultiTurma.nao_processados_count > 0) {
+                const toShow = pendingUnprocessedDataMultiTurma;
+                pendingUnprocessedDataMultiTurma = null;
+                openUnprocessedPDFsModal(toShow);
+            }
         }
 
         function proceedStudentUpdateConfirmation() {
@@ -2783,6 +2841,7 @@
             return true;
         }
     </script>
+    <script src="{{ url_for('static', filename='js/progress.js') }}?v=11"></script>
 </body>
 
 </html>

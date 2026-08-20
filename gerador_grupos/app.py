@@ -1253,6 +1253,7 @@ def index():
             db.session.add(new_turma)
             db.session.commit() # Salva primeiro para gerar o ID
             
+            base_df = None
             # Processar PDFs se houver
             files = request.files.getlist('pdf_files')
             if files and files[0].filename != '':
@@ -1317,6 +1318,9 @@ def index():
             else:
                 flash(f'Turma "{nome}" criada com sucesso!', 'success')
                 
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                redirect_target = url_for('view_turma', turma_id=new_turma.id) if (base_df is not None and not base_df.empty) else url_for('index')
+                return jsonify({"success": True, "redirect_url": redirect_target})
             return redirect(url_for('index'))
             
         elif action == 'delete_turma':
@@ -1552,9 +1556,18 @@ def add_alunos_multi_turma_batch():
 
     # BLOCO 3: Interrupção para confirmação do usuário se houver duplicatas
     if todos_existentes and not confirm_update:
+        unprocessed_payload = None
+        if todos_falha_arquivos:
+            unprocessed_payload = {
+                "total_pdfs": sum(len(f_list) for f_list in turma_files_map.values()),
+                "num_alunos": sum(len(tp[3]) for tp in turmas_parsed.values()),
+                "nao_processados_count": len(todos_falha_arquivos),
+                "falha_arquivos": todos_falha_arquivos
+            }
         return jsonify({
             "requires_confirmation": True,
-            "existing_students": todos_existentes
+            "existing_students": todos_existentes,
+            "unprocessed_data": unprocessed_payload
         })
 
     # BLOCO 4: Persistência acumulada do CSV e atualização dos Alunos
@@ -1895,13 +1908,33 @@ def add_alunos_to_specific_turma(turma_id):
         if al_limpo.lower() in nomes_existentes_set:
             existentes.append(al_limpo)
 
+    # BLOCO 5 (Preparo): Mapeamento de falhas de leitura ou arquivos não processados
+    falhas_turma = process_info.get("falha_arquivos", [])
+    todos_falha_arquivos = []
+    for f_item in falhas_turma:
+        f_copy = f_item.copy() if isinstance(f_item, dict) else {"file": str(f_item), "type": "leitura"}
+        f_copy["turma"] = turma.nome
+        f_copy["turma_id"] = turma.id
+        todos_falha_arquivos.append(f_copy)
+
+    unprocessed_payload = None
+    if todos_falha_arquivos:
+        unprocessed_payload = {
+            "total_pdfs": len(files),
+            "num_alunos": len(alunos_enviados),
+            "nao_processados_count": len(todos_falha_arquivos),
+            "falha_arquivos": todos_falha_arquivos,
+            "turma_nome": turma.nome
+        }
+
     # BLOCO 3: Solicitar confirmação ao usuário se houver duplicatas e confirm_update for Falso
     if existentes and not confirm_update:
         return jsonify({
             "requires_confirmation": True,
             "existing_students": existentes,
             "turma_id": turma.id,
-            "turma_nome": turma.nome
+            "turma_nome": turma.nome,
+            "unprocessed_data": unprocessed_payload
         })
 
     # BLOCO 4: Mesclar novos horários no base_data e atualizar tabela Aluno relacional

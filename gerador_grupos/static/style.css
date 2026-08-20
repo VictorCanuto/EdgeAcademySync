@@ -1603,8 +1603,28 @@ body:not(.dark-mode) .progress-bar-container {
     width: 0%;
     background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
     border-radius: 4px;
-    transition: width 0.1s ease;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 0 12px rgba(79, 70, 229, 0.4);
+}
+
+/* Estágio 2: Animação pulsante durante leitura de PDFs no servidor */
+.progress-bar-fill.processing {
+    background: linear-gradient(
+        45deg,
+        var(--color-primary) 25%,
+        var(--color-secondary) 25%,
+        var(--color-secondary) 50%,
+        var(--color-primary) 50%,
+        var(--color-primary) 75%,
+        var(--color-secondary) 75%
+    );
+    background-size: 30px 30px;
+    animation: progress-stripes 1.2s linear infinite;
+}
+
+@keyframes progress-stripes {
+    0% { background-position: 0 0; }
+    100% { background-position: 30px 0; }
 }
 
 .progress-percentage {
