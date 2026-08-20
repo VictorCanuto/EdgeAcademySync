@@ -2729,6 +2729,7 @@ def download_schedule_xlsx(turma_id):
         
         align_center = Alignment(horizontal='center', vertical='center')
         align_left = Alignment(horizontal='left', vertical='center')
+        align_hora_vertical = Alignment(horizontal='center', vertical='center', wrap_text=True)
         
         thin_border_side = Side(border_style="thin", color="CBD5E1") # Slate 300
         border_all = Border(left=thin_border_side, right=thin_border_side, top=thin_border_side, bottom=thin_border_side)
@@ -2760,10 +2761,11 @@ def download_schedule_xlsx(turma_id):
             start_col = col_idx
             for hora in HORARIOS_GRADE:
                 cell_hora = ws.cell(row=2, column=col_idx)
-                cell_hora.value = hora
+                # Formata o horário na vertical (um caractere por linha: 0\n7\n:\n0\n0)
+                cell_hora.value = "\n".join(list(hora))
                 cell_hora.font = font_header_hora
                 cell_hora.fill = fill_header_hora
-                cell_hora.alignment = align_center
+                cell_hora.alignment = align_hora_vertical
                 cell_hora.border = border_all
                 col_idx += 1
                 
@@ -2838,7 +2840,8 @@ def download_schedule_xlsx(turma_id):
                 for slot in HORARIOS_GRADE:
                     cell = ws.cell(row=row_idx, column=col_idx)
                     status = schedules[aluno_nome][f"{dia}_{slot}"]
-                    cell.value = status
+                    # Horários livres ('L') ficam sem texto para manter o layout limpo
+                    cell.value = "" if status == 'L' else status
                     cell.font = font_status
                     cell.alignment = align_center
                     cell.border = border_all
@@ -2855,10 +2858,10 @@ def download_schedule_xlsx(turma_id):
         ws.column_dimensions['A'].width = 30
         for c in range(2, col_idx):
             col_letter = get_column_letter(c)
-            ws.column_dimensions[col_letter].width = 6
+            ws.column_dimensions[col_letter].width = 4.5
             
         ws.row_dimensions[1].height = 28
-        ws.row_dimensions[2].height = 20
+        ws.row_dimensions[2].height = 65
         for r in range(3, row_idx):
             ws.row_dimensions[r].height = 24
             
@@ -3356,6 +3359,7 @@ def download_all_schedules(export_format):
         
         align_center = Alignment(horizontal='center', vertical='center')
         align_left = Alignment(horizontal='left', vertical='center')
+        align_hora_vertical = Alignment(horizontal='center', vertical='center', wrap_text=True)
         
         thin_border_side = Side(border_style="thin", color="CBD5E1")
         border_all = Border(left=thin_border_side, right=thin_border_side, top=thin_border_side, bottom=thin_border_side)
@@ -3393,10 +3397,11 @@ def download_all_schedules(export_format):
             start_col = col_idx
             for hora in HORARIOS_GRADE:
                 cell_hora = ws.cell(row=2, column=col_idx)
-                cell_hora.value = hora
+                # Formata o horário na vertical (um caractere por linha: 0\n7\n:\n0\n0)
+                cell_hora.value = "\n".join(list(hora))
                 cell_hora.font = font_header_hora
                 cell_hora.fill = fill_header_hora
-                cell_hora.alignment = align_center
+                cell_hora.alignment = align_hora_vertical
                 cell_hora.border = border_all
                 col_idx += 1
                 
@@ -3434,7 +3439,8 @@ def download_all_schedules(export_format):
                 for slot in HORARIOS_GRADE:
                     cell = ws.cell(row=row_idx, column=col_idx)
                     status = schedules[aluno_nome][f"{dia}_{slot}"]
-                    cell.value = status
+                    # Horários livres ('L') ficam sem texto para manter o layout limpo
+                    cell.value = "" if status == 'L' else status
                     cell.font = font_status
                     cell.alignment = align_center
                     cell.border = border_all
@@ -3451,10 +3457,10 @@ def download_all_schedules(export_format):
         ws.column_dimensions['B'].width = 15
         for c in range(3, col_idx):
             col_letter = get_column_letter(c)
-            ws.column_dimensions[col_letter].width = 6
+            ws.column_dimensions[col_letter].width = 4.5
             
         ws.row_dimensions[1].height = 28
-        ws.row_dimensions[2].height = 20
+        ws.row_dimensions[2].height = 65
         for r in range(3, row_idx):
             ws.row_dimensions[r].height = 24
             
