@@ -925,7 +925,7 @@
 
     <!-- Modal Exportar Grade Geral (Alunos) -->
     <div class="modal-overlay" id="all-export-modal-overlay">
-        <div class="glass-panel modal-card" style="max-width: 450px; width: 100%;">
+        <div class="glass-panel modal-card" style="max-width: 500px; width: 100%;">
             <div class="modal-header">
                 <h2>Exportar Dados da Grade Geral</h2>
                 <button onclick="closeAllExportModal()"
@@ -934,21 +934,51 @@
                     onmouseout="this.style.color='var(--text-muted)'">&times;</button>
             </div>
             <div class="modal-body" style="padding-top: 10px;">
-                <div
-                    style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #F59E0B; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
-                    <span
-                        style="color: #D97706; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                        ⚠️ Exportação Filtrada
-                    </span>
-                    <p style="margin: 0; font-size: 0.85rem; color: var(--text-main); line-height: 1.4;">
-                        Serão exportados apenas os alunos visíveis na tabela com base nos filtros ativos.
-                    </p>
+                <p style="font-size: 0.88rem; color: var(--text-muted); margin: 0 0 16px 0; text-align: left;">
+                    Escolha o escopo e o formato dos dados que deseja exportar:
+                </p>
+
+                <!-- Opções de Escopo de Exportação -->
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; text-align: left;">
+                    <label style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s ease; background: var(--bg-card);"
+                        onmouseover="this.style.borderColor='var(--color-primary)'"
+                        onmouseout="if(!document.getElementById('export_scope_filtered').checked) this.style.borderColor='var(--border-color)'">
+                        <input type="radio" name="export_scope" id="export_scope_filtered" value="filtered" checked
+                            style="margin-top: 3px; accent-color: var(--color-primary); width: 16px; height: 16px;">
+                        <div>
+                            <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-main); display: block;">
+                                🎯 Exportação Filtrada
+                            </span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; display: block; margin-top: 2px;">
+                                Exporta apenas os alunos visíveis na tabela com base na busca e nos filtros ativos.
+                            </span>
+                        </div>
+                    </label>
+
+                    <label style="display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border: 1.5px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: all 0.2s ease; background: var(--bg-card);"
+                        onmouseover="this.style.borderColor='var(--color-primary)'"
+                        onmouseout="if(!document.getElementById('export_scope_all').checked) this.style.borderColor='var(--border-color)'">
+                        <input type="radio" name="export_scope" id="export_scope_all" value="all_sheets"
+                            style="margin-top: 3px; accent-color: var(--color-primary); width: 16px; height: 16px;">
+                        <div>
+                            <span style="font-weight: 700; font-size: 0.92rem; color: var(--text-main); display: block;">
+                                📚 Todas as Turmas da Base de Dados
+                            </span>
+                            <span style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.35; display: block; margin-top: 2px;">
+                                Gera um arquivo Excel (.xlsx) com <strong>uma aba inferior para cada turma</strong> cadastrada.
+                            </span>
+                        </div>
+                    </label>
                 </div>
+
                 <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                    <button class="btn btn-primary" onclick="submitAllExport('xlsx')">
+                    <button class="btn btn-secondary" onclick="closeAllExportModal()" style="padding: 10px 18px; border-radius: 8px; font-weight: 600;">
+                        Cancelar
+                    </button>
+                    <button class="btn btn-primary" onclick="submitAllExport('xlsx')" style="padding: 10px 20px; border-radius: 8px; font-weight: 600;">
                         Excel (.xlsx)
                     </button>
-                    <button class="btn btn-primary" onclick="submitAllExport('csv')">
+                    <button class="btn btn-primary" onclick="submitAllExport('csv')" style="padding: 10px 20px; border-radius: 8px; font-weight: 600;">
                         CSV
                     </button>
                 </div>
@@ -2535,21 +2565,29 @@
         }
 
         function submitAllExport(format) {
-            const searchVal = document.getElementById('filter-all-student-search').value.trim();
-            const selectedTurmas = Array.from(selectedFilterTurmas || []);
-            const selectedStudents = Array.from(selectedAllCompareStudents || []);
+            const scopeInput = document.querySelector('input[name="export_scope"]:checked');
+            const scope = scopeInput ? scopeInput.value : 'filtered';
 
             let url = `/download/all_schedules/${format}`;
             const params = [];
 
-            if (searchVal) {
-                params.push(`search=${encodeURIComponent(searchVal)}`);
-            }
-            if (selectedTurmas.length > 0) {
-                params.push(`turmas=${encodeURIComponent(selectedTurmas.join(','))}`);
-            }
-            if (selectedStudents.length > 0) {
-                params.push(`students=${encodeURIComponent(selectedStudents.join(','))}`);
+            if (scope === 'all_sheets') {
+                params.push('mode=all_sheets');
+            } else {
+                params.push('mode=filtered');
+                const searchVal = document.getElementById('filter-all-student-search') ? document.getElementById('filter-all-student-search').value.trim() : '';
+                const selectedTurmas = Array.from(selectedFilterTurmas || []);
+                const selectedStudents = Array.from(selectedAllCompareStudents || []);
+
+                if (searchVal) {
+                    params.push(`search=${encodeURIComponent(searchVal)}`);
+                }
+                if (selectedTurmas.length > 0) {
+                    params.push(`turmas=${encodeURIComponent(selectedTurmas.join(','))}`);
+                }
+                if (selectedStudents.length > 0) {
+                    params.push(`students=${encodeURIComponent(selectedStudents.join(','))}`);
+                }
             }
 
             if (params.length > 0) {
