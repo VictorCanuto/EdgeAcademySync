@@ -1197,7 +1197,7 @@ function renderFileList(files, container) {
         if (file.name.endsWith('.pdf')) {
             const item = document.createElement('div');
             item.className = 'selected-file-item';
-            item.innerHTML = `<span><i class="fa-solid fa-file-pdf"></i> ${file.name}</span>`;
+            item.innerHTML = `<span style="flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; word-break: break-word;"><i class="fa-solid fa-file-pdf"></i> ${file.name}</span>`;
             container.appendChild(item);
         }
     });
