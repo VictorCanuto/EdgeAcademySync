@@ -9,6 +9,7 @@
     --color-select: rgb(23, 63, 109);   
     --color-primary-hover: rgb(14, 42, 77);
     --color-highlight: rgb(0, 158, 180); 
+    --color-light-gray: #edeff4;
     --color-highlight-hover: rgb(9, 132, 148);
     --color-success: #10b981;       /* Verde Esmeralda */
     --color-success-bg: rgba(16, 185, 129, 0.15);
