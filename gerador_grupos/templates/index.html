@@ -23,7 +23,8 @@
 
         <div style="display: flex; align-items: center; gap: 15px;">
             <a href="{{ url_for('index') }}" class="btn btn-terciary" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; font-weight: 600;">
-                ⬅️Voltar para Turmas
+                <i class="fa-solid fa-arrow-left"></i>
+                Voltar para Turmas
             </a>
             <div id="active-turma-indicator" style="font-weight: 700; font-size: 1.1rem; color: var(--color-secondary);">
                 Turma: <span id="active-turma-name">{{ turma.nome }}</span>
@@ -36,8 +37,8 @@
                 <label class="theme-switch" for="checkbox-theme">
                     <input type="checkbox" id="checkbox-theme">
                     <div class="slider">
-                        <span style="font-size: 10px; margin-left: 5px;">☀️</span>
-                        <span style="font-size: 10px; margin-right: 5px;">🌙</span>
+                        <span style="font-size: 10px; margin-left: 5px;"><i class="fa-solid fa-sun"></i></span>
+                        <span style="font-size: 10px; margin-right: 5px;"><i class="fa-solid fa-moon"></i></span>
                     </div>
                 </label>
             </div>
@@ -45,7 +46,7 @@
             <!-- Botão de Alertas (Apenas se houver grupos ativos) -->
             {% if groups_result %}
             <button id="alert-drawer-toggle" class="btn btn-secondary" style="padding: 6px 12px; position: relative;">
-                ⚠️ Alertas
+                <i class="fa-solid fa-triangle-exclamation"></i> Alertas
                 <span id="alerts-count-badge" style="position: absolute; top: -6px; right: -6px; background: var(--color-danger); color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 0.65rem; display: flex; align-items: center; justify-content: center; font-weight: bold;">0</span>
             </button>
             {% endif %}
@@ -67,7 +68,7 @@
     <div style="padding: 20px 20px 0 20px; max-width: 1200px; margin: 0 auto;">
         <div class="glass-panel" style="padding: 24px; border-left: 4px solid var(--color-warning); background: rgba(255, 193, 7, 0.05); border-radius: 12px; text-align: left; box-sizing: border-box;">
             <h4 style="margin: 0 0 10px 0; color: var(--color-warning); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-                <span>⚠️</span> Configuração de Segurança Pendente
+                <span><i class="fa-solid fa-triangle-exclamation"></i></span> Configuração de Segurança Pendente
             </h4>
             <p style="margin: 0 0 20px 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
                 Sua conta não possui uma pergunta de segurança configurada. Configure-a para poder recuperar sua senha.
@@ -134,7 +135,7 @@
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; margin-top: 30px;">
-                    <button type="submit" class="btn btn-primary" id="process-btn-real" style="padding: 12px 24px;">Processar PDFs ➜</button>
+                    <button type="submit" class="btn btn-primary" id="process-btn-real" style="padding: 12px 24px;">Processar PDFs <i class="fa-solid fa-arrow-right"></i></button>
                 </div>
             </form>
         </div>
@@ -155,7 +156,7 @@
 
             <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 8px;">Configurações de Agrupamento</h3>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
-                🔍 <strong>{{ base_data_info.alunos }} estudantes</strong> detectados nos PDFs. Configure os parâmetros abaixo:
+                <i class="fa-solid fa-magnifying-glass"></i> <strong>{{ base_data_info.alunos }} estudantes</strong> detectados nos PDFs. Configure os parâmetros abaixo:
             </p>
 
             <form method="post" id="groups-config-form" action="{{ url_for('view_turma', turma_id=turma.id) }}">
@@ -225,7 +226,7 @@
             {% if is_admin %}
                 <div class="workspace-title-bar">
                     <a href="{{ url_for('clear_session', turma_id=turma.id) }}" class="back-dash-btn" onclick="return confirm('Tem certeza de que deseja limpar os PDFs e redefinir o sistema?');">
-                        🗑️ Limpar Workspace / Recomeçar
+                        <i class="fa-solid fa-trash-arrow-up"></i> Limpar Workspace / Recomeçar
                     </a>
                 </div>
             {% else %}
@@ -237,20 +238,21 @@
                 {% if turma.em_imersao %}
                 <!-- Reconfigurar grupos de forma dinâmica -->
                 <button class="btn btn-secondary" onclick="showConfigPanelFromWorkspace()">
-                    ⚙️ Reconfigurar Grupos
+                    <i class="fa-solid fa-gear"></i> Reconfigurar Grupos
                 </button>
                 {% endif %}
 
             
-                <!-- Botão Único de Exportação -->
+                <!-- Botão de exportação de planilha-->
                 <button class="btn btn-secondary" onclick="openUnifiedExportModal()">
-                    ⬇️ Exportar Dados
+                    Exportar Planilha
                 </button>
 
                 {% if is_admin %}
                 <!-- Botão Add Aluno (Admin/Superadmin) -->
                 <button class="btn btn-primary" id="btn-add-aluno-turma" onclick="openTurmaAddAlunoModal()">
-                    ➕ Adicionar Novo Aluno
+                    <i class="fa-solid fa-plus"></i> 
+                    Adicionar Novo Aluno
                 </button>
                 {% endif %}
             </div>
@@ -258,9 +260,9 @@
 
         <!-- Abas -->
         <nav class="tab-nav-bar">
-            <button class="tab-btn active" id="tab-btn-spreadsheet" onclick="switchTab('spreadsheet')">📅 Planilha Geral de Horários</button>
+            <button class="tab-btn active" id="tab-btn-spreadsheet" onclick="switchTab('spreadsheet')"><i class="fa-solid fa-table-list"></i> Planilha Geral de Horários</button>
             {% if turma.em_imersao %}
-            <button class="tab-btn" id="tab-btn-groups" onclick="switchTab('groups')">👥 Gerenciador de Grupos</button>
+            <button class="tab-btn" id="tab-btn-groups" onclick="switchTab('groups')"><i class="fa-solid fa-folder-open"></i> Gerenciador de Grupos</button>
             {% endif %}
         </nav>
 
@@ -311,7 +313,7 @@
                     <!-- Barra de Filtros -->
                     <div class="spreadsheet-filters-bar">
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <label class="form-label" style="margin-bottom: 0; font-size: 0.85rem; white-space: nowrap;">📂 Filtrar Grupo:</label>
+                            <label class="form-label" style="margin-bottom: 0; font-size: 0.85rem; white-space: nowrap;"><i class="fa-solid fa-folder-open"></i> Filtrar Grupo:</label>
                             <select id="filter-group-select" class="form-input" style="padding: 8px 12px; font-size: 0.85rem; width: 180px; min-width: 150px; background: rgba(255, 255, 255, 0.05);" onchange="handleGroupFilterChange(this.value)">
                                 <option value="all">Todos os Alunos</option>
                                 <option value="sem-grupo">Sem Grupo</option>
@@ -320,7 +322,7 @@
                         
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <button class="btn btn-terciary" style="padding: 8px 16px; font-size: 0.85rem; height: 38px;" onclick="openCompareModal()">
-                                🔍 Comparar Alunos
+                                <i class="fa-solid fa-magnifying-glass"></i> Comparar Alunos
                             </button>
                         </div>
 
@@ -346,7 +348,7 @@
 
                 <!-- Alunos Fora de Grupo -->
                 <div class="glass-panel banco-removidos-card">
-                    <h4>📥 Alunos Fora de Grupo (Sem Reunião)</h4>
+                    <h4><i class="fa-solid fa-inbox"></i> Alunos Fora de Grupo (Sem Reunião)</h4>
                     <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 12px;">Arraste estudantes para cá para removê-los temporariamente de seus grupos.</p>
                     <div class="banco-removidos-container" id="banco-removidos-dropzone" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, 'banco')">
                         <!-- Injetado via JS -->
@@ -360,7 +362,7 @@
     <div class="modal-overlay" id="reconfig-groups-modal-overlay">
         <div class="glass-panel modal-card" style="max-width: 550px;">
             <div class="modal-header">
-                <h3>⚙️ Reconfigurar Grupos</h3>
+                <h3><i class="fa-solid fa-gear"></i> Reconfigurar Grupos</h3>
                 <button class="modal-close" onclick="closeConfigPanelFromWorkspace()">&times;</button>
             </div>
             <div class="modal-body">
@@ -466,7 +468,7 @@
     <!-- Painel Gaveta de Alertas -->
     <div class="alerts-drawer" id="alerts-sidebar-drawer">
         <div class="drawer-header">
-            <h3>⚠️ Pendências (Conflitos)</h3>
+            <h3><i class="fa-solid fa-triangle-exclamation"></i> Pendências (Conflitos)</h3>
             <button class="drawer-close" onclick="toggleAlertDrawer(false)">&times;</button>
         </div>
         <div class="alerts-list" id="alerts-drawer-list">
@@ -479,7 +481,7 @@
         <div class="glass-panel modal-card" style="padding: 24px; position: relative; max-width: 450px; width: 100%;">
             <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-weight: 700; color: var(--color-danger); margin: 0; display: flex; align-items: center; gap: 8px;">
-                    ⚠️ Conflito de Horário
+                    <i class="fa-solid fa-triangle-exclamation"></i> Conflito de Horário
                 </h3>
                 <button class="modal-close" onclick="closeConflictResolutionModal()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
             </div>
@@ -521,7 +523,7 @@
     <div class="modal-overlay" id="compare-students-modal-overlay">
         <div class="glass-panel modal-card" style="max-width: 600px; width: 90%;">
             <div class="modal-header">
-                <h3>🔍 Comparação de Alunos</h3>
+                <h3>Comparar de Alunos</h3>
                 <button class="modal-close" onclick="closeCompareModal()">&times;</button>
             </div>
             <div class="modal-body">
@@ -536,8 +538,8 @@
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 16px;">
                     <div style="display: flex; gap: 8px;">
-                        <button type="button" class="btn btn-secondary" style="padding: 8px 12px; font-size: 0.8rem;" onclick="selectAllCompare(true)">Selecionar Todos</button>
-                        <button type="button" class="btn btn-secondary" style="padding: 8px 12px; font-size: 0.8rem;" onclick="selectAllCompare(false)">Limpar Seleção</button>
+                        <button type="button" class="btn btn-terciary" style="padding: 8px 12px; font-size: 0.8rem;" onclick="selectAllCompare(true)">Selecionar Todos</button>
+                        <button type="button" class="btn btn-terciary" style="padding: 8px 12px; font-size: 0.8rem;" onclick="selectAllCompare(false)">Limpar Seleção</button>
                     </div>
                     <button type="button" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.9rem;" onclick="applyCompareFilter()">Aplicar Filtro</button>
                 </div>
@@ -591,7 +593,7 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
                     <!-- Seção 1: Grade de Horários -->
                     <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column;">
-                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-secondary);">📅 Grade de Horários (Compromissos)</h3>
+                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-secondary);"><i class="fa-solid fa-calendar-days"></i> Grade de Horários (Compromissos)</h3>
                         <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; flex-grow: 1;">
                             Exporta a planilha com a disponibilidade de 30 em 30 minutos e todos os compromissos cadastrados.
                         </p>
@@ -599,7 +601,7 @@
                         <!-- Aviso de filtro ativo no workspace -->
                         <div id="workspace-export-filter-notice" style="display: none; background: rgba(245, 158, 11, 0.08); border-left: 4px solid #F59E0B; padding: 10px 12px; border-radius: 6px; margin-bottom: 12px; text-align: left;">
                             <span style="color: #D97706; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
-                                ⚠️ Exportação Filtrada
+                                <i class="fa-solid fa-triangle-exclamation"></i> Exportação Filtrada
                             </span>
                             <p style="margin: 0; font-size: 0.75rem; color: var(--text-main); line-height: 1.3;" id="workspace-export-filter-notice-text">
                                 Apenas os alunos visíveis na tela serão incluídos na planilha.
@@ -630,7 +632,7 @@
 
                     <!-- Seção 2: Grupos Formados -->
                     <div id="export-groups-section-container" style="display: none; padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255, 255, 255, 0.02); flex-direction: column;">
-                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-secondary);">👥 Divisão de Grupos Formados</h3>
+                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-secondary);"><i class="fa-solid fa-users"></i> Divisão de Grupos Formados</h3>
                         <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; flex-grow: 1;">
                             Exporta a listagem com a divisão de alunos em seus respectivos horários e grupos.
                         </p>
@@ -675,7 +677,7 @@
         <div class="glass-panel modal-card" style="max-width: 520px; width: 100%; padding: 24px; position: relative;">
             <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-weight: 700; color: #D97706; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.15rem;">
-                    ⚠️ PDFs Não Processados
+                    <i class="fa-solid fa-triangle-exclamation"></i> PDFs Não Processados
                 </h3>
                 <button onclick="closeUnprocessedPDFsModal()" style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
             </div>
@@ -692,7 +694,7 @@
                 </div>
 
                 <div style="background: rgba(245, 158, 11, 0.08); border-left: 3px solid #F59E0B; padding: 10px 12px; border-radius: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                    💡 <strong>Dica:</strong> Verifique se os arquivos são PDFs com texto selecionável (com tabela de horários). Arquivos digitalizados como imagem requerem leitura OCR antes do envio.
+                    <i class="fa-solid fa-lightbulb"></i> <strong>Dica:</strong> Verifique se os arquivos são PDFs com texto selecionável (com tabela de horários). Arquivos digitalizados como imagem requerem leitura OCR antes do envio.
                 </div>
             </div>
 
@@ -711,7 +713,7 @@
             <div class="modal-header" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0;">
                 <div>
                     <h3 style="font-weight: 700; color: var(--text-main); margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px; font-size: 1.25rem;">
-                        ➕ Adicionar Alunos
+                        <i class="fa-solid fa-plus"></i> Adicionar Alunos
                     </h3>
                     <p style="margin: 0; font-size: 0.88rem; color: var(--text-muted); font-weight: 500;">
                         Adicionar um ou mais alunos para a turma <strong>"{{ turma.nome }}"</strong>
@@ -737,7 +739,7 @@
                         <!-- Botão de Upload Customizado -->
                         <div style="margin-bottom: 12px;">
                             <label class="btn btn-terciary" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: 1px dashed var(--color-secondary);  width: 100%; box-sizing: border-box; justify-content: center;">
-                                📄 Escolher PDF(s) para {{ turma.nome }}
+                                <i class="fa-solid fa-file-pdf"></i> Escolher PDF(s) para {{ turma.nome }}
                                 <input type="file" id="turma-pdf-files-input" name="pdf_files" accept=".pdf" multiple onchange="handleTurmaAddAlunoFilesSelect(event)" style="display: none;">
                             </label>
                         </div>
@@ -769,7 +771,7 @@
         <div class="glass-panel modal-card" style="max-width: 500px; width: 100%; padding: 24px; position: relative;">
             <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-weight: 700; color: #D97706; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.15rem;">
-                    ⚠️ Aluno(s) Já Existente(s)
+                    <i class="fa-solid fa-triangle-exclamation"></i> Aluno(s) Já Existente(s)
                 </h3>
                 <button onclick="closeTurmaConfirmStudentUpdateModal()" style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
             </div>

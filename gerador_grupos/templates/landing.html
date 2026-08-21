@@ -307,18 +307,22 @@
             <button class="header-tab-btn" id="tab-btn-home" onclick="switchLandingTab('home')"
                 style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 16px;"
                 title="Home">
+                <i class="fa-solid fa-house-chimney"></i>
                 <span>Home</span>
             </button>
             <button class="header-tab-btn active" id="tab-btn-imersao" onclick="switchLandingTab('imersao')">
+                <i class="fa-solid fa-graduation-cap"></i>
                 Turmas
             </button>
             <button class="header-tab-btn" id="tab-btn-academy" onclick="switchLandingTab('academy')">
+                <i class="fa-solid fa-users"></i>
                 Alunos
             </button>
 
             {% if is_admin %}
             <a href="{{ url_for('manage_users') }}" class="header-tab-btn" id="tab-btn-users"
                 style="text-decoration: none;">
+                <i class="fa-solid fa-gear"></i>
                 Gerenciar Usuários
             </a>
             {% endif %}
@@ -330,8 +334,8 @@
                 <label class="theme-switch" for="checkbox-theme">
                     <input type="checkbox" id="checkbox-theme">
                     <div class="slider">
-                        <span style="font-size: 10px; margin-left: 5px;">☀️</span>
-                        <span style="font-size: 10px; margin-right: 5px;">🌙</span>
+                        <span style="font-size: 10px; margin-left: 5px;"><i class="fa-solid fa-sun"></i></span>
+                        <span style="font-size: 10px; margin-right: 5px;"><i class="fa-solid fa-moon"></i></span>
                     </div>
                 </label>
             </div>
@@ -367,7 +371,7 @@
             style="padding: 24px; border-left: 4px solid var(--color-warning); background: rgba(255, 193, 7, 0.05); border-radius: 12px; text-align: left; box-sizing: border-box;">
             <h4
                 style="margin: 0 0 10px 0; color: var(--color-warning); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-                <span>⚠️</span> Configuração de Segurança Pendente
+                <span><i class="fa-solid fa-triangle-exclamation"></i></span> Configuração de Segurança Pendente
             </h4>
             <p style="margin: 0 0 20px 0; font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">
                 Sua conta não possui uma pergunta de segurança configurada. Configure-a para poder recuperar sua senha.
@@ -431,7 +435,8 @@
                     style="width: 100%; max-width: 480px; padding: 20px; border-radius: 12px; display: flex; align-items: center; justify-content: center; box-sizing: border-box;">
                     <button class="btn btn-primary" onclick="handleHomeAddTurmaClick()"
                         style="width: 100%; padding: 14px 28px; font-size: 1.05rem; font-weight: 700; border-radius: 8px; cursor: pointer;">
-                        Adicionar Turmas
+                       <i class="fa-solid fa-plus"></i>
+                       Adicionar Turmas
                     </button>
                 </div>
                 {% else %}
@@ -483,7 +488,8 @@
                 {% if is_admin %}
                 <button class="btn btn-primary" onclick="openCreateModal()"
                     style="border-radius: 8px; font-weight: 600; padding: 10px 20px;">
-                    + Nova Turma
+                    <i class="fa-solid fa-plus"></i> 
+                    Nova Turma
                 </button>
                 {% endif %}
             </div>
@@ -552,19 +558,20 @@
                 </div>
                 
 
-                <!-- Botão Exportar Dados -->
+                <!-- Botão de exportar planilha -->
                 <div style="display: flex; gap: 12px; align-items: center;">
                     <button class="btn btn-secondary"
                         style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;"
                         onclick="openAllExportModal()">
-                        ⬇️ Exportar Dados
+                            Exportar Planilha
                     </button>
 
                     <!-- Botão Add Aluno (Admin/Superadmin) -->
                     {% if is_admin %}
                         <button class="btn btn-primary" id="btn-add-aluno"
                             onclick="openAddAlunoModal()">
-                            ➕ Adicionar Novo Aluno
+                            <i class="fa-solid fa-plus"></i> 
+                            Adicionar Novo Aluno
                         </button>
                     {% endif %}
                 </div>
@@ -640,7 +647,8 @@
                             <button class="btn btn-terciary" id="btn-filter-turmas"
                                 style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;"
                                 onclick="openFilterTurmasModal()">
-                                📂 Filtrar Turmas
+                                <i class="fa-solid fa-graduation-cap"></i> 
+                                Filtrar Turmas
                             </button>
                         </div>
 
@@ -649,7 +657,8 @@
                             <button class="btn btn-terciary"
                                 style="padding: 8px 16px; font-size: 0.85rem; height: 38px; border-radius: 8px; font-weight: 600; box-sizing: border-box;"
                                 onclick="openAllCompareModal()">
-                                🔍 Comparar Alunos
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                                 Comparar Alunos
                             </button>
                         </div>
 
@@ -791,7 +800,7 @@
         <div class="glass-panel modal-card" style="padding: 24px; position: relative; max-width: 500px; width: 100%;">
             <div class="modal-header"
                 style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">📂 Filtrar Turmas</h3>
+                <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">Filtrar Turmas</h3>
                 <button class="modal-close" onclick="closeFilterTurmasModal()"
                     style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
             </div>
@@ -833,7 +842,7 @@
         <div class="glass-panel modal-card" style="padding: 24px; position: relative; max-width: 500px; width: 100%;">
             <div class="modal-header"
                 style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">🔍 Comparar Alunos</h3>
+                <h3 style="font-weight: 700; color: var(--text-main); margin: 0;">Comparar Alunos</h3>
                 <button class="modal-close" onclick="closeAllCompareModal()"
                     style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
             </div>
@@ -932,7 +941,7 @@
                     style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #F59E0B; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
                     <span
                         style="color: #D97706; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-                        ⚠️ Exportação Filtrada
+                        <i class="fa-solid fa-triangle-exclamation"></i> Exportação Filtrada
                     </span>
                     <p style="margin: 0; font-size: 0.85rem; color: var(--text-main); line-height: 1.4;">
                         Serão exportados apenas os alunos visíveis na tabela com base nos filtros ativos.
@@ -958,7 +967,7 @@
             <div class="modal-header" style="margin-bottom: 6px; display: flex; justify-content: space-between; align-items: flex-start; flex-shrink: 0;">
                 <div>
                     <h3 style="font-weight: 700; color: var(--text-main); margin: 0 0 4px 0; display: flex; align-items: center; gap: 8px; font-size: 1.25rem;">
-                        ➕ Adicionar Alunos
+                        <i class="fa-solid fa-plus"></i> Adicionar Alunos
                     </h3>
                     <p style="margin: 0; font-size: 0.88rem; color: var(--text-muted); font-weight: 500;">
                         Selecione a turma que deseja adicionar um ou mais alunos
@@ -970,7 +979,7 @@
             <!-- Botão de Ação: Nova Turma -->
             <div style="margin-bottom: 12px; display: flex; justify-content: flex-end; flex-shrink: 0;">
                 <button type="button" class="btn btn-secondary" onclick="openCreateBlankTurmaModal()" style="padding: 8px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; border: 1px dashed var(--color-secondary); color: var(--color-secondary); background: transparent;">
-                    ➕ Nova Turma
+                    <i class="fa-solid fa-plus"></i> Nova Turma
                 </button>
             </div>
             
@@ -1001,7 +1010,7 @@
         <div class="glass-panel modal-card" style="max-width: 440px; width: 100%; padding: 24px; position: relative;">
             <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-weight: 700; color: var(--text-main); margin: 0; font-size: 1.1rem;">
-                    ➕ Cadastrar Nova Turma
+                    <i class="fa-solid fa-plus"></i> Cadastrar Nova Turma
                 </h3>
                 <button onclick="closeCreateBlankTurmaModal()" style="background: none; border: none; font-size: 1.8rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
             </div>
@@ -1036,7 +1045,7 @@
         <div class="glass-panel modal-card" style="max-width: 500px; width: 100%; padding: 24px; position: relative;">
             <div class="modal-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="font-weight: 700; color: #D97706; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.15rem;">
-                    ⚠️ Aluno(s) Já Existente(s)
+                    <i class="fa-solid fa-triangle-exclamation"></i> Aluno(s) Já Existente(s)
                 </h3>
                 <button onclick="closeConfirmStudentUpdateModal()" style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease;" onmouseover="this.style.color='#EF4444'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
             </div>
@@ -1068,7 +1077,7 @@
                 style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                 <h3
                     style="font-weight: 700; color: var(--color-danger); margin: 0; display: flex; align-items: center; gap: 8px;">
-                    ⚠️ Conflito de Horário
+                    <i class="fa-solid fa-triangle-exclamation"></i> Conflito de Horário
                 </h3>
                 <button class="modal-close" onclick="closeConflictResolutionModal()"
                     style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); padding: 0;">&times;</button>
@@ -1117,7 +1126,7 @@
                 style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
                 <h3
                     style="font-weight: 700; color: #D97706; margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.15rem;">
-                    ⚠️ PDFs Não Processados
+                    <i class="fa-solid fa-triangle-exclamation"></i> PDFs Não Processados
                 </h3>
                 <button onclick="closeUnprocessedPDFsModal()"
                     style="background: none; border: none; font-size: 2rem; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 4px; transition: color 0.15s ease;"
@@ -1140,7 +1149,7 @@
 
                 <div
                     style="background: rgba(245, 158, 11, 0.08); border-left: 3px solid #F59E0B; padding: 10px 12px; border-radius: 6px; font-size: 0.8rem; color: var(--text-muted);">
-                    💡 <strong>Dica:</strong> Verifique se os arquivos são PDFs com texto selecionável (com tabela de
+                    <i class="fa-solid fa-lightbulb"></i> <strong>Dica:</strong> Verifique se os arquivos são PDFs com texto selecionável (com tabela de
                     horários). Arquivos digitalizados como imagem requerem leitura OCR antes do envio.
                 </div>
             </div>
@@ -1384,10 +1393,10 @@
             const btnFilter = document.getElementById('btn-filter-turmas');
             if (btnFilter) {
                 if (selectedFilterTurmas.size > 0) {
-                    btnFilter.innerText = `📂 Turmas (${selectedFilterTurmas.size})`;
+                    btnFilter.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> Turmas (${selectedFilterTurmas.size})`;
                     btnFilter.style.borderColor = 'var(--color-secondary)';
                 } else {
-                    btnFilter.innerText = '📂 Filtrar Turmas';
+                    btnFilter.innerHTML = '<i class="fa-solid fa-graduation-cap"></i> Filtrar Turmas';
                     btnFilter.style.borderColor = 'var(--border-color)';
                 }
             }
@@ -1481,7 +1490,7 @@
                                 </h2>
                                 
                                 <span style="font-size: 0.7rem; color: var(--text-muted); font-weight:500;">
-                                    📂 ${turmaNome}
+                                    <i class="fa-solid fa-graduation-cap"></i> ${turmaNome}
                                 </span>
                             </div>
                         </div>
@@ -2216,7 +2225,7 @@
             if (!globalTurmasData || globalTurmasData.length === 0) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 24px; color: var(--text-muted);">
-                        Nenhuma turma cadastrada. Clique no botão "➕ Nova Turma" acima para começar!
+                        Nenhuma turma cadastrada. Clique no botão "<i class="fa-solid fa-plus"></i> Nova Turma" acima para começar!
                     </div>
                 `;
                 return;
@@ -2238,7 +2247,7 @@
                 card.innerHTML = `
                     <div class="multi-turma-header" onclick="toggleTurmaCardAccordion(${turma.id})" style="padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; background: rgba(0,0,0,0.01);">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-size: 1.1rem;">📁</span>
+                            <span style="font-size: 1.1rem;"><i class="fa-solid fa-folder"></i></span>
                             <span style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">${turma.nome}</span>
                             ${turma.em_imersao ? '<span class="meta-badge" style="font-size: 0.72rem; padding: 2px 8px; background: rgba(139,92,246,0.12); color: #8B5CF6;">Imersão</span>' : ''}
                         </div>
@@ -2260,7 +2269,7 @@
 
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <label class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.82rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: 1px dashed var(--color-secondary); color: var(--color-secondary); margin: 0;">
-                                📄 Inserir PDF(s) para ${turma.nome}
+                                <i class="fa-solid fa-file-pdf"></i> Inserir PDF(s) para ${turma.nome}
                                 <input type="file" accept=".pdf" multiple onchange="handleTurmaFilesSelect(event, ${turma.id})" style="display: none;">
                             </label>
                         </div>
@@ -2338,7 +2347,7 @@
                 item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem;';
                 item.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 85%;">
-                        <span style="color: #EF4444;">📄</span>
+                        <span style="color: #EF4444;"><i class="fa-solid fa-file-pdf"></i></span>
                         <span style="font-weight: 600; color: var(--text-main);">${file.name}</span>
                         <span style="color: var(--text-muted); font-size: 0.75rem;">(${(file.size / 1024).toFixed(1)} KB)</span>
                     </div>
@@ -2424,7 +2433,7 @@
                 item.style.cssText = "display: flex; align-items: center; justify-content: space-between; color: #D97706; font-weight: 600; font-size: 0.85rem;";
                 const nomeAl = typeof itemInfo === 'object' ? itemInfo.aluno : itemInfo;
                 const turmaNm = typeof itemInfo === 'object' ? itemInfo.turma : '';
-                item.innerHTML = `<span>👤 ${nomeAl}</span> <span style="font-size: 0.75rem; color: var(--text-muted);">(${turmaNm})</span>`;
+                item.innerHTML = `<span><i class="fa-solid fa-user"></i> ${nomeAl}</span> <span style="font-size: 0.75rem; color: var(--text-muted);">(${turmaNm})</span>`;
                 list.appendChild(item);
             });
 
@@ -2432,7 +2441,7 @@
             if (pendingUnprocessedDataMultiTurma && pendingUnprocessedDataMultiTurma.nao_processados_count > 0) {
                 const warnDiv = document.createElement('div');
                 warnDiv.style.cssText = "margin-top: 12px; padding: 8px 12px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #EF4444; border-radius: 6px; font-size: 0.8rem; color: #EF4444;";
-                warnDiv.innerHTML = `⚠️ <strong>${pendingUnprocessedDataMultiTurma.nao_processados_count} arquivo(s)</strong> não puderam ser lidos (erro de leitura) e serão detalhados.`;
+                warnDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>${pendingUnprocessedDataMultiTurma.nao_processados_count} arquivo(s)</strong> não puderam ser lidos (erro de leitura) e serão detalhados.`;
                 list.appendChild(warnDiv);
             }
 
@@ -2476,11 +2485,11 @@
             if (!container) return;
             const toast = document.createElement('div');
             toast.className = 'toast';
-            let icon = 'ℹ️';
+            let icon = '<i class="fa-regular fa-circle-info"></i>';
             let border = 'var(--color-secondary)';
-            if (type === 'success') { icon = '✅'; border = 'var(--color-success)'; }
-            else if (type === 'danger' || type === 'error') { icon = '⚠️'; border = 'var(--color-danger)'; }
-            else if (type === 'warning') { icon = '⚠️'; border = 'var(--color-warning)'; }
+            if (type === 'success') { icon = '<i class="fa-solid fa-circle-check"></i>'; border = 'var(--color-success)'; }
+            else if (type === 'danger' || type === 'error') { icon = '<i class="fa-solid fa-triangle-exclamation"></i>'; border = 'var(--color-danger)'; }
+            else if (type === 'warning') { icon = '<i class="fa-solid fa-triangle-exclamation"></i>'; border = 'var(--color-warning)'; }
 
             toast.style.borderLeftColor = border;
             toast.innerHTML = `
@@ -2604,7 +2613,7 @@
                 const turmaHeader = document.createElement('div');
                 turmaHeader.style.cssText = "font-weight: 700; font-size: 0.88rem; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;";
                 turmaHeader.innerHTML = `
-                    <span style="display: flex; align-items: center; gap: 6px;">📁 <span>${turmaNome}</span></span>
+                    <span style="display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-folder"></i> <span>${turmaNome}</span></span>
                     <span style="font-size: 0.75rem; background: rgba(239,68,68,0.1); color: #DC2626; padding: 2px 8px; border-radius: 10px; font-weight: 600;">
                         ${turmaFalhas.length} não processado(s)
                     </span>
@@ -2623,7 +2632,7 @@
                     let type = typeof item === 'object' ? (item.type || item.tipo) : 'leitura';
                     let alunoNome = typeof item === 'object' ? (item.aluno || item.detalhes) : null;
 
-                    let icon = type === 'duplicado' || type === 'duplicate' ? 'ℹ️' : '📄';
+                    let icon = type === 'duplicado' || type === 'duplicate' ? '<i class="fa-regular fa-circle-info"></i>' : '<i class="fa-solid fa-file-pdf"></i>';
                     let color = type === 'duplicado' || type === 'duplicate' ? 'var(--text-main)' : '#DC2626';
                     let reasonBadge = (type === 'duplicado' || type === 'duplicate')
                         ? `<span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #2563EB; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Aluno Duplicado${alunoNome ? ': ' + alunoNome : ''}</span>`
