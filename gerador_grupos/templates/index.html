@@ -23,10 +23,10 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 15px;">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; font-weight: 600;">
-                ⬅️ Turmas
+            <a href="{{ url_for('index') }}" class="btn btn-terciary" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                ⬅️Voltar para Turmas
             </a>
-            <div id="active-turma-indicator" style="font-weight: 700; font-size: 1.1rem; color: var(--color-primary);">
+            <div id="active-turma-indicator" style="font-weight: 700; font-size: 1.1rem; color: var(--color-secondary);">
                 Turma: <span id="active-turma-name">{{ turma.nome }}</span>
             </div>
         </div>
@@ -235,13 +235,6 @@
             {% endif %}
 
             <div style="display: flex; gap: 12px; align-items: center;">
-                {% if is_admin %}
-                <!-- Botão Add Aluno (Admin/Superadmin) -->
-                <button class="btn btn-primary" id="btn-add-aluno-turma" onclick="openTurmaAddAlunoModal()" style="background: var(--color-primary); display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
-                    ➕ Add Aluno
-                </button>
-                {% endif %}
-
                 {% if turma.em_imersao %}
                 <!-- Reconfigurar grupos de forma dinâmica -->
                 <button class="btn btn-secondary" onclick="showConfigPanelFromWorkspace()">
@@ -249,10 +242,18 @@
                 </button>
                 {% endif %}
 
+            
                 <!-- Botão Único de Exportação -->
-                <button class="btn btn-primary" onclick="openUnifiedExportModal()">
+                <button class="btn btn-secondary" onclick="openUnifiedExportModal()">
                     ⬇️ Exportar Dados
                 </button>
+
+                {% if is_admin %}
+                <!-- Botão Add Aluno (Admin/Superadmin) -->
+                <button class="btn btn-primary" id="btn-add-aluno-turma" onclick="openTurmaAddAlunoModal()">
+                    ➕ Adicionar Novo Aluno
+                </button>
+                {% endif %}
             </div>
         </div>
 
@@ -319,7 +320,7 @@
                         </div>
                         
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <button class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.85rem; height: 38px;" onclick="openCompareModal()">
+                            <button class="btn btn-terciary" style="padding: 8px 16px; font-size: 0.85rem; height: 38px;" onclick="openCompareModal()">
                                 🔍 Comparar Alunos
                             </button>
                         </div>
@@ -490,8 +491,8 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                <button class="btn btn-secondary" onclick="closeConflictResolutionModal()" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:600;">Cancelar</button>
-                <button class="btn btn-primary" id="btn-confirm-conflict-swap" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:700; background: var(--color-danger); border-color: var(--color-danger);">Realizar Troca</button>
+                <button class="btn btn-terciary" onclick="closeConflictResolutionModal()" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:600;">Cancelar</button>
+                <button class="btn btn-secondary" id="btn-confirm-conflict-swap" style="padding: 10px 18px; border-radius: 8px; font-size:0.9rem; font-weight:700; background: var(--color-danger); border-color: var(--color-danger);">Realizar Troca</button>
             </div>
         </div>
     </div>
@@ -591,7 +592,7 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
                     <!-- Seção 1: Grade de Horários -->
                     <div style="padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column;">
-                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-primary);">📅 Grade de Horários (Compromissos)</h3>
+                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-secondary);">📅 Grade de Horários (Compromissos)</h3>
                         <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; flex-grow: 1;">
                             Exporta a planilha com a disponibilidade de 30 em 30 minutos e todos os compromissos cadastrados.
                         </p>
@@ -619,7 +620,7 @@
                         </div>
 
                         <div style="display: flex; gap: 8px; margin-top: auto;">
-                            <button class="btn btn-primary" style="flex: 1; font-size: 0.8rem; padding: 8px 12px;" onclick="submitGroupExport('xlsx')">
+                            <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem; padding: 8px 12px;" onclick="submitGroupExport('xlsx')">
                                 Excel (.xlsx)
                             </button>
                             <button class="btn btn-secondary" style="flex: 1; font-size: 0.8rem; padding: 8px 12px;" onclick="submitGroupExport('csv')">
@@ -630,7 +631,7 @@
 
                     <!-- Seção 2: Grupos Formados -->
                     <div id="export-groups-section-container" style="display: none; padding: 16px; border: 1px solid var(--border-color); border-radius: 12px; background: rgba(255, 255, 255, 0.02); flex-direction: column;">
-                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-primary);">👥 Divisão de Grupos Formados</h3>
+                        <h3 style="margin-top: 0; margin-bottom: 6px; font-size: 1.1rem; color: var(--color-secondary);">👥 Divisão de Grupos Formados</h3>
                         <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px; flex-grow: 1;">
                             Exporta a listagem com a divisão de alunos em seus respectivos horários e grupos.
                         </p>
@@ -736,7 +737,7 @@
 
                         <!-- Botão de Upload Customizado -->
                         <div style="margin-bottom: 12px;">
-                            <label class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: 1px dashed var(--color-primary); color: var(--color-primary); width: 100%; box-sizing: border-box; justify-content: center;">
+                            <label class="btn btn-terciary" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; font-size: 0.88rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: 1px dashed var(--color-secondary);  width: 100%; box-sizing: border-box; justify-content: center;">
                                 📄 Escolher PDF(s) para {{ turma.nome }}
                                 <input type="file" id="turma-pdf-files-input" name="pdf_files" accept=".pdf" multiple onchange="handleTurmaAddAlunoFilesSelect(event)" style="display: none;">
                             </label>
@@ -753,10 +754,10 @@
 
                 <!-- Rodapé Fixo -->
                 <div class="modal-footer" style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 12px; flex-shrink: 0; padding-top: 12px; border-top: 1px solid var(--border-color);">
-                    <button type="button" class="btn btn-secondary" onclick="closeTurmaAddAlunoModal()" style="padding: 10px 18px; font-weight: 600; font-size: 0.9rem;">
+                    <button type="button" class="btn btn-terciary" onclick="closeTurmaAddAlunoModal()" style="padding: 10px 18px; font-weight: 600; font-size: 0.9rem;">
                         Cancelar
                     </button>
-                    <button type="submit" class="btn btn-primary" id="btn-save-turma-add-aluno" style="padding: 10px 22px; font-weight: 700; font-size: 0.9rem;">
+                    <button type="submit" class="btn btn-secondary" id="btn-save-turma-add-aluno" style="padding: 10px 22px; font-weight: 700; font-size: 0.9rem;">
                         Confirmar e Enviar PDFs
                     </button>
                 </div>

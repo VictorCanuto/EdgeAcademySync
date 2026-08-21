@@ -136,7 +136,7 @@
 
             <a 
                 href="{{ url_for('index') }}" 
-                class="btn btn-secondary" 
+                class="btn btn-terciary" 
                 style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; font-weight: 600;">
                 ⬅️ Voltar ao AcademySync
             </a>
@@ -338,7 +338,7 @@
             const el = document.createElement('div');
             el.className = 'glass-panel';
             el.style.cssText = 'padding: 14px 18px; min-width: 260px; border-left: 4px solid ' +
-                (type === 'success' ? '#16a34a' : type === 'danger' || type === 'error' ? '#ef4444' : 'var(--color-primary)') + ';';
+                (type === 'success' ? '#16a34a' : type === 'danger' || type === 'error' ? '#ef4444' : 'var(--color-secondary)') + ';';
             el.innerHTML = '<strong style="display:block; margin-bottom:4px; color:var(--text-main);">' + title + '</strong>' +
                 '<span style="font-size:0.85rem; color:var(--text-muted);">' + desc + '</span>';
             container.appendChild(el);

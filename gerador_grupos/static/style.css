@@ -5,9 +5,11 @@
    ========================================================================== */
 :root {
     /* Cores Globais */
-    --color-primary: #4f46e5;       /* Indigo Royal */
-    --color-primary-hover: #4338ca;
-    --color-secondary: #0ea5e9;     /* Ocean Blue */
+    --color-secondary: rgb(23, 61, 107);     
+    --color-select: rgb(23, 63, 109);   
+    --color-secondary-hover: rgb(14, 42, 77);
+    --color-primary: rgb(0, 158, 180); 
+    --color-primary-hover: rgb(9, 132, 148);
     --color-success: #10b981;       /* Verde Esmeralda */
     --color-success-bg: rgba(16, 185, 129, 0.15);
     --color-danger: #ef4444;        /* Vermelho Carmesim */
@@ -128,6 +130,7 @@ body {
     flex-direction: column;
     overflow-x: hidden;
     transition: background 0.3s ease, color 0.3s ease;
+    width: 100%;
 }
 
 /* Scrollbar Customizada */
@@ -191,11 +194,23 @@ body {
 }
 
 .btn-secondary {
+    background: var(--color-secondary);
+    color: var(--text-on-accent);
+}
+.btn-secondary:hover {
+    background: var(--color-secondary-hover);
+    transform: translateY(-1px);
+}
+.btn-secondary:active {
+    transform: translateY(0);
+}
+
+.btn-terciary {
     background: transparent;
     border: 1px solid var(--border-color);
     color: var(--text-main);
 }
-.btn-secondary:hover {
+.btn-terciary:hover {
     background: var(--border-color);
     transform: translateY(-1px);
 }
@@ -234,7 +249,7 @@ body {
 }
 
 .action-bttn-edit:hover {
-    color: var(--color-primary);
+    color: var(--color-secondary);
     background: rgba(79, 70, 229, 0.1);
 }
 
@@ -265,7 +280,7 @@ body {
 .logo-icon {
     width: 38px;
     height: 38px;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%);
+    background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-accent) 100%);
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -279,7 +294,7 @@ body {
 .logo-text h1 {
     font-size: 1.3rem;
     font-weight: 700;
-    background: linear-gradient(to right, var(--text-main) 30%, var(--color-primary) 100%);
+    background: linear-gradient(to right, var(--text-main) 30%, var(--color-secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -305,13 +320,13 @@ body {
 }
 
 .header-menu-item a:hover {
-    color: var(--color-primary-hover);
+    color: var(--color-secondary-hover);
 }
 
 a.active{
-    color: var(--color-primary-hover);
+    color: var(--color-secondary-hover);
     font-weight: 600;
-    border-bottom: 2px solid var(--color-primary-hover);
+    border-bottom: 2px solid var(--color-secondary-hover);
 }
 
 
@@ -351,7 +366,7 @@ a.active{
     padding: 0 4px;
 }
 body.dark-mode .slider {
-    background-color: var(--color-primary);
+    background-color: var(--color-secondary);
 }
 .slider:before {
     background-color: white;
@@ -457,7 +472,7 @@ input:checked + .slider:before {
     margin-top: 20px;
 }
 .form-footer a {
-    color: var(--color-primary);
+    color: var(--color-secondary);
     text-decoration: none;
     font-weight: 600;
     font-size: 0.85rem;
@@ -525,7 +540,7 @@ input:checked + .slider:before {
 .stat-val {
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--color-secondary);
 }
 .stat-lbl {
     font-size: 0.75rem;
@@ -579,7 +594,7 @@ input:checked + .slider:before {
     transition: all 0.3s ease;
 }
 .wizard-step-circle.active {
-    background: var(--color-primary);
+    background: var(--color-secondary);
     color: white;
     box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
 }
@@ -599,12 +614,12 @@ input:checked + .slider:before {
     margin-bottom: 20px;
 }
 .drag-drop-area:hover, .drag-drop-area.drag-over {
-    border-color: var(--color-primary);
+    border-color: var(--color-secondary);
     background: rgba(79, 70, 229, 0.05);
 }
 .drag-drop-area svg {
     margin-bottom: 12px;
-    color: var(--color-primary);
+    color: var(--color-secondary);
 }
 .drag-drop-area p {
     font-weight: 500;
@@ -700,7 +715,7 @@ input:checked + .slider:before {
     text-decoration: none;
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--color-primary);
+    color: var(--color-secondary);
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -729,8 +744,8 @@ input:checked + .slider:before {
     transition: all 0.2s ease;
 }
 .tab-btn.active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
+    color: var(--color-secondary);
+    border-bottom-color: var(--color-secondary);
 }
 .tab-btn:hover {
     color: var(--text-main);
@@ -1097,7 +1112,7 @@ body.dark-mode .styled-table td.aluno-name-cell {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: var(--color-primary);
+    background: var(--color-secondary);
     color: white;
     display: flex;
     align-items: center;
@@ -1158,7 +1173,7 @@ body.dark-mode .styled-table td.aluno-name-cell {
     transition: background 0.15s ease;
 }
 .sug-item:hover {
-    border-color: var(--color-primary);
+    border-color: var(--color-secondary);
     background: var(--border-color);
 }
 
@@ -1311,7 +1326,7 @@ body.dark-mode .styled-table td.aluno-name-cell {
     margin-bottom: 8px;
 }
 .alert-card-action {
-    color: var(--color-primary);
+    color: var(--color-secondary);
     text-decoration: none;
     font-weight: 600;
     cursor: pointer;
@@ -1601,7 +1616,7 @@ body:not(.dark-mode) .progress-bar-container {
 .progress-bar-fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    background: linear-gradient(90deg, var(--color-secondary) 0%, var(--color-primary) 100%);
     border-radius: 4px;
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 0 12px rgba(79, 70, 229, 0.4);
@@ -1611,12 +1626,12 @@ body:not(.dark-mode) .progress-bar-container {
 .progress-bar-fill.processing {
     background: linear-gradient(
         45deg,
-        var(--color-primary) 25%,
         var(--color-secondary) 25%,
-        var(--color-secondary) 50%,
+        var(--color-primary) 25%,
         var(--color-primary) 50%,
-        var(--color-primary) 75%,
-        var(--color-secondary) 75%
+        var(--color-secondary) 50%,
+        var(--color-secondary) 75%,
+        var(--color-primary) 75%
     );
     background-size: 30px 30px;
     animation: progress-stripes 1.2s linear infinite;
@@ -1630,14 +1645,14 @@ body:not(.dark-mode) .progress-bar-container {
 .progress-percentage {
     font-size: 1.15rem;
     font-weight: 700;
-    color: var(--color-primary);
+    color: var(--color-secondary);
 }
 
 .progress-spinner {
     width: 40px;
     height: 40px;
     border: 3px solid rgba(255, 255, 255, 0.08);
-    border-top: 3px solid var(--color-primary);
+    border-top: 3px solid var(--color-secondary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px auto;
@@ -1645,7 +1660,7 @@ body:not(.dark-mode) .progress-bar-container {
 
 body:not(.dark-mode) .progress-spinner {
     border-color: rgba(15, 23, 42, 0.08);
-    border-top-color: var(--color-primary);
+    border-top-color: var(--color-secondary);
 }
 
 @keyframes spin {
@@ -1700,7 +1715,7 @@ body.dark-mode .spreadsheet-filters-bar {
 }
 .compare-student-item.selected {
     background: rgba(79, 70, 229, 0.1);
-    border-color: var(--color-primary);
+    border-color: var(--color-secondary);
 }
 body.dark-mode .compare-student-item.selected {
     background: rgba(99, 102, 241, 0.15);
@@ -1710,7 +1725,7 @@ body.dark-mode .compare-student-item.selected {
     cursor: pointer;
     width: 16px;
     height: 16px;
-    accent-color: var(--color-primary);
+    accent-color: var(--color-secondary);
     margin: 0;
 }
 

@@ -204,7 +204,7 @@ function renderSpreadsheet() {
     if (statusText) {
         let text = `Mostrando ${filteredAlunos.length} de ${listAlunos.length} alunos`;
         if (selectedCompareStudents.size > 0 || activeGroupFilter !== 'all') {
-            text += ` (Filtro Ativo - <a href="#" onclick="clearAllFilters(event)" style="color: var(--color-primary); text-decoration: none; font-weight: 600;">Limpar</a>)`;
+            text += ` (Filtro Ativo - <a href="#" onclick="clearAllFilters(event)" style="color: var(--color-secondary); text-decoration: none; font-weight: 600;">Limpar</a>)`;
         }
         statusText.innerHTML = text;
     }
@@ -653,7 +653,7 @@ function createStudentCard(alunoNome, grupoId) {
 
     card.innerHTML = `
         <div class="student-card-header">
-            <div class="stud-avatar" style="background:${temConflito ? 'var(--color-danger)' : 'var(--color-primary)'}">
+            <div class="stud-avatar" style="background:${temConflito ? 'var(--color-danger)' : 'var(--color-secondary)'}">
                 ${alunoNome[0].toUpperCase()}
             </div>
             <span class="stud-name">${alunoNome}</span>
@@ -1044,7 +1044,7 @@ function openGroupMatrix(grupoNum) {
             }
 
             if (isImersao) {
-                td.style.border = '2px solid var(--color-primary)';
+                td.style.border = '2px solid var(--color-secondary)';
             }
 
             tr.appendChild(td);
@@ -1259,7 +1259,7 @@ function showToast(title, desc, type = 'info') {
     toast.className = 'toast';
 
     let icon = 'ℹ️';
-    let border = 'var(--color-primary)';
+    let border = 'var(--color-secondary)';
 
     if (type === 'success') {
         icon = '✅';
