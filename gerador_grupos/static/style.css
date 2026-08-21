@@ -323,6 +323,57 @@ a.active{
     gap: 16px;
 }
 
+.header-turma-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.back-link:hover {
+    color: var(--color-highlight);
+}
+
+.active-turma-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 16px;
+    border-radius: 999px;
+    background: var(--color-highlight);
+    color: var(--text-on-accent);
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+}
+
+.active-turma-badge i {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.active-turma-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.85;
+}
+
+.active-turma-name {
+    font-size: 1rem;
+    font-weight: 800;
+}
+
 /* Theme Switcher Toggle */
 .theme-switch-wrapper {
     display: flex;

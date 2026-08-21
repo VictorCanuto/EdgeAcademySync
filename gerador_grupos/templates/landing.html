@@ -55,7 +55,7 @@
         .turma-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
-            border-color: var(--color-secondary);
+            border-color: var(--color-primary);
         }
 
         .turma-card-header h3 {
@@ -98,7 +98,7 @@
 
         .meta-badge {
             background: rgba(79, 70, 229, 0.1);
-            color: var(--color-secondary);
+            color: var(--color-primary);
             padding: 4px 10px;
             border-radius: 20px;
             font-size: 0.75rem;
@@ -131,7 +131,7 @@
         }
 
         .action-bttn-edit:hover{
-            color: var(--color-secondary);
+            color: var(--color-primary);
             background: rgba(79, 70, 229, 0.1);
         }
 
@@ -167,7 +167,7 @@
         }
 
         .add-turma-card:hover {
-            border-color: var(--color-secondary);
+            border-color: var(--color-primary);
             background: rgba(79, 70, 229, 0.02);
         }
 
@@ -178,7 +178,7 @@
         }
 
         .add-turma-card:hover svg {
-            color: var(--color-secondary);
+            color: var(--color-primary);
             transform: scale(1.1);
         }
 
@@ -189,7 +189,7 @@
         }
 
         .add-turma-card:hover span {
-            color: var(--color-secondary);
+            color: var(--color-primary);
         }
 
         /* Modal styles */
@@ -230,10 +230,6 @@
             display: flex;
             gap: 4px;
             padding: 4px;
-        }
-
-        body.dark-mode .header-tabs-container {
-            background: rgba(255, 255, 255, 0.03);
         }
 
         .header-tab-btn {
@@ -717,7 +713,7 @@
                         <label
                             style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
                             <input type="checkbox" name="em_imersao" id="em_imersao" value="true"
-                                style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-secondary);">
+                                style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--color-primary);">
                             <span style="font-size: 0.95rem; font-weight: 500; color: var(--text-main);">Em
                                 imersão</span>
                         </label>
@@ -978,7 +974,7 @@
 
             <!-- Botão de Ação: Nova Turma -->
             <div style="margin-bottom: 12px; display: flex; justify-content: flex-end; flex-shrink: 0;">
-                <button type="button" class="btn btn-secondary" onclick="openCreateBlankTurmaModal()" style="padding: 8px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; border: 1px dashed var(--color-secondary); color: var(--color-secondary); background: transparent;">
+                <button type="button" class="btn btn-secondary" onclick="openCreateBlankTurmaModal()" style="padding: 8px 14px; font-size: 0.85rem; font-weight: 600; border-radius: 8px; border: 1px dashed var(--color-primary); color: var(--color-primary); background: transparent;">
                     <i class="fa-solid fa-plus"></i> Nova Turma
                 </button>
             </div>
@@ -1024,7 +1020,7 @@
                     </div>
 
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none;">
-                        <input type="checkbox" name="em_imersao" id="blank-em-imersao" value="true" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-secondary);">
+                        <input type="checkbox" name="em_imersao" id="blank-em-imersao" value="true" style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--color-primary);">
                         <span style="font-size: 0.9rem; font-weight: 500; color: var(--text-main);">Em imersão</span>
                     </label>
                 </div>
@@ -1394,7 +1390,7 @@
             if (btnFilter) {
                 if (selectedFilterTurmas.size > 0) {
                     btnFilter.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> Turmas (${selectedFilterTurmas.size})`;
-                    btnFilter.style.borderColor = 'var(--color-secondary)';
+                    btnFilter.style.borderColor = 'var(--color-primary)';
                 } else {
                     btnFilter.innerHTML = '<i class="fa-solid fa-graduation-cap"></i> Filtrar Turmas';
                     btnFilter.style.borderColor = 'var(--border-color)';
@@ -1406,7 +1402,7 @@
             if (statusText) {
                 let text = `Mostrando ${filteredAlunos.length} de ${allStudentsData.listaAlunos.length} alunos`;
                 if (selectedAllCompareStudents.size > 0 || searchQuery !== '' || selectedFilterTurmas.size > 0) {
-                    text += ` (Filtro Ativo - <a href="#" onclick="clearAllAllFilters(event)" style="color: var(--color-secondary); text-decoration: none; font-weight: 600;">Limpar</a>)`;
+                    text += ` (Filtro Ativo - <a href="#" onclick="clearAllAllFilters(event)" style="color: var(--color-primary); text-decoration: none; font-weight: 600;">Limpar</a>)`;
                 }
                 statusText.innerHTML = text;
             }
@@ -2268,7 +2264,7 @@
                         </div>
 
                         <div style="display: flex; gap: 10px; align-items: center;">
-                            <label class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.82rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: 1px dashed var(--color-secondary); color: var(--color-secondary); margin: 0;">
+                            <label class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.82rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: 1px dashed var(--color-primary); color: var(--color-primary); margin: 0;">
                                 <i class="fa-solid fa-file-pdf"></i> Inserir PDF(s) para ${turma.nome}
                                 <input type="file" accept=".pdf" multiple onchange="handleTurmaFilesSelect(event, ${turma.id})" style="display: none;">
                             </label>
@@ -2486,7 +2482,7 @@
             const toast = document.createElement('div');
             toast.className = 'toast';
             let icon = '<i class="fa-regular fa-circle-info"></i>';
-            let border = 'var(--color-secondary)';
+            let border = 'var(--color-primary)';
             if (type === 'success') { icon = '<i class="fa-solid fa-circle-check"></i>'; border = 'var(--color-success)'; }
             else if (type === 'danger' || type === 'error') { icon = '<i class="fa-solid fa-triangle-exclamation"></i>'; border = 'var(--color-danger)'; }
             else if (type === 'warning') { icon = '<i class="fa-solid fa-triangle-exclamation"></i>'; border = 'var(--color-warning)'; }
