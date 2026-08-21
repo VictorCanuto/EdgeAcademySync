@@ -14,13 +14,12 @@
        BARRA DE NAVEGAÇÃO SUPERIOR (HEADER)
        ========================================================================== -->
     <header class="main-header" id="app-header">
-        <div class="logo-block">
-            <div class="logo-icon">A</div>
-            <div class="logo-text">
-                <h1>AcademySync</h1>
-                <p>Edge Academy Study Groups</p>
+        <a href="" class="logo-container">
+            <div class="logo-block">
+                <img class="logo" src="{{ url_for('static', filename='images/edge-academy-horizontal-logo.png') }}"/>
             </div>
-        </div>
+            <p class="logo-subtext">AcademySync</p>
+        </a>
 
         <div style="display: flex; align-items: center; gap: 15px;">
             <a href="{{ url_for('index') }}" class="btn btn-terciary" style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; font-weight: 600;">
