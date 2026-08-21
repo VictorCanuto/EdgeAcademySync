@@ -284,6 +284,25 @@ body {
 .logo{
     width: 100%;
     height: 100%;
+    object-fit: contain;
+}
+
+.logo-dark {
+    display: none;
+}
+
+.logo-light {
+    display: block;
+}
+
+body.dark-mode .logo-light,
+[data-theme='dark'] .logo-light {
+    display: none;
+}
+
+body.dark-mode .logo-dark,
+[data-theme='dark'] .logo-dark {
+    display: block;
 }
 
 .logo-subtext{
