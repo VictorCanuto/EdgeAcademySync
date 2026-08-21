@@ -596,14 +596,14 @@ function renderKanban() {
                 <div>
                     <h3>Grupo ${g.Grupo}</h3>
                     <span style="font-size:0.7rem; color: var(--text-muted); font-weight:600;">
-                        🗓️ ${g.Dia} (${g.Horário})
+                        <i class="fa-solid fa-calendar-days"></i> ${g.Dia} (${g.Horário})
                     </span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div class="grp-badge">${g.Membros.length} alunos</div>
                     <div class="export-dropdown" id="export-dropdown-grp-${g.Grupo}" style="margin: 0;">
                         <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;" onclick="toggleGroupExportMenu(${g.Grupo}); event.stopPropagation();">
-                            ⬇️
+                            <i class="fa-solid fa-chevron-down"></i>
                         </button>
                         <div class="export-menu" style="width: 140px; right: 0;">
                             <a href="/download/grupo/${window.flaskData.turmaId}/${g.Grupo}?format=xlsx" class="export-item" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none;">Excel (.xlsx)</a>
@@ -616,7 +616,7 @@ function renderKanban() {
             <div class="column-cards-container" id="column-cards-grp-${g.Grupo}"></div>
             
             <button class="btn btn-secondary" style="margin-top: 14px; font-size: 0.75rem; padding: 6px;" onclick="openGroupMatrix(${g.Grupo})">
-                👁️ Ver Compatibilidade
+                <i class="fa-regular fa-eye"></i> Ver Compatibilidade
             </button>
         `;
         container.appendChild(col);
@@ -657,7 +657,7 @@ function createStudentCard(alunoNome, grupoId) {
                 ${alunoNome[0].toUpperCase()}
             </div>
             <span class="stud-name">${alunoNome}</span>
-            ${temConflito ? '<span style="font-size:0.9rem; margin-left:auto;">⚠️</span>' : ''}
+            ${temConflito ? '<span style="font-size:0.9rem; margin-left:auto;"><i class="fa-solid fa-triangle-exclamation"></i></span>' : ''}
         </div>
         <div class="sugestoes-block">
             <button class="sugs-btn" onclick="toggleSugDropdown(event, '${alunoNome}', ${grupoId})">
@@ -844,7 +844,7 @@ function renderAlertsDrawer() {
     if (activeConflicts.length === 0) {
         list.innerHTML = `
             <div style="text-align:center; padding: 40px 10px; color: var(--text-muted);">
-                <div style="font-size: 2rem; margin-bottom: 10px;">🎉</div>
+                <div style="font-size: 2rem; margin-bottom: 10px;"><i class="fa-solid fa-circle-check"></i></div>
                 <h5 style="font-size:0.9rem; font-weight:700; color: var(--text-main);">Tudo em ordem!</h5>
                 <p style="font-size:0.75rem; margin-top:4px;">Nenhum choque de horário nos grupos da turma.</p>
             </div>
@@ -923,7 +923,7 @@ function renderSuggestions(alunoNome, grupoId, container) {
             m.sugestoes.troca_simples.forEach(t => {
                 const item = document.createElement('div');
                 item.className = 'sug-item';
-                item.innerHTML = `🔄 Trocar com <strong>${t.trocar_com}</strong> (Grupo ${t.grupo_destino})`;
+                item.innerHTML = `<i class="fa-solid fa-right-left"></i> Trocar com <strong>${t.trocar_com}</strong> (Grupo ${t.grupo_destino})`;
 
                 // Evento clique da troca
                 item.onclick = () => {
@@ -938,7 +938,7 @@ function renderSuggestions(alunoNome, grupoId, container) {
         compGrupos.forEach(gId => {
             const item = document.createElement('div');
             item.className = 'sug-item';
-            item.innerHTML = `➡️ Mover para <strong>Grupo ${gId}</strong> (Compatível)`;
+            item.innerHTML = `<i class="fa-solid fa-arrow-right"></i> Mover para <strong>Grupo ${gId}</strong> (Compatível)`;
             item.onclick = () => {
                 executeMoveOnServer(alunoNome, grupoId, gId);
             };
@@ -1197,7 +1197,7 @@ function renderFileList(files, container) {
         if (file.name.endsWith('.pdf')) {
             const item = document.createElement('div');
             item.className = 'selected-file-item';
-            item.innerHTML = `<span>📄 ${file.name}</span>`;
+            item.innerHTML = `<span style="flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; word-break: break-word;"><i class="fa-solid fa-file-pdf"></i> ${file.name}</span>`;
             container.appendChild(item);
         }
     });
@@ -1258,21 +1258,21 @@ function showToast(title, desc, type = 'info') {
     const toast = document.createElement('div');
     toast.className = 'toast';
 
-    let icon = 'ℹ️';
+    let icon = '<i class="fa-regular fa-circle-info"></i>';
     let border = 'var(--color-primary)';
 
     if (type === 'success') {
-        icon = '✅';
+        icon = '<i class="fa-solid fa-circle-check"></i>';
         border = 'var(--color-success)';
     } else if (type === 'danger') {
-        icon = '⚠️';
+        icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
         border = 'var(--color-danger)';
     } else if (type === 'warning') {
-        icon = '⚠️';
+        icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
         border = 'var(--color-warning)';
     } else if (type === 'info') {
-        icon = 'ℹ️';
-        border = 'var(--color-secondary)';
+        icon = '<i class="fa-regular fa-circle-info"></i>';
+        border = 'var(--color-primary)';
     }
 
     toast.style.borderLeftColor = border;
@@ -1321,7 +1321,7 @@ function openUnprocessedPDFsModal(data) {
         let type = typeof item === 'object' ? item.type : 'leitura';
         let alunoNome = typeof item === 'object' ? item.aluno : null;
 
-        let icon = type === 'duplicado' ? 'ℹ️' : '📄';
+        let icon = type === 'duplicado' ? '<i class="fa-regular fa-circle-info"></i>' : '<i class="fa-solid fa-file-pdf"></i>';
         let color = type === 'duplicado' ? 'var(--text-main)' : '#DC2626';
         let reasonBadge = type === 'duplicado'
             ? `<span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #2563EB; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Aluno Duplicado${alunoNome ? ': ' + alunoNome : ''}</span>`
@@ -1443,7 +1443,7 @@ function renderTurmaAddAlunoFilesList() {
         item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem;';
         item.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 85%;">
-                <span style="color: #EF4444;">📄</span>
+                <span style="color: #EF4444;"><i class="fa-solid fa-file-pdf"></i></span>
                 <span style="font-weight: 600; color: var(--text-main);">${file.name}</span>
                 <span style="color: var(--text-muted); font-size: 0.75rem;">(${(file.size / 1024).toFixed(1)} KB)</span>
             </div>
@@ -1539,7 +1539,7 @@ function openTurmaConfirmStudentUpdateModal(data) {
     existing.forEach(student => {
         const item = document.createElement('div');
         item.style.cssText = "display: flex; align-items: center; gap: 8px; color: #D97706; font-weight: 600; font-size: 0.85rem;";
-        item.innerHTML = `<span>👤</span> <span>${student}</span>`;
+        item.innerHTML = `<span><i class="fa-solid fa-user"></i></span> <span>${student}</span>`;
         list.appendChild(item);
     });
 
@@ -1547,7 +1547,7 @@ function openTurmaConfirmStudentUpdateModal(data) {
     if (pendingUnprocessedDataTurma && pendingUnprocessedDataTurma.nao_processados_count > 0) {
         const warnDiv = document.createElement('div');
         warnDiv.style.cssText = "margin-top: 12px; padding: 8px 12px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #EF4444; border-radius: 6px; font-size: 0.8rem; color: #EF4444;";
-        warnDiv.innerHTML = `⚠️ <strong>${pendingUnprocessedDataTurma.nao_processados_count} arquivo(s)</strong> não puderam ser lidos (erro de leitura) e serão detalhados.`;
+        warnDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>${pendingUnprocessedDataTurma.nao_processados_count} arquivo(s)</strong> não puderam ser lidos (erro de leitura) e serão detalhados.`;
         list.appendChild(warnDiv);
     }
 
