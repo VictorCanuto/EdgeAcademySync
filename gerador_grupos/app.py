@@ -19,6 +19,7 @@ from models.user import User
 from models.turma import Turma
 from models.grupo import Grupo
 from models.aluno import Aluno
+from models.horario_aluno import HorarioAluno
 from services.save_studant import save_studant
 
 # Carregar variáveis de ambiente do arquivo .env
@@ -1253,6 +1254,7 @@ def index():
             db.session.add(new_turma)
             db.session.commit() # Salva primeiro para gerar o ID
             
+            base_df = None
             # Processar PDFs se houver
             files = request.files.getlist('pdf_files')
             if files and files[0].filename != '':
@@ -1317,6 +1319,9 @@ def index():
             else:
                 flash(f'Turma "{nome}" criada com sucesso!', 'success')
                 
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                redirect_target = url_for('view_turma', turma_id=new_turma.id) if (base_df is not None and not base_df.empty) else url_for('index')
+                return jsonify({"success": True, "redirect_url": redirect_target})
             return redirect(url_for('index'))
             
         elif action == 'delete_turma':
@@ -1552,9 +1557,18 @@ def add_alunos_multi_turma_batch():
 
     # BLOCO 3: Interrupção para confirmação do usuário se houver duplicatas
     if todos_existentes and not confirm_update:
+        unprocessed_payload = None
+        if todos_falha_arquivos:
+            unprocessed_payload = {
+                "total_pdfs": sum(len(f_list) for f_list in turma_files_map.values()),
+                "num_alunos": sum(len(tp[3]) for tp in turmas_parsed.values()),
+                "nao_processados_count": len(todos_falha_arquivos),
+                "falha_arquivos": todos_falha_arquivos
+            }
         return jsonify({
             "requires_confirmation": True,
-            "existing_students": todos_existentes
+            "existing_students": todos_existentes,
+            "unprocessed_data": unprocessed_payload
         })
 
     # BLOCO 4: Persistência acumulada do CSV e atualização dos Alunos
@@ -1895,13 +1909,33 @@ def add_alunos_to_specific_turma(turma_id):
         if al_limpo.lower() in nomes_existentes_set:
             existentes.append(al_limpo)
 
+    # BLOCO 5 (Preparo): Mapeamento de falhas de leitura ou arquivos não processados
+    falhas_turma = process_info.get("falha_arquivos", [])
+    todos_falha_arquivos = []
+    for f_item in falhas_turma:
+        f_copy = f_item.copy() if isinstance(f_item, dict) else {"file": str(f_item), "type": "leitura"}
+        f_copy["turma"] = turma.nome
+        f_copy["turma_id"] = turma.id
+        todos_falha_arquivos.append(f_copy)
+
+    unprocessed_payload = None
+    if todos_falha_arquivos:
+        unprocessed_payload = {
+            "total_pdfs": len(files),
+            "num_alunos": len(alunos_enviados),
+            "nao_processados_count": len(todos_falha_arquivos),
+            "falha_arquivos": todos_falha_arquivos,
+            "turma_nome": turma.nome
+        }
+
     # BLOCO 3: Solicitar confirmação ao usuário se houver duplicatas e confirm_update for Falso
     if existentes and not confirm_update:
         return jsonify({
             "requires_confirmation": True,
             "existing_students": existentes,
             "turma_id": turma.id,
-            "turma_nome": turma.nome
+            "turma_nome": turma.nome,
+            "unprocessed_data": unprocessed_payload
         })
 
     # BLOCO 4: Mesclar novos horários no base_data e atualizar tabela Aluno relacional
@@ -2696,6 +2730,7 @@ def download_schedule_xlsx(turma_id):
         
         align_center = Alignment(horizontal='center', vertical='center')
         align_left = Alignment(horizontal='left', vertical='center')
+        align_hora_vertical = Alignment(horizontal='center', vertical='center', wrap_text=True)
         
         thin_border_side = Side(border_style="thin", color="CBD5E1") # Slate 300
         border_all = Border(left=thin_border_side, right=thin_border_side, top=thin_border_side, bottom=thin_border_side)
@@ -2727,10 +2762,11 @@ def download_schedule_xlsx(turma_id):
             start_col = col_idx
             for hora in HORARIOS_GRADE:
                 cell_hora = ws.cell(row=2, column=col_idx)
-                cell_hora.value = hora
+                # Formata o horário na vertical (um caractere por linha: 0\n7\n:\n0\n0)
+                cell_hora.value = "\n".join(list(hora))
                 cell_hora.font = font_header_hora
                 cell_hora.fill = fill_header_hora
-                cell_hora.alignment = align_center
+                cell_hora.alignment = align_hora_vertical
                 cell_hora.border = border_all
                 col_idx += 1
                 
@@ -2805,7 +2841,8 @@ def download_schedule_xlsx(turma_id):
                 for slot in HORARIOS_GRADE:
                     cell = ws.cell(row=row_idx, column=col_idx)
                     status = schedules[aluno_nome][f"{dia}_{slot}"]
-                    cell.value = status
+                    # Horários livres ('L') ficam sem texto para manter o layout limpo
+                    cell.value = "" if status == 'L' else status
                     cell.font = font_status
                     cell.alignment = align_center
                     cell.border = border_all
@@ -2822,10 +2859,10 @@ def download_schedule_xlsx(turma_id):
         ws.column_dimensions['A'].width = 30
         for c in range(2, col_idx):
             col_letter = get_column_letter(c)
-            ws.column_dimensions[col_letter].width = 6
+            ws.column_dimensions[col_letter].width = 4.5
             
         ws.row_dimensions[1].height = 28
-        ws.row_dimensions[2].height = 20
+        ws.row_dimensions[2].height = 65
         for r in range(3, row_idx):
             ws.row_dimensions[r].height = 24
             
@@ -3216,24 +3253,217 @@ def download_all_schedules(export_format):
     if not user:
         return "Usuário não encontrado.", 404
         
+    mode = request.args.get('mode', 'filtered')
     search_val = request.args.get('search', '').strip().lower()
     turmas_param = request.args.get('turmas', '').strip()
     students_param = request.args.get('students', '').strip()
     
+    dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
+    dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
+
+    # EXPORTAÇÃO COMPLETA MULTI-ABAS (Uma aba por Turma no Excel)
+    if mode == 'all_sheets' and export_format == 'xlsx':
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        import re
+
+        turmas_all = Turma.query.order_by(Turma.nome).all()
+        turmas_validas = [t for t in turmas_all if t.base_data]
+        if not turmas_validas:
+            return "Nenhuma turma com dados cadastrados encontrada.", 404
+
+        wb = openpyxl.Workbook()
+        default_sheet = wb.active
+
+        # Estilos padronizados
+        font_header_dia = Font(name='Segoe UI', size=11, bold=True, color='FFFFFF')
+        fill_header_dia = PatternFill(start_color='4F46E5', end_color='4F46E5', fill_type='solid')
+        
+        font_header_hora = Font(name='Segoe UI', size=9, bold=True, color='334155')
+        fill_header_hora = PatternFill(start_color='F1F5F9', end_color='F1F5F9', fill_type='solid')
+        
+        font_aluno = Font(name='Segoe UI', size=10, bold=True, color='0F172A')
+        fill_aluno = PatternFill(start_color='F8FAFC', end_color='F8FAFC', fill_type='solid')
+        
+        align_center = Alignment(horizontal='center', vertical='center')
+        align_left = Alignment(horizontal='left', vertical='center')
+        align_hora_vertical = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        
+        thin_border_side = Side(border_style="thin", color="CBD5E1")
+        border_all = Border(left=thin_border_side, right=thin_border_side, top=thin_border_side, bottom=thin_border_side)
+        
+        STATUS_COLORS = {
+            'L': 'D4EDDA',
+            'AC': 'FFE0B2',
+            'PSI': 'EBD4FC',
+            'X': 'FCC2C2',
+            'IM': 'CCE5FF',
+            'AP': 'D1ECF1',
+            'R': 'E2E3E5',
+        }
+        font_status = Font(name='Segoe UI', size=9, bold=True, color='1E293B')
+
+        for turma in turmas_validas:
+            try:
+                df = pd.read_csv(BytesIO(turma.base_data))
+            except Exception as e:
+                print(f"Erro ao ler CSV da turma {turma.id}: {e}")
+                continue
+
+            raw_title = turma.nome or f"Turma {turma.id}"
+            clean_title = re.sub(r'[\\/*?:\[\]]', '-', raw_title)[:30].strip() or f"Turma_{turma.id}"
+            existing_titles = wb.sheetnames
+            final_title = clean_title
+            counter = 1
+            while final_title in existing_titles:
+                final_title = f"{clean_title[:27]}_{counter}"
+                counter += 1
+
+            ws = wb.create_sheet(title=final_title)
+            ws.views.sheetView[0].showGridLines = True
+
+            # Cabeçalho da Aba da Turma
+            ws.merge_cells('A1:A2')
+            ws['A1'] = "Estudante"
+            ws['A1'].font = font_header_dia
+            ws['A1'].fill = fill_header_dia
+            ws['A1'].alignment = align_center
+            ws['A1'].border = border_all
+            ws['A2'].border = border_all
+
+            col_idx = 2
+            for dia in dias_semana:
+                start_col = col_idx
+                for hora in HORARIOS_GRADE:
+                    cell_hora = ws.cell(row=2, column=col_idx)
+                    cell_hora.value = "\n".join(list(hora))
+                    cell_hora.font = font_header_hora
+                    cell_hora.fill = fill_header_hora
+                    cell_hora.alignment = align_hora_vertical
+                    cell_hora.border = border_all
+                    col_idx += 1
+
+                end_col = col_idx - 1
+                start_letter = get_column_letter(start_col)
+                end_letter = get_column_letter(end_col)
+                ws.merge_cells(f"{start_letter}1:{end_letter}1")
+                cell_dia = ws[f"{start_letter}1"]
+                cell_dia.value = dia
+                cell_dia.font = font_header_dia
+                cell_dia.fill = fill_header_dia
+                cell_dia.alignment = align_center
+
+                for c in range(start_col, end_col + 1):
+                    ws.cell(row=1, column=c).border = border_all
+
+            # Alunos e horários desta turma
+            alunos_unicos = sorted(df['aluno'].unique())
+            schedules_turma = {}
+            for aluno in alunos_unicos:
+                nome_limpo = str(aluno).replace('_', ' ')
+                schedules_turma[nome_limpo] = {}
+                for dia in dias_semana:
+                    for slot in HORARIOS_GRADE:
+                        schedules_turma[nome_limpo][f"{dia}_{slot}"] = 'L'
+
+            for _, row in df.iterrows():
+                materia = row['materia']
+                if pd.isna(materia) or str(materia).strip() in ('', '---'):
+                    continue
+                intervalo = obter_intervalo_minutos(row['horario'])
+                if intervalo is None:
+                    continue
+                nome_limpo = str(row['aluno']).replace('_', ' ')
+                dia_completo = dias_completos.get(row['dia'], row['dia'])
+                materia_str = str(materia).strip()
+
+                if materia_str in ('Acompanhamento Comportamental', 'AC') or 'Acompanhamento Comportamental' in materia_str:
+                    status = 'AC'
+                elif materia_str in ('Psicoterapia', 'PSI') or 'Psicoterapia' in materia_str:
+                    status = 'PSI'
+                elif materia_str in ('Imersão', 'IM') or 'Imersão' in materia_str:
+                    status = 'IM'
+                elif materia_str in ('Acompanhamento Pedagógico', 'AP') or 'Acompanhamento Pedagógico' in materia_str:
+                    status = 'AP'
+                elif materia_str in ('Realocado', 'R') or 'Realocado' in materia_str:
+                    status = 'R'
+                elif materia_str.startswith('Custom:'):
+                    status = materia_str[7:].strip()
+                else:
+                    status = 'X'
+
+                ini, fim = intervalo
+                aluno_sched = schedules_turma.get(nome_limpo)
+                if aluno_sched is not None:
+                    for slot in slots_ocupados_no_intervalo(ini, fim):
+                        aluno_sched[f"{dia_completo}_{slot}"] = status
+
+            row_idx = 3
+            for aluno_nome in sorted(schedules_turma.keys()):
+                cell_aluno = ws.cell(row=row_idx, column=1)
+                cell_aluno.value = aluno_nome
+                cell_aluno.font = font_aluno
+                cell_aluno.fill = fill_aluno
+                cell_aluno.alignment = align_left
+                cell_aluno.border = border_all
+
+                col_idx = 2
+                for dia in dias_semana:
+                    for slot in HORARIOS_GRADE:
+                        cell = ws.cell(row=row_idx, column=col_idx)
+                        status = schedules_turma[aluno_nome][f"{dia}_{slot}"]
+                        cell.value = "" if status == 'L' else status
+                        cell.font = font_status
+                        cell.alignment = align_center
+                        cell.border = border_all
+
+                        color = STATUS_COLORS.get(status)
+                        if color:
+                            cell.fill = PatternFill(start_color=color, end_color=color, fill_type='solid')
+                        else:
+                            cell.fill = PatternFill(start_color='F5F3FF', end_color='F5F3FF', fill_type='solid')
+                        col_idx += 1
+                row_idx += 1
+
+            ws.column_dimensions['A'].width = 30
+            for c in range(2, col_idx):
+                col_letter = get_column_letter(c)
+                ws.column_dimensions[col_letter].width = 4.5
+
+            ws.row_dimensions[1].height = 28
+            ws.row_dimensions[2].height = 65
+            for r in range(3, row_idx):
+                ws.row_dimensions[r].height = 24
+
+        if default_sheet in wb.worksheets:
+            wb.remove(default_sheet)
+
+        out_buf = BytesIO()
+        wb.save(out_buf)
+        out_buf.seek(0)
+
+        return send_file(
+            out_buf,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name='grade_geral_todas_as_turmas.xlsx'
+        )
+
+    # EXPORTAÇÃO FILTRADA OU CSV
     query = Turma.query
-    if turmas_param:
+    if mode != 'all_sheets' and turmas_param:
         names_list = [x.strip() for x in turmas_param.split(',')]
         if names_list:
             query = query.filter(Turma.nome.in_(names_list))
     turmas = query.all()
     
     allowed_students_filter = None
-    if students_param:
+    if mode != 'all_sheets' and students_param:
         allowed_students_filter = {x.strip().lower() for x in students_param.split(',')}
+    if mode == 'all_sheets':
+        search_val = ''
         
-    dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
-    dias_completos = {'Seg': 'Segunda', 'Ter': 'Terça', 'Qua': 'Quarta', 'Qui': 'Quinta', 'Sex': 'Sexta', 'Sab': 'Sábado'}
-    
     schedules = {}
     
     for t in turmas:
@@ -3323,6 +3553,7 @@ def download_all_schedules(export_format):
         
         align_center = Alignment(horizontal='center', vertical='center')
         align_left = Alignment(horizontal='left', vertical='center')
+        align_hora_vertical = Alignment(horizontal='center', vertical='center', wrap_text=True)
         
         thin_border_side = Side(border_style="thin", color="CBD5E1")
         border_all = Border(left=thin_border_side, right=thin_border_side, top=thin_border_side, bottom=thin_border_side)
@@ -3360,10 +3591,11 @@ def download_all_schedules(export_format):
             start_col = col_idx
             for hora in HORARIOS_GRADE:
                 cell_hora = ws.cell(row=2, column=col_idx)
-                cell_hora.value = hora
+                # Formata o horário na vertical (um caractere por linha: 0\n7\n:\n0\n0)
+                cell_hora.value = "\n".join(list(hora))
                 cell_hora.font = font_header_hora
                 cell_hora.fill = fill_header_hora
-                cell_hora.alignment = align_center
+                cell_hora.alignment = align_hora_vertical
                 cell_hora.border = border_all
                 col_idx += 1
                 
@@ -3401,7 +3633,8 @@ def download_all_schedules(export_format):
                 for slot in HORARIOS_GRADE:
                     cell = ws.cell(row=row_idx, column=col_idx)
                     status = schedules[aluno_nome][f"{dia}_{slot}"]
-                    cell.value = status
+                    # Horários livres ('L') ficam sem texto para manter o layout limpo
+                    cell.value = "" if status == 'L' else status
                     cell.font = font_status
                     cell.alignment = align_center
                     cell.border = border_all
@@ -3418,10 +3651,10 @@ def download_all_schedules(export_format):
         ws.column_dimensions['B'].width = 15
         for c in range(3, col_idx):
             col_letter = get_column_letter(c)
-            ws.column_dimensions[col_letter].width = 6
+            ws.column_dimensions[col_letter].width = 4.5
             
         ws.row_dimensions[1].height = 28
-        ws.row_dimensions[2].height = 20
+        ws.row_dimensions[2].height = 65
         for r in range(3, row_idx):
             ws.row_dimensions[r].height = 24
             

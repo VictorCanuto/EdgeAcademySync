@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Usuários - AcademySync</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
     <style>
         body {
             background: var(--bg-card);
@@ -17,6 +19,10 @@
             margin: 40px auto;
             padding: 0 20px;
             background: var(--bg-card);
+            display: flex;
+            flex-direction: column;
+            flex: stretch;
+            justify-content: space-between;
         }
 
         .user-actions-menu {
@@ -124,21 +130,21 @@
 <body>
     <header class="main-header">
 
-        <div class="logo-block">
-            <div class="logo-icon">A</div>
-            <div class="logo-text">
-                <h1>AcademySync</h1>
-                <p>Edge Academy Study Groups</p>
+        <a href="" class="logo-container">
+            <div class="logo-block">
+                <img class="logo logo-light" src="{{ url_for('static', filename='images/edge-academy-logo.png') }}" alt="Edge Academy Logo"/>
+                <img class="logo logo-dark" src="{{ url_for('static', filename='images/modo dark.png') }}" alt="Edge Academy Logo Dark"/>
             </div>
-        </div>
+            <p class="logo-subtext">AcademySync</p>
+        </a>
          
         <div class="header-actions">
 
             <a 
                 href="{{ url_for('index') }}" 
-                class="btn btn-secondary" 
+                class="btn btn-terciary" 
                 style="padding: 6px 12px; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; font-weight: 600;">
-                ⬅️ Voltar ao AcademySync
+                <i class="fa-solid fa-arrow-left"></i>Voltar ao AcademySync
             </a>
         
             {% if session.username %}
@@ -294,15 +300,18 @@
             const saved = localStorage.getItem('theme');
             if (saved === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
+                document.body.classList.add('dark-mode');
                 if (checkbox) checkbox.checked = true;
             }
             if (checkbox) {
                 checkbox.addEventListener('change', function () {
                     if (this.checked) {
                         document.documentElement.setAttribute('data-theme', 'dark');
+                        document.body.classList.add('dark-mode');
                         localStorage.setItem('theme', 'dark');
                     } else {
                         document.documentElement.removeAttribute('data-theme');
+                        document.body.classList.remove('dark-mode');
                         localStorage.setItem('theme', 'light');
                     }
                 });
@@ -338,7 +347,7 @@
             const el = document.createElement('div');
             el.className = 'glass-panel';
             el.style.cssText = 'padding: 14px 18px; min-width: 260px; border-left: 4px solid ' +
-                (type === 'success' ? '#16a34a' : type === 'danger' || type === 'error' ? '#ef4444' : 'var(--color-primary)') + ';';
+                (type === 'success' ? '#16a34a' : type === 'danger' || type === 'error' ? '#ef4444' : 'var(--color-secondary)') + ';';
             el.innerHTML = '<strong style="display:block; margin-bottom:4px; color:var(--text-main);">' + title + '</strong>' +
                 '<span style="font-size:0.85rem; color:var(--text-muted);">' + desc + '</span>';
             container.appendChild(el);

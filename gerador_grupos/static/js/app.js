@@ -596,14 +596,14 @@ function renderKanban() {
                 <div>
                     <h3>Grupo ${g.Grupo}</h3>
                     <span style="font-size:0.7rem; color: var(--text-muted); font-weight:600;">
-                        🗓️ ${g.Dia} (${g.Horário})
+                        <i class="fa-solid fa-calendar-days"></i> ${g.Dia} (${g.Horário})
                     </span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <div class="grp-badge">${g.Membros.length} alunos</div>
                     <div class="export-dropdown" id="export-dropdown-grp-${g.Grupo}" style="margin: 0;">
                         <button class="btn btn-secondary" style="padding: 2px 6px; font-size: 0.75rem;" onclick="toggleGroupExportMenu(${g.Grupo}); event.stopPropagation();">
-                            ⬇️
+                            <i class="fa-solid fa-chevron-down"></i>
                         </button>
                         <div class="export-menu" style="width: 140px; right: 0;">
                             <a href="/download/grupo/${window.flaskData.turmaId}/${g.Grupo}?format=xlsx" class="export-item" style="padding: 6px 12px; font-size: 0.75rem; text-decoration: none;">Excel (.xlsx)</a>
@@ -616,7 +616,7 @@ function renderKanban() {
             <div class="column-cards-container" id="column-cards-grp-${g.Grupo}"></div>
             
             <button class="btn btn-secondary" style="margin-top: 14px; font-size: 0.75rem; padding: 6px;" onclick="openGroupMatrix(${g.Grupo})">
-                👁️ Ver Compatibilidade
+                <i class="fa-regular fa-eye"></i> Ver Compatibilidade
             </button>
         `;
         container.appendChild(col);
@@ -657,7 +657,7 @@ function createStudentCard(alunoNome, grupoId) {
                 ${alunoNome[0].toUpperCase()}
             </div>
             <span class="stud-name">${alunoNome}</span>
-            ${temConflito ? '<span style="font-size:0.9rem; margin-left:auto;">⚠️</span>' : ''}
+            ${temConflito ? '<span style="font-size:0.9rem; margin-left:auto;"><i class="fa-solid fa-triangle-exclamation"></i></span>' : ''}
         </div>
         <div class="sugestoes-block">
             <button class="sugs-btn" onclick="toggleSugDropdown(event, '${alunoNome}', ${grupoId})">
@@ -844,7 +844,7 @@ function renderAlertsDrawer() {
     if (activeConflicts.length === 0) {
         list.innerHTML = `
             <div style="text-align:center; padding: 40px 10px; color: var(--text-muted);">
-                <div style="font-size: 2rem; margin-bottom: 10px;">🎉</div>
+                <div style="font-size: 2rem; margin-bottom: 10px;"><i class="fa-solid fa-circle-check"></i></div>
                 <h5 style="font-size:0.9rem; font-weight:700; color: var(--text-main);">Tudo em ordem!</h5>
                 <p style="font-size:0.75rem; margin-top:4px;">Nenhum choque de horário nos grupos da turma.</p>
             </div>
@@ -923,7 +923,7 @@ function renderSuggestions(alunoNome, grupoId, container) {
             m.sugestoes.troca_simples.forEach(t => {
                 const item = document.createElement('div');
                 item.className = 'sug-item';
-                item.innerHTML = `🔄 Trocar com <strong>${t.trocar_com}</strong> (Grupo ${t.grupo_destino})`;
+                item.innerHTML = `<i class="fa-solid fa-right-left"></i> Trocar com <strong>${t.trocar_com}</strong> (Grupo ${t.grupo_destino})`;
 
                 // Evento clique da troca
                 item.onclick = () => {
@@ -938,7 +938,7 @@ function renderSuggestions(alunoNome, grupoId, container) {
         compGrupos.forEach(gId => {
             const item = document.createElement('div');
             item.className = 'sug-item';
-            item.innerHTML = `➡️ Mover para <strong>Grupo ${gId}</strong> (Compatível)`;
+            item.innerHTML = `<i class="fa-solid fa-arrow-right"></i> Mover para <strong>Grupo ${gId}</strong> (Compatível)`;
             item.onclick = () => {
                 executeMoveOnServer(alunoNome, grupoId, gId);
             };
@@ -1197,7 +1197,7 @@ function renderFileList(files, container) {
         if (file.name.endsWith('.pdf')) {
             const item = document.createElement('div');
             item.className = 'selected-file-item';
-            item.innerHTML = `<span>📄 ${file.name}</span>`;
+            item.innerHTML = `<span style="flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; word-break: break-word;"><i class="fa-solid fa-file-pdf"></i> ${file.name}</span>`;
             container.appendChild(item);
         }
     });
@@ -1210,82 +1210,33 @@ function setupUploadProgress() {
     form.addEventListener('submit', (e) => {
         const fileInput = document.getElementById('pdf-files-real');
         if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-            return; // let HTML5 validation handle empty file selection
+            return;
         }
 
         e.preventDefault();
-
-        // Show overlay
-        const overlay = document.getElementById('upload-progress-overlay');
-        const title = document.getElementById('progress-title');
-        const status = document.getElementById('progress-status');
-        const barFill = document.getElementById('progress-bar-fill');
-        const percentage = document.getElementById('progress-percentage');
-
-        if (overlay) overlay.classList.add('active');
-        if (title) title.innerText = "Preparando Envio";
-        if (status) status.innerText = "Empacotando atestados para transmissão...";
-        if (barFill) barFill.style.width = "0%";
-        if (percentage) percentage.innerText = "0%";
-
         const formData = new FormData(form);
-        const xhr = new XMLHttpRequest();
 
-        // Track upload progress
-        xhr.upload.addEventListener('progress', (event) => {
-            if (event.lengthComputable) {
-                const percent = Math.round((event.loaded / event.total) * 100);
-                if (barFill) barFill.style.width = percent + "%";
-                if (percentage) percentage.innerText = percent + "%";
-
-                if (percent < 100) {
-                    if (title) title.innerText = "Enviando Atestados";
-                    if (status) status.innerText = `Enviando arquivos para o servidor: ${percent}% concluído.`;
-                } else {
-                    if (title) title.innerText = "Envio Concluído";
-                    if (status) status.innerText = "Arquivos recebidos com sucesso! Processando e extraindo horários...";
-                }
-            }
-        });
-
-        // Track response completion
-        xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                if (status) status.innerText = "Processamento concluído com sucesso! Atualizando workspace...";
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    if (response.success && response.redirect_url) {
-                        setTimeout(() => {
-                            window.location.href = response.redirect_url;
-                        }, 800);
-                        return;
-                    }
-                } catch (e) {
-                    // Fallback to standard redirect
-                }
-                setTimeout(() => {
-                    if (xhr.responseURL) {
+        if (typeof window.triggerGlobalUploadProgress === 'function') {
+            window.triggerGlobalUploadProgress({
+                url: form.getAttribute('action') || form.action,
+                formData: formData,
+                totalFiles: fileInput.files.length,
+                onSuccess: (data, xhr) => {
+                    if (data && data.success && data.redirect_url) {
+                        window.location.href = data.redirect_url;
+                    } else if (xhr.responseURL) {
                         window.location.href = xhr.responseURL;
                     } else {
                         window.location.reload();
                     }
-                }, 800);
-            } else {
-                if (overlay) overlay.classList.remove('active');
-                console.error("Erro no upload de PDFs. Status:", xhr.status, "Texto:", xhr.statusText, "Resposta:", xhr.responseText);
-                showToast("Erro de Processamento", "Ocorreu um erro ao enviar e processar os PDFs.", "danger");
-            }
-        };
-
-        xhr.onerror = () => {
-            if (overlay) overlay.classList.remove('active');
-            console.error("Erro de conexão/rede no upload de PDFs.");
-            showToast("Erro de Conexão", "Não foi possível conectar ao servidor para enviar os arquivos.", "danger");
-        };
-
-        xhr.open('POST', form.getAttribute('action'), true);
-        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-        xhr.send(formData);
+                },
+                onError: () => {
+                    showToast('Erro', 'Falha ao enviar atestados para a turma.', 'danger');
+                }
+            });
+        } else {
+            form.submit();
+        }
     });
 }
 
@@ -1307,21 +1258,21 @@ function showToast(title, desc, type = 'info') {
     const toast = document.createElement('div');
     toast.className = 'toast';
 
-    let icon = 'ℹ️';
+    let icon = '<i class="fa-regular fa-circle-info"></i>';
     let border = 'var(--color-primary)';
 
     if (type === 'success') {
-        icon = '✅';
+        icon = '<i class="fa-solid fa-circle-check"></i>';
         border = 'var(--color-success)';
     } else if (type === 'danger') {
-        icon = '⚠️';
+        icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
         border = 'var(--color-danger)';
     } else if (type === 'warning') {
-        icon = '⚠️';
+        icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
         border = 'var(--color-warning)';
     } else if (type === 'info') {
-        icon = 'ℹ️';
-        border = 'var(--color-secondary)';
+        icon = '<i class="fa-regular fa-circle-info"></i>';
+        border = 'var(--color-primary)';
     }
 
     toast.style.borderLeftColor = border;
@@ -1370,7 +1321,7 @@ function openUnprocessedPDFsModal(data) {
         let type = typeof item === 'object' ? item.type : 'leitura';
         let alunoNome = typeof item === 'object' ? item.aluno : null;
 
-        let icon = type === 'duplicado' ? 'ℹ️' : '📄';
+        let icon = type === 'duplicado' ? '<i class="fa-regular fa-circle-info"></i>' : '<i class="fa-solid fa-file-pdf"></i>';
         let color = type === 'duplicado' ? 'var(--text-main)' : '#DC2626';
         let reasonBadge = type === 'duplicado'
             ? `<span style="font-size: 0.75rem; background: rgba(59, 130, 246, 0.1); color: #2563EB; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Aluno Duplicado${alunoNome ? ': ' + alunoNome : ''}</span>`
@@ -1492,7 +1443,7 @@ function renderTurmaAddAlunoFilesList() {
         item.style.cssText = 'display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.03); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem;';
         item.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 85%;">
-                <span style="color: #EF4444;">📄</span>
+                <span style="color: #EF4444;"><i class="fa-solid fa-file-pdf"></i></span>
                 <span style="font-weight: 600; color: var(--text-main);">${file.name}</span>
                 <span style="color: var(--text-muted); font-size: 0.75rem;">(${(file.size / 1024).toFixed(1)} KB)</span>
             </div>
@@ -1532,47 +1483,38 @@ async function submitTurmaAddAlunos(event, forceConfirm = false) {
         });
     }
 
-    const btnSave = document.getElementById('btn-save-turma-add-aluno');
-    if (btnSave) {
-        btnSave.disabled = true;
-        btnSave.innerText = 'Processando...';
-    }
+    // Fecha o modal de escolha de PDFs e ativa o overlay de progresso unificado em 2 estágios
+    closeTurmaAddAlunoModal();
 
-    try {
-        const response = await fetch(`/turma/${turmaId}/add_alunos`, {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
+    if (typeof window.triggerGlobalUploadProgress === 'function') {
+        window.triggerGlobalUploadProgress({
+            url: `/turma/${turmaId}/add_alunos`,
+            formData: formData,
+            totalFiles: turmaAddAlunoFilesList.length || 1,
+            onSuccess: (data) => {
+                if (data.requires_confirmation) {
+                    pendingTurmaAddAlunoFormData = formData;
+                    openTurmaConfirmStudentUpdateModal(data);
+                } else if (data.success) {
+                    closeTurmaConfirmStudentUpdateModal();
 
-        const data = await response.json();
-
-        if (data.requires_confirmation) {
-            pendingTurmaAddAlunoFormData = formData;
-            openTurmaConfirmStudentUpdateModal(data);
-        } else if (data.success) {
-            closeTurmaAddAlunoModal();
-            closeTurmaConfirmStudentUpdateModal();
-
-            if (data.unprocessed_data && data.unprocessed_data.nao_processados_count > 0) {
-                showToast('Aviso', 'Alguns PDFs não foram processados. Veja os detalhes.', 'warning');
-                openUnprocessedPDFsModal(data.unprocessed_data);
-                window.onUnprocessedModalClose = () => window.location.reload();
-            } else {
-                showToast('Sucesso', data.message || 'Aluno(s) adicionado(s) com sucesso!', 'success');
-                setTimeout(() => window.location.reload(), 1200);
+                    if (data.unprocessed_data && data.unprocessed_data.nao_processados_count > 0) {
+                        showToast('Aviso', 'Alguns PDFs não foram processados. Veja os detalhes.', 'warning');
+                        openUnprocessedPDFsModal(data.unprocessed_data);
+                        window.onUnprocessedModalClose = () => window.location.reload();
+                    } else {
+                        showToast('Sucesso', data.message || 'Aluno(s) adicionado(s) com sucesso!', 'success');
+                        setTimeout(() => window.location.reload(), 1200);
+                    }
+                } else {
+                    showToast('Erro', data.error || 'Falha ao cadastrar alunos.', 'danger');
+                }
+            },
+            onError: (err) => {
+                console.error("Erro ao enviar PDFs para a turma:", err);
+                showToast('Erro', 'Falha na comunicação com o servidor.', 'danger');
             }
-        } else {
-            showToast('Erro', data.error || 'Falha ao cadastrar alunos.', 'danger');
-        }
-    } catch (err) {
-        console.error("Erro ao enviar PDFs para a turma:", err);
-        showToast('Erro', 'Falha na comunicação com o servidor.', 'danger');
-    } finally {
-        if (btnSave) {
-            btnSave.disabled = false;
-            btnSave.innerText = 'Confirmar e Enviar PDFs';
-        }
+        });
     }
 }
 
@@ -1580,11 +1522,15 @@ async function submitTurmaAddAlunos(event, forceConfirm = false) {
  * Abre o modal de confirmação de alunos pré-existentes na turma.
  * @param {Object} data Resposta JSON do servidor contendo existing_students.
  */
+let pendingUnprocessedDataTurma = null;
+
 function openTurmaConfirmStudentUpdateModal(data) {
     const modal = document.getElementById('turma-confirm-student-update-modal-overlay');
     const msg = document.getElementById('turma-confirm-student-update-message');
     const list = document.getElementById('turma-confirm-student-update-list');
     if (!modal || !msg || !list) return;
+
+    pendingUnprocessedDataTurma = data.unprocessed_data || null;
 
     const existing = data.existing_students || [];
     msg.innerHTML = `Identificamos que <strong>${existing.length} aluno(s)</strong> já estão cadastrado(s) nesta turma:`;
@@ -1593,9 +1539,17 @@ function openTurmaConfirmStudentUpdateModal(data) {
     existing.forEach(student => {
         const item = document.createElement('div');
         item.style.cssText = "display: flex; align-items: center; gap: 8px; color: #D97706; font-weight: 600; font-size: 0.85rem;";
-        item.innerHTML = `<span>👤</span> <span>${student}</span>`;
+        item.innerHTML = `<span><i class="fa-solid fa-user"></i></span> <span>${student}</span>`;
         list.appendChild(item);
     });
+
+    // Se houver arquivos com erro de leitura no mesmo lote, exibe aviso visual
+    if (pendingUnprocessedDataTurma && pendingUnprocessedDataTurma.nao_processados_count > 0) {
+        const warnDiv = document.createElement('div');
+        warnDiv.style.cssText = "margin-top: 12px; padding: 8px 12px; background: rgba(239, 68, 68, 0.08); border-left: 3px solid #EF4444; border-radius: 6px; font-size: 0.8rem; color: #EF4444;";
+        warnDiv.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> <strong>${pendingUnprocessedDataTurma.nao_processados_count} arquivo(s)</strong> não puderam ser lidos (erro de leitura) e serão detalhados.`;
+        list.appendChild(warnDiv);
+    }
 
     modal.classList.add('active');
     modal.style.display = 'flex';
@@ -1611,6 +1565,12 @@ function closeTurmaConfirmStudentUpdateModal() {
         modal.style.display = 'none';
     }
     pendingTurmaAddAlunoFormData = null;
+
+    if (pendingUnprocessedDataTurma && pendingUnprocessedDataTurma.nao_processados_count > 0) {
+        const toShow = pendingUnprocessedDataTurma;
+        pendingUnprocessedDataTurma = null;
+        openUnprocessedPDFsModal(toShow);
+    }
 }
 
 /**
