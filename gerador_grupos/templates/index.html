@@ -111,6 +111,7 @@
        ========================================================================== -->
     {% if not base_data_info %}
     <main class="wizard-wrapper">
+        {% if is_admin %}
         <div class="glass-panel wizard-card">
             <div class="wizard-steps-indicator">
                 <div class="wizard-step-circle active">1</div>
@@ -123,7 +124,7 @@
 
             <form method="post" enctype="multipart/form-data" id="upload-form-real" action="{{ url_for('view_turma', turma_id=turma.id) }}">
                 <input type="hidden" name="action" value="process_pdfs">
-                
+
                 <div class="form-group">
                     <label class="form-label">Horários dos Alunos (PDFs)</label>
                     <div class="drag-drop-area" id="drag-drop-area-real">
@@ -142,6 +143,17 @@
                 </div>
             </form>
         </div>
+        {% else %}
+        <div class="glass-panel wizard-card" style="text-align: center;">
+            <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--bg-muted, rgba(0,0,0,0.04)); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <i class="fa-solid fa-folder-open" style="font-size: 1.6rem; color: var(--text-muted);"></i>
+            </div>
+            <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">Nenhuma aluno cadastrado nesta turma</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 380px; margin: 0 auto;">
+                Os alunos aparecerão aqui assim que um administrador realizar o cadastro.
+            </p>
+        </div>
+        {% endif %}
     </main>
     {% endif %}
 
