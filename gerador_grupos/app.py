@@ -19,7 +19,14 @@ from models.user import User
 from models.turma import Turma
 from models.grupo import Grupo
 from models.aluno import Aluno
+from models.horario_aluno import HorarioAluno
+from models.acompanhamento_aluno import AcompanhamentoAluno
 from services.save_studant import save_studant
+from services.horario_service import salvar_horarios_turma, substituir_horarios_aluno
+from services.acompanhamento_service import (
+    eh_status_acompanhamento, resolver_tipo, resolver_aluno_id,
+    salvar_acompanhamento, remover_acompanhamento, remover_todos_do_aluno,
+)
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
@@ -1071,7 +1078,9 @@ def update_student_schedule(turma_id):
                         )
                         if not conf_df[cond_conf].empty:
                             conf_df.loc[cond_conf, 'materia'] = '---'
-                            
+                            aluno_conflito_id = resolver_aluno_id(conf_turma.id, aluno_conflito_key)
+                            remover_acompanhamento(aluno_conflito_id, dia_abrev, horario_salvar_temp)
+
                         out_conf = BytesIO()
                         conf_df.to_csv(out_conf, index=False, encoding='utf-8')
                         conf_turma.base_data = out_conf.getvalue()
@@ -1081,6 +1090,7 @@ def update_student_schedule(turma_id):
     try:
         df = pd.read_csv(BytesIO(turma.base_data))
         aluno_key = aluno_nome.replace(' ', '_')
+        aluno_id_atual = resolver_aluno_id(turma_id, aluno_key)
         # Match "João Silva" e "João_Silva" como o mesmo aluno
         def _aluno_keys_equal(a, target_key):
             return str(a).replace(' ', '_').strip().lower() == target_key.lower()
@@ -1093,6 +1103,8 @@ def update_student_schedule(turma_id):
             cond_conf = df['aluno'].apply(lambda a: _aluno_keys_equal(a, aluno_conflito_key)) & (df['dia'] == dia_abrev) & cond_horario_conf
             if not df[cond_conf].empty:
                 df.loc[cond_conf, 'materia'] = '---'
+                aluno_conflito_id_same = resolver_aluno_id(turma_id, aluno_conflito_key)
+                remover_acompanhamento(aluno_conflito_id_same, dia_abrev, horario_salvar)
 
         def _match_horario(h):
             if str(h).strip() == horario_salvar:
@@ -1131,7 +1143,16 @@ def update_student_schedule(turma_id):
                 'materia': materia_val
             }])
             df = pd.concat([df, new_row], ignore_index=True)
-            
+
+        # Espelhar o compromisso (criação/edição) ou a remoção dele na tabela
+        # relacional acompanhamentos_aluno. 'class' e 'free' não são compromissos
+        # (aula comum e slot liberado, respectivamente), então qualquer
+        # acompanhamento existente ali é removido em vez de gravado.
+        if eh_status_acompanhamento(novo_status):
+            salvar_acompanhamento(aluno_id_atual, dia_abrev, horario_salvar, resolver_tipo(novo_status))
+        else:
+            remover_acompanhamento(aluno_id_atual, dia_abrev, horario_salvar)
+
         # Salvar CSV atualizado
         csv_buffer = BytesIO()
         df.to_csv(csv_buffer, index=False, encoding='utf-8')
@@ -1290,6 +1311,7 @@ def index():
                     db.session.commit()
                     
                     save_studant(base_df, new_turma.id)
+                    salvar_horarios_turma(new_turma.id, base_df)
                     num_alunos = len(base_df["aluno"].unique())
                     
                     if falha_arquivos:
@@ -1591,6 +1613,7 @@ def add_alunos_multi_turma_batch():
 
         # Sincronizar registros no banco relacional
         sincronizar_tabelas_dos_alunos(turma.id, base_df)
+        salvar_horarios_turma(turma.id, base_df)
 
     # BLOCO 5: Montar o objeto 'unprocessed_data' consolidado contendo as falhas divididas por turma
     total_pdfs_enviados = sum(len(f_list) for f_list in turma_files_map.values())
@@ -1715,6 +1738,7 @@ def add_alunos_batch():
 
     # Sincronizar alunos na tabela Aluno
     sincronizar_tabelas_dos_alunos(turma.id, base_df)
+    salvar_horarios_turma(turma.id, base_df)
 
     total_alunos = len(base_df['aluno'].unique())
     return jsonify({
@@ -1954,6 +1978,7 @@ def add_alunos_to_specific_turma(turma_id):
     db.session.commit()
 
     sincronizar_tabelas_dos_alunos(turma.id, base_df)
+    salvar_horarios_turma(turma.id, base_df)
 
     # BLOCO 5: Mapeamento de falhas de leitura ou arquivos não processados
     falhas_turma = process_info.get("falha_arquivos", [])
@@ -2060,7 +2085,8 @@ def view_turma(turma_id):
                 
                 # 3. Sincroniza alunos na tabela Aluno
                 sincronizar_tabelas_dos_alunos(turma.id, base_df)
-                
+                salvar_horarios_turma(turma.id, base_df)
+
                 total_turma = len(base_df["aluno"].unique())
                 if falha_arquivos:
                     flash(json.dumps({
@@ -2540,6 +2566,20 @@ def edit_studant(studant_id):
                 turma_destino.base_data = out_final.getvalue()
                 db.session.commit()
                 pdf_atualizado = True
+
+                # Espelha o novo horário (mesmas linhas de df_novo) na tabela relacional
+                # horarios_aluno. Falha aqui não deve derrubar a atualização do CSV, que
+                # já foi concluída e persistida acima.
+                try:
+                    substituir_horarios_aluno(aluno.id, df_novo)
+                    # O CSV também descarta qualquer compromisso (AC/PSI/AP/...) que o
+                    # aluno tivesse antes, já que a substituição reescreve todas as suas
+                    # linhas a partir do novo PDF — espelha o mesmo esvaziamento aqui.
+                    remover_todos_do_aluno(aluno.id)
+                    db.session.commit()
+                except Exception as e:
+                    db.session.rollback()
+                    print(f"AVISO: falha ao espelhar horarios_aluno/acompanhamentos para o aluno {aluno.id}: {e}")
             except Exception as e:
                 print(f"Erro ao atualizar horário do aluno via PDF: {e}")
                 flash('Erro ao atualizar o horário do aluno a partir do PDF.', 'error')
