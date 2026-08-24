@@ -19,6 +19,7 @@ from models.user import User
 from models.turma import Turma
 from models.grupo import Grupo
 from models.aluno import Aluno
+from models.horario_aluno import HorarioAluno
 from services.save_studant import save_studant
 
 # Carregar variáveis de ambiente do arquivo .env
