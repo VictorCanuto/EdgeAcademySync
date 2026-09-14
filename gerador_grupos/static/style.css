@@ -1831,3 +1831,206 @@ body.dark-mode .styled-table th.day-header:hover {
 #export-groups-checkbox-list label:hover {
     background-color: var(--border-color);
 }
+
+/* ==========================================================================
+   RODAPÉ (FOOTER) — presente em todas as páginas
+   ========================================================================== */
+.site-footer {
+    width: 100%;
+    margin-top: auto;
+    padding: 18px 28px;
+    background: var(--bg-header);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+}
+.site-footer span {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+.site-footer a {
+    color: var(--color-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.site-footer a:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   MANUAL DO USUÁRIO — menu lateral fixo + conteúdo
+   ========================================================================== */
+.manual-layout {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    flex: 1;
+}
+
+.manual-sidebar {
+    flex: 0 0 280px;
+    width: 280px;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 28px 18px;
+    background: var(--bg-header);
+    border-right: 1px solid var(--border-color);
+}
+
+.manual-sidebar-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin: 22px 0 8px 10px;
+}
+.manual-sidebar-title:first-child {
+    margin-top: 0;
+}
+
+.manual-nav {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.manual-nav a {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 8px;
+    font-size: 0.86rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    line-height: 1.3;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.manual-nav a:hover {
+    background: var(--border-color);
+    color: var(--text-main);
+}
+.manual-nav a.manual-nav-top {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.manual-content {
+    flex: 1;
+    min-width: 0;
+    padding: 40px clamp(20px, 5vw, 64px);
+    max-width: 900px;
+}
+
+.manual-content h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin-bottom: 6px;
+}
+.manual-content > p.manual-subtitle {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 36px;
+}
+
+.manual-group-header {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-primary);
+    margin: 56px 0 8px 0;
+    padding-top: 28px;
+    border-top: 1px solid var(--border-color);
+}
+.manual-group-header:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+.manual-group-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+}
+
+.manual-section {
+    scroll-margin-top: 20px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.manual-section:last-child {
+    border-bottom: none;
+}
+.manual-section h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-bottom: 10px;
+}
+.manual-section h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 16px 0 6px 0;
+}
+.manual-section p {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+.manual-section ol, .manual-section ul {
+    margin: 6px 0 12px 22px;
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.7;
+}
+.manual-section li {
+    margin-bottom: 4px;
+}
+.manual-section a {
+    color: var(--color-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+.manual-section a:hover {
+    text-decoration: underline;
+}
+.manual-note {
+    background: var(--color-warning-bg);
+    border-left: 3px solid var(--color-warning);
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 10px 0;
+}
+.manual-see-also {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 10px;
+}
+
+@media (max-width: 860px) {
+    .manual-layout {
+        flex-direction: column;
+    }
+    .manual-sidebar {
+        position: static;
+        width: 100%;
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .manual-content {
+        max-width: 100%;
+        padding: 28px 20px;
+    }
+}
