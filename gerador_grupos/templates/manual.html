@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual do Usuário - AcademySync</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=5">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer">
+</head>
+<body>
+
+    <!-- ==========================================================================
+       BARRA DE NAVEGAÇÃO SUPERIOR (HEADER)
+       ========================================================================== -->
+    <header class="main-header">
+        <a href="{{ url_for('index') }}" class="logo-container">
+            <div class="logo-block">
+                <img class="logo logo-light" src="{{ url_for('static', filename='images/edge-academy-logo.png') }}" alt="Edge Academy Logo"/>
+                <img class="logo logo-dark" src="{{ url_for('static', filename='images/modo dark.png') }}" alt="Edge Academy Logo Dark"/>
+            </div>
+            <p class="logo-subtext">AcademySync</p>
+        </a>
+
+        <div class="header-turma-stack">
+            <a href="{{ url_for('index') }}" class="back-link">
+                <i class="fa-solid fa-arrow-left"></i>
+                Voltar para o sistema
+            </a>
+        </div>
+
+        <div class="header-actions">
+            <!-- Switch Modo Claro/Escuro -->
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="checkbox-theme">
+                    <input type="checkbox" id="checkbox-theme">
+                    <div class="slider">
+                        <span style="font-size: 10px; margin-left: 5px;"><i class="fa-solid fa-sun"></i></span>
+                        <span style="font-size: 10px; margin-right: 5px;"><i class="fa-solid fa-moon"></i></span>
+                    </div>
+                </label>
+            </div>
+
+            {% if session.username %}
+            <div class="user-widget">
+                <div class="user-avatar">{{ session.username[0]|upper }}</div>
+                <div class="user-name">{{ session.username }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- ==========================================================================
+       MANUAL: MENU LATERAL FIXO + CONTEÚDO
+       ========================================================================== -->
+    <div class="manual-layout">
+
+        <!-- MENU LATERAL -->
+        <nav class="manual-sidebar" aria-label="Sumário do manual">
+
+            <p class="manual-sidebar-title">Introdução</p>
+            <ul class="manual-nav">
+                <li><a href="#intro">Sobre o AcademySync</a></li>
+                <li><a href="#usuarios">Sobre os usuários do sistema</a></li>
+                <li><a href="#permissoes">Sobre as permissões de acesso</a></li>
+            </ul>
+
+            <p class="manual-sidebar-title">Conceitos do sistema</p>
+            <ul class="manual-nav">
+                <li><a href="#turmas">Turmas</a></li>
+                <li><a href="#horarios">Horários dos alunos</a></li>
+                <li><a href="#pdfs">Sobre os PDFs dos alunos</a></li>
+                <li><a href="#acompanhamentos">Acompanhamentos</a></li>
+                <li><a href="#grupos-imersao">Sobre os grupos de imersão</a></li>
+            </ul>
+
+            <p class="manual-sidebar-title">Funcionalidades Gerais</p>
+            <ol class="manual-nav">
+                <li><a href="#geral-1">1. Recuperar senha</a></li>
+                <li><a href="#geral-2">2. Buscar uma turma</a></li>
+                <li><a href="#geral-3">3. Verificar os horários dos alunos de uma turma</a></li>
+                <li><a href="#geral-4">4. Filtrar e comparar alunos</a></li>
+                <li><a href="#geral-5">5. Marcar acompanhamento para um aluno</a></li>
+                <li><a href="#geral-6">6. Consultar a grade geral (aba Alunos)</a></li>
+                <li><a href="#geral-7">7. Exportar a grade de horários</a></li>
+            </ol>
+
+            <p class="manual-sidebar-title">Funcionalidades do Administrador</p>
+            <ul class="manual-nav">
+                <li><a href="#admin-1">1. Criar uma nova turma</a></li>
+                <li><a href="#admin-2">2. Editar ou excluir uma turma</a></li>
+                <li><a href="#admin-3">3. Enviar os horários dos alunos em PDF</a></li>
+                <li><a href="#admin-4">4. Editar ou excluir um aluno</a></li>
+                <li><a href="#admin-5">5. Limpar os dados de uma turma</a></li>
+                <li><a href="#admin-6">6. Gerenciar usuários</a></li>
+            </ul>
+
+            <p class="manual-sidebar-title">Funcionalidades do Super Administrador</p>
+            <ul class="manual-nav">
+                <li><a href="#superadmin">Permissões exclusivas</a></li>
+            </ul>
+        </nav>
+
+        <!-- CONTEÚDO -->
+        <main class="manual-content">
+            <h1>Manual do Usuário</h1>
+            <p class="manual-subtitle">AcademySync — Sistema de gestão de turmas em imersão e acompanhamentos do Edge Academy. Atualizado em setembro de 2026.</p>
+
+            <!-- ============================= INTRODUÇÃO ============================= -->
+            <section class="manual-section" id="intro">
+                <h2>Sobre o AcademySync</h2>
+                <p>O AcademySync é um sistema de gerenciamento de turmas do Edge Academy. Aqui é possível criar, editar e organizar turmas, além de gerar automaticamente as turmas de imersão(em construção) e gerenciar os horários de aula, imersão e acompanhamentos, bem como exportar esses resultados para planilhas.</p>
+                <h3>Sobre este manual</h3>
+                <p>Este manual foi criado com o objetivo de auxiliar os usuários e tirar dúvidas sobre como utilizar as funcionalidades do sistema. Cada funcionalidade acompanha o passo a passo, além de estar organizada de acordo com o tipo de usuário que pode acessá-la.</p>
+            </section>
+
+            <section class="manual-section" id="usuarios">
+                <h2>Sobre os usuários do sistema</h2>
+                <p>Esse sistema foi pensado para ser utilizado pelos psicólogos e pedagogos do Edge Academy. Alunos não são considerados usuários e, portanto, não possuem acesso a esse sistema.</p>
+            </section>
+
+            <section class="manual-section" id="permissoes">
+                <h2>Sobre as permissões de acesso</h2>
+                <p>
+                    Algumas funcionalidades, botões e telas descritos neste manual podem não estar disponíveis para todos os usuários. Caso encontre algum recurso que não consiga acessar, é provável que sua conta não possua a permissão necessária.
+                    Nesse caso, entre em contato com um administrador e solicite a liberação do acesso. (veja <a href="#admin-6">Gerenciar usuários</a>).</p>
+                <p>O sistema possui três tipos de usuário:</p>
+                <p><strong>Usuário comum:</strong> pode visualizar as turmas cadastradas no sistema e marcar acompanhamentos.</p>
+                <p><strong>Usuário administrador:</strong> além das funcionalidades dos usuários comuns, pode cadastrar, editar e excluir turmas e alunos, além de poder gerenciar outros usuários.</p>
+                <p><strong>Usuário super administrador:</strong> apenas um super administrador é permitido por vez. Ele tem acesso a todas as funcionalidades dos outros dois tipos de usuário, porém suas capacidades de gerenciar os usuários são mais amplas.</p>
+            </section>
+
+            <!-- ============================= CONCEITOS ============================= -->
+            <section class="manual-section" id="turmas">
+                <h2>Turmas</h2>
+                <p>São as turmas, em imersão ou não, existentes no Edge Academy. Cada turma possui uma visão em tabela representando os alunos e os horários.</p>
+            </section>
+
+            <section class="manual-section" id="horarios">
+                <h2>Horários dos alunos</h2>
+                <p>Os horários são registrados pelo administrador e pelo super administrador através dos PDFs dos alunos. A tabela resultante é a representação desse horário e contém os horários livres e ocupados por aulas, imersões e acompanhamento de cada aluno.</p>
+            </section>
+
+            <section class="manual-section" id="pdfs">
+                <h2>Sobre os PDFs dos alunos</h2>
+                <p>Os PDFs referidos neste documento dizem respeito ao atestado de matrícula  de cada um dos alunos, é a partir desses que o sistema extrai a grade horária dos alunos. Para poderem ser lidos pelo sistema, estes precisam seguir instruções específicas (Sem cabeçalho ou rodapé, escala de 90%, margens padrão, folha A4).</p>
+                <div class="manual-note">O arquivo precisa ser um PDF com texto selecionável (não pode ser uma imagem digitalizada). Veja o passo a passo em <a href="#admin-3">Enviar os horários dos alunos em PDF</a>.</div>
+            </section>
+
+            <section class="manual-section" id="acompanhamentos">
+                <h2>Acompanhamentos</h2>
+                <p>São marcadores adicionados à grade horária dos alunos e representam os acompanhamentos realizados por psicólogos e pedagogos com os alunos do Edge Academy. Qualquer usuário pode registrar e remover um acompanhamento, então cautela é necessária nesse processo.</p>
+                <h3>Tipos de acompanhamento</h3>
+                <ul>
+                    <li><strong>Livre (L)</strong> — horário sem nenhum compromisso marcado.</li>
+                    <li><strong>Acompanhamento Comportamental (AC)</strong></li>
+                    <li><strong>Psicoterapia (PSI)</strong></li>
+                    <li><strong>Acompanhamento Pedagógico (AP)</strong></li>
+                    <li><strong>Realocado (R)</strong></li>
+                    <li><strong>Imersão (IM)</strong></li>
+                </ul>
+                <h3>Tipo de acompanhamento personalizado</h3>
+                <p>Além dos tipos acima, é possível criar um marcador personalizado na hora, informando um nome (por exemplo, "Reunião com a coordenação") e uma sigla de uma letra que vai representá-lo na tabela.</p>
+            </section>
+
+            <section class="manual-section" id="grupos-imersao">
+                <h2>Sobre os grupos de imersão</h2>
+                <p>Os grupos de imersão são gerados automaticamente a partir da disponibilidade dos alunos e das especificações passadas pelo administrador. Atualmente essa funcionalidade está sendo reestruturada.</p>
+            </section>
+
+            <!-- ============================= FUNCIONALIDADES GERAIS ============================= -->
+            <h2 class="manual-group-header">Funcionalidades Gerais</h2>
+            <p class="manual-group-desc">Funcionalidades que podem ser acessadas por todos os tipos de usuário: comum, administrador e super administrador.</p>
+
+            <section class="manual-section" id="geral-1">
+                <h2>1. Recuperar senha</h2>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>Na tela de login, clique em "Esqueceu a senha?".</li>
+                    <li>Digite seu nome de usuário ou e-mail cadastrado e clique em "Avançar".</li>
+                    <li>Responda à pergunta de segurança que aparecer na tela e clique em "Verificar Resposta".</li>
+                    <li>Se a resposta estiver correta, uma nova tela vai pedir para você criar uma senha nova.</li>
+                    <li>Digite a nova senha (mínimo de 6 caracteres) nos dois campos solicitados e clique em "Salvar Nova Senha".</li>
+                    <li>Faça login normalmente com a nova senha.</li>
+                </ol>
+            </section>
+
+            <section class="manual-section" id="geral-2">
+                <h2>2. Buscar uma turma</h2>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>Vá até a aba "Turmas".</li>
+                    <li>Clique no campo "Buscar turma" e digite parte do nome que você procura.</li>
+                </ol>
+            </section>
+
+            <section class="manual-section" id="geral-3">
+                <h2>3. Verificar os horários dos alunos de uma turma</h2>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>Acesse a tela de turmas.</li>
+                    <li>Clique na turma desejada.</li>
+                    <li>A tabela com todos os horários dos alunos da turma escolhida serão mostrados. Se nenhum aluno tiver sido cadastrado uma mensagem "Nenhum aluno cadastrado" será mostrada. (veja os <a href="#acompanhamentos">tipos de acompanhamento</a>).</li>
+
+                </li>
+                </ol>
+            </section>
+
+            <section class="manual-section" id="geral-4">
+                <h2>4. Filtrar e comparar alunos</h2>
+                <h2 id="geral-4-1">4.1 tela de turma</h2>
+                <h3>Filtrar por grupo</h3>
+                <ol>
+                    <li>Acesse a aba "Turmas" e selecione uma turma.</li>
+                    <li>Na "Planilha Geral de Horários" da turma, clique no filtro de grupos e selecione o grupo desejado.</li>
+                    <li>Selecione "Limpar" ou "Todos os grupos" no filtro para reiniciar a listagem.</li>
+                </ol>
+                <h3>Comparar alunos</h3>
+                <p class="manual-see-also">Se um filtro por grupo estiver ativo, os alunos listados na comparação serão apenas os já filtrados.</p>
+                <ol>
+                    <li>Acesse a aba "Turmas" e selecione uma turma.</li>
+                    <li>Clique no botão "Comparar Alunos".</li>
+                    <li>Marque os alunos que deseja comparar.</li>
+                    <li>Opcional: você pode buscar um aluno pelo nome.</li>
+                    <li>Opcional: "Limpar Seleção" reseta o filtro e desmarca todos os alunos (todos voltam a ser exibidos).</li>
+                    <li>Clique em "Aplicar Filtro" para atualizar a planilha, mostrando apenas os alunos escolhidos.</li>
+                </ol>
+
+                <h2 id="geral-4-1">4.2 tela de alunos</h2>
+                <ol>
+                    <li>Clique na aba "Alunos", no topo da página.</li>
+                    <li>Use o campo "Buscar aluno pelo nome..." para localizar um aluno específico.</li>
+                    <li>Clique em "Filtrar Turmas" para restringir a visualização a apenas algumas turmas.</li>
+                    <li>Clique em "Comparar Alunos" para escolher, entre todos os alunos de todas as turmas, quais devem aparecer na planilha.</li>
+                </ol>
+            </section>
+
+            <section class="manual-section" id="geral-5">
+                <h2>5. Marcar acompanhamento para um aluno</h2>
+                <p>Agendar manualmente um acompanhamento.</p>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>Na "Planilha Geral de Horários", clique sobre a célula que representa o dia e o horário desejados do aluno.</li>
+                    <li>Uma pequena janela, "Alterar Compromisso", abre com as opções de <a href="#acompanhamentos">acompanhamento</a> disponíveis: Livre, Acompanhamento Comportamental, Psicoterapia, Imersão, Acompanhamento Pedagógico ou Realocado.</li>
+                    <li>Clique na opção desejada para aplicá-la.</li>
+                    <li>Se quiser um compromisso personalizado, digite um nome e uma sigla de uma letra nos campos da seção "Compromisso Customizado" e clique em "Salvar".</li>
+                </ol>
+                <div class="manual-note">Se o novo compromisso conflitar com um horário já marcado em outra turma, o sistema avisa antes de confirmar a alteração.</div>
+            </section>
+
+            <section class="manual-section" id="geral-6">
+                <h2>6. Consultar a grade geral de todos os alunos (aba Alunos)</h2>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>Acesse a aba "Alunos", no topo da página.</li>
+                    <li>Use a busca, o filtro de turmas e a comparação de alunos para refinar a visualização — veja o detalhe em <a href="#geral-9">Filtrar e comparar alunos</a>.</li>
+                </ol>
+            </section>
+
+            <section class="manual-section" id="geral-7">
+                <h2>7. Exportar a grade de horários (Excel ou CSV)</h2>
+                <p>baixa a tabela de horários em formato Excel (.xlsx) ou CSV.</p>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>Dentro de uma turma ou na aba alunos,  clique em "Exportar Planilha".</li>
+                    <li>Na janela "Exportar Planilhas e Dados", escolha quais alunos ou grupos deseja incluir, se nenhum for especificado, todos serão inclusos na planilha.</li>
+                    <li>Clique em "Excel (.xlsx)" ou em "CSV", de acordo com o formato desejado.</li>
+                    <li>Aguarde o arquivo ser baixado.</li>
+                </ol>
+            </section>
+
+            <!-- ============================= FUNCIONALIDADES DO ADMINISTRADOR ============================= -->
+            <h2 class="manual-group-header">Funcionalidades do Administrador</h2>
+            <p class="manual-see-also">Veja <a href="#permissoes">Permissões de acesso</a>.</p>
+
+            <section class="manual-section" id="admin-1">
+                <h2>1. Criar uma nova turma</h2>
+                <p class="manual-see-also">Veja sobre <a href="#turmas">turma</a>.</p>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>Acesse a aba "Turmas".</li>
+                    <li>Clique no botão "Nova Turma".</li>
+                    <li>No modal que abriu, digite um nome para a nova turma no campo indicado (por exemplo, "Turma 4").</li>
+                    <li>Opcional: marque a opção "Em imersão" caso seja uma turma em imersão. Essa opção vem desmarcada por padrão — veja <a href="#grupos-imersao">Sobre os grupos de imersão</a>.
+                        <ol>
+                            <li>Caso a opção seja marcada, um novo modal será aberto para a configuração das turmas.</li>
+                        </ol>
+                    </li>
+                    <li>Opcional: se você já tiver os PDFs de horários dos alunos dessa turma em mãos, clique em "Inserir Pdfs" e selecione os arquivos. Essa ação também pode ser feita depois (veja <a href="#admin-3">Enviar os horários dos alunos em PDF</a>).</li>
+                    <li>Clique em "Salvar" para criar a turma. Ela agora pode ser acessada através da listagem de turmas.</li>
+                </ol>
+                <p class="manual-see-also">Para adicionar o primeiro aluno logo após criar a turma, veja <a href="#admin-3">Enviar os horários dos alunos em PDF</a>.</p>
+            </section>
+
+            <section class="manual-section" id="admin-2">
+                <h2>2. Editar ou excluir uma turma</h2>
+                <h3>Mudar o nome da turma</h3>
+                <ol>
+                    <li>Na aba "Turmas", localize o cartão da turma desejada.</li>
+                    <li>Clique no ícone de lápis, no canto superior direito do cartão.</li>
+                    <li>Digite o novo nome no campo indicado.</li>
+                    <li>Clique em "Salvar Alterações".</li>
+                </ol>
+                <h3>Como excluir</h3>
+                <div class="manual-note">Excluir uma turma remove também todos os alunos e horários cadastrados nela. Essa ação não pode ser desfeita.</div>
+                <ol>
+                    <li>Na aba "Turmas", localize o cartão da turma desejada.</li>
+                    <li>Clique no ícone de lixeira, no canto superior direito do cartão.</li>
+                    <li>Confirme a exclusão na janela que aparecer, clicando em "Sim, Excluir!".</li>
+                </ol>
+            </section>
+
+            <section class="manual-section" id="admin-3">
+                <h2>3. Enviar os horários dos alunos em PDF (atestados de matrícula)</h2>
+                <p class="manual-see-also">Veja também: <a href="#pdfs">Sobre os PDFs dos alunos</a>, <a href="#horarios">Horários dos alunos</a> e <a href="#permissoes">Sobre as permissões de acesso</a>.</p>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>Acesse a aba "Turmas".</li>
+                    <li>Abra a turma desejada clicando sobre o cartão dela.</li>
+                    <li>Se a turma ainda não tiver alunos cadastrados, arraste os arquivos PDF para a área indicada (ou clique nela para escolher os arquivos) e depois clique em "Processar PDFs".</li>
+                    <li>Se a turma já tiver alunos cadastrados, clique em "Adicionar Novo Aluno", escolha os arquivos PDF e clique em "Confirmar e Enviar PDFs".</li>
+                    <li>Aguarde a barra de progresso concluir o envio.</li>
+                    <li>Se algum aluno enviado já existir na turma, o sistema pergunta se deseja atualizar a grade dele com os dados do novo PDF — confirme se for o caso.</li>
+                </ol>
+                <div class="manual-note">O PDF precisa ter texto selecionável (não pode ser uma imagem digitalizada); se algum arquivo não puder ser lido, o sistema mostra um aviso listando quais falharam.</div>
+            </section>
+
+            <section class="manual-section" id="admin-4">
+                <h2>4. Editar ou excluir um aluno</h2>
+                <h3>Como editar</h3>
+                <div class="manual-note">Editar a grade horária do aluno limpa todos os acompanhamentos marcados para ele.</div>
+                <ol>
+                    <li>Localize o aluno na planilha e clique na ícone de lápis.</li>
+                    <li>Na janela "Editar Aluno" você pode:
+                        <ol>
+                            <li>Alterar o nome do aluno</li>
+                            <li>Escolher outra turma no campo "Turma" se quiser mover o aluno de turma</li>
+                            <li>Clique em "Selecionar novo PDF" para substituir a grade de horários dele.</li>
+                        </ol>
+                    <li>Clique em "Salvar Alterações".</li>
+                </ol>
+                <h3>Como excluir</h3>
+                <div class="manual-note">Excluir um aluno remove todos os horários e acompanhamentos dele. Essa ação não pode ser desfeita.</div>
+                <ol>
+                    <li>Clique na opção de excluir o aluno.</li>
+                    <li>Confirme clicando em "Sim, Excluir!" na janela de confirmação.</li>
+                </ol>
+            </section>
+
+            <section class="manual-section" id="admin-5">
+                <h2>5. Limpar os dados de uma turma (recomeçar do zero)</h2>
+                <p>Apaga todos os PDFs processados e os horários salvos de uma turma, deixando-a vazia, mas não exclui a turma.</p>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>Abra a turma desejada.</li>
+                    <li>Clique em "Limpar Workspace / Recomeçar".</li>
+                    <li>Confirme a ação na janela que aparecer.</li>
+                </ol>
+                <div class="manual-note">Essa ação apaga os alunos e horários carregados na turma e não pode ser desfeita. </div>
+            </section>
+
+            <section class="manual-section" id="admin-6">
+                <h2>6. Gerenciar usuários </h2>
+                <p> página onde administradores definem quem pode ou não ter permissões avançadas no sistema.</p>
+                <p><strong>Como fazer:</strong></p>
+                <ol>
+                    <li>No menu superior, clique em "Gerenciar Usuários" (esse link só aparece para contas com permissão de Administrador).</li>
+                    <li>Localize o usuário desejado na lista e clique no ícone de três pontinhos ao lado do nome dele.</li>
+                    <li>Escolha "Tornar admin" para dar permissões de Administrador a esse usuário.</li>
+                    <li>Confirme a ação na janela que aparecer.</li>
+                </ol>
+                <p class="manual-see-also">Outras opções como "Remover admin" e "Deletar usuário" só aparecem para contas de Super Administrador — veja <a href="#superadmin">Funcionalidades do Super Administrador</a>.</p>
+            </section>
+
+            <!-- ============================= FUNCIONALIDADES DO SUPER ADMINISTRADOR ============================= -->
+            <h2 class="manual-group-header">Funcionalidades do Super Administrador</h2>
+            <p class="manual-group-desc">Além de tudo o que um Administrador pode fazer, a conta de Super Administrador tem acesso exclusivo às ações abaixo.</p>
+
+            <section class="manual-section" id="superadmin">
+                <h2>Permissões exclusivas</h2>
+                <p>Dentro da tela "Gerenciar Usuários" (veja <a href="#admin-6">Gerenciar usuários</a>), apenas a conta de Super Administrador pode:</p>
+                <ol>
+                    <li><strong>Remover admin</strong> — retira a permissão de Administrador de um usuário, voltando-o para conta comum.</li>
+                    <li><strong>Deletar usuário</strong> — exclui definitivamente a conta de um usuário.</li>
+                </ol>
+                <div class="manual-note">Não é possível remover suas próprias permissões de administrador nem excluir sua própria conta por essa tela. Apenas um Super Administrador é permitido por vez no sistema.</div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="site-footer">
+        <span>AcademySync — Edge Academy</span>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkbox = document.getElementById('checkbox-theme');
+            const saved = localStorage.getItem('theme') || 'light';
+            if (saved === 'dark') {
+                document.body.classList.add('dark-mode');
+                if (checkbox) checkbox.checked = true;
+            }
+            if (checkbox) {
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        document.body.classList.add('dark-mode');
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        document.body.classList.remove('dark-mode');
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

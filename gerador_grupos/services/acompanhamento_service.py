@@ -36,9 +36,7 @@ def _normalizar_nome(nome):
 
 
 def resolver_aluno_id(turma_id, aluno_key):
-    """Busca o id do Aluno na turma cujo nome (ou nome_custom) bate com
-    aluno_key, tolerando '_' vs espaço e maiúsculas/minúsculas — mesma regra
-    de casamento usada no resto do app (_normalize_name_for_match)."""
+    """Busca o id do Aluno na turma"""
     alvo = _normalizar_nome(aluno_key)
     if not alvo:
         return None
@@ -48,7 +46,7 @@ def resolver_aluno_id(turma_id, aluno_key):
     return None
 
 
-def salvar_acompanhamento(aluno_id, dia, horario, tipo):
+def salvar_acompanhamento(aluno_id, dia, horario, tipo, descricao):
     """Cria ou atualiza (upsert) o compromisso do aluno naquele slot."""
     if aluno_id is None:
         return
@@ -57,12 +55,14 @@ def salvar_acompanhamento(aluno_id, dia, horario, tipo):
     ).first()
     if existente:
         existente.tipo = tipo
+        existente.descricao = descricao
     else:
         db.session.add(AcompanhamentoAluno(
             aluno_id=aluno_id,
             dia=dia,
             horario=horario,
             tipo=tipo,
+            descricao=descricao,
         ))
 
 
@@ -76,9 +76,7 @@ def remover_acompanhamento(aluno_id, dia, horario):
 
 
 def remover_todos_do_aluno(aluno_id):
-    """Remove todos os compromissos do aluno. Usado quando o horário completo
-    do aluno é substituído por um novo PDF (o que também zera essas linhas no
-    CSV, já que a substituição reescreve todas as linhas daquele aluno)."""
+    """Remove todos os compromissos do aluno"""
     if aluno_id is None:
         return
     AcompanhamentoAluno.query.filter_by(aluno_id=aluno_id).delete()

@@ -679,6 +679,12 @@ def logout():
     flash('Você foi desconectado.', 'info')
     return redirect(url_for('login'))
 
+@app.route('/manual')
+@login_required
+def manual_usuario():
+    """Página estática com o Manual do Usuário do AcademySync."""
+    return render_template('manual.html')
+
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     step = 1
