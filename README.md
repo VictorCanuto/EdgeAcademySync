@@ -55,8 +55,8 @@ Siga os passos abaixo para preparar o ambiente e rodar o projeto na sua máquina
 
 ### Passo 1: Clonar o Repositório
 ```bash
-git clone https://github.com/VictorCanuto/edgesync.git
-cd edgesync
+git clone https://github.com/VictorCanuto/EdgeAcademySync.git
+cd EdgeAcademySync
 ```
 
 ### Passo 2: Configurar o Ambiente Virtual (venv)
@@ -93,7 +93,7 @@ pip install -r gerador_grupos/requirements.txt
 
 ### Passo 5: Iniciar o Servidor Local
 
-Tornamos a inicialização muito mais simples e rápida! Use os atalhos criados na raiz da pasta `edgesync`:
+Tornamos a inicialização muito mais simples e rápida! Use os atalhos criados na raiz da pasta `EdgeAcademySync`:
 
 - **No Windows (PowerShell):**
   ```powershell
